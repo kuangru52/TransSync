@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 侧边栏 Chip 同款：10% 白色背景 -->
+    <solid android:color="#1AFFFFFF" />
+
+    <!-- 极细边框：1px 才能显现出晶莹感，1dp 太粗了 -->
+    <stroke
+        android:width="1px"
+        android:color="#20FFFFFF" />
+
+    <!-- 物理极限圆角：100dp 强制将两端渲染为完美半圆 -->
+    <corners android:radius="100dp" />
+</shape>

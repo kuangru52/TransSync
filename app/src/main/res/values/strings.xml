@@ -1,0 +1,72 @@
+<resources>
+    <string name="app_name">TransSync</string>
+    <string name="login_title">Transmission 登录</string>
+    <string name="host_hint">服务器地址 (如 https://domain:port)</string>
+    <string name="username_hint">用户名</string>
+    <string name="password_hint">密码</string>
+    <string name="login_button">登录</string>
+
+    <string name="nav_all">全部任务</string>
+    <string name="nav_downloading">正在下载</string>
+    <string name="nav_seeding">正在做种</string>
+    <string name="nav_paused">已暂停</string>
+    <string name="nav_active">活动中</string>
+    <string name="nav_inactive">未活动</string>
+    <string name="nav_settings">设置</string>
+    <string name="nav_logout">退出登录</string>
+
+    <string name="status_paused">已暂停</string>
+    <string name="status_checking">正在校验</string>
+    <string name="status_downloading">正在下载</string>
+    <string name="status_seeding">正在做种</string>
+    <string name="status_unknown">未知状态</string>
+
+    <string name="label_size">大小: %s</string>
+    <string name="label_ratio">分享率: %s</string>
+    <string name="label_eta">剩余时间: %s</string>
+    <string name="time_today">今天&#160;&#160;&#160;%s</string>
+    <string name="time_yesterday">昨天&#160;&#160;&#160;%s</string>
+    <string name="state_not_finished">未完成</string>
+    <string name="state_none">无</string>
+    <string name="dialog_edit_tracker_title">编辑 Tracker (每行一个)</string>
+    <string name="dialog_save">保存</string>
+    <string name="dialog_cancel">取消</string>
+    <string name="msg_fetch_tracker_failed">获取 Tracker 失败</string>
+    <string name="msg_tracker_updated">Tracker 已更新</string>
+    <string name="msg_update_failed">更新失败: %d</string>
+    <string name="msg_network_error">网络错误</string>
+    <string name="unit_day">%dd&#160;&#160;</string>
+    <string name="unit_hour">%dh&#160;&#160;</string>
+    <string name="unit_minute">%dm</string>
+    <string name="peer_progress">进度: %s</string>
+
+    <string name="navigation_drawer_open">打开导航抽屉</string>
+    <string name="navigation_drawer_close">关闭导航抽屉</string>
+    <string name="selected_count">已选择 %d 个</string>
+    <string name="free_space_label">可用空间: %s</string>
+    <string name="delete_confirm_msg">确定要删除选中的 %d 个种子吗？</string>
+    <string name="count_bracket">[%s]</string>
+    <string name="tracker_count_format">%1$s  %2$d</string>
+    <string name="msg_exit_press_again">再按一次退出</string>
+    <string name="msg_select_only_one">请仅选择一个项目</string>
+    <string name="msg_torrent_added_success">种子已成功添加</string>
+    <string name="hint_new_name">新名称</string>
+    <string name="dialog_rename_title">重命名种子</string>
+    <string name="dialog_delete_title">删除种子</string>
+    <string name="dialog_set_location_title">设置保存位置</string>
+    <string name="menu_pause">暂停</string>
+    <string name="menu_start">开始</string>
+    <string name="menu_rename">重命名</string>
+    <string name="menu_set_location">设置保存位置</string>
+    <string name="menu_verify">校验本地数据</string>
+    <string name="menu_reannounce">寻找更多节点</string>
+    <string name="cb_delete_data">同时删除数据</string>
+    <string name="cb_move_data">移动数据</string>
+    <string name="btn_delete">删除</string>
+    <string name="hint_torrent_url">种子链接 / Magnet (磁力链)</string>
+    <string name="hint_download_dir">下载目录 (可选)</string>
+    <string name="btn_confirm">确定</string>
+    <string name="search_results">搜索结果</string>
+    <string name="label_seeding_time">做种时间</string>
+    <string name="label_peers_stats">做种 / 下载 / 完成</string>
+</resources>

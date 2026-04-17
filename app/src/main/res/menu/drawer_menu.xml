@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_all"
+            android:title="@string/nav_all" />
+        <item
+            android:id="@+id/nav_downloading"
+            android:title="@string/nav_downloading" />
+        <item
+            android:id="@+id/nav_seeding"
+            android:title="@string/nav_seeding" />
+        <item
+            android:id="@+id/nav_paused"
+            android:title="@string/nav_paused" />
+        <item
+            android:id="@+id/nav_active"
+            android:title="@string/nav_active" />
+        <item
+            android:id="@+id/nav_inactive"
+            android:title="@string/nav_inactive" />
+    </group>
+</menu>

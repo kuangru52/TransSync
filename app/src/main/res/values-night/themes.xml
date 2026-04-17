@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Base.Theme.TransSync" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- 核心：改�?Material 3 的表面颜色，这决定了 PopupMenu 的背�?-->
+        <item name="colorSurface">@color/bg_item</item>
+        <item name="colorOnSurface">@color/text_primary</item>
+        <item name="android:colorBackground">@color/bg_main</item>
+    </style>
+
+    <style name="Theme.TransSync" parent="Base.Theme.TransSync">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/bg_toolbar</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/bg_main</item>
+        <item name="android:statusBarColor">@color/bg_toolbar</item>
+        <item name="android:navigationBarColor">@color/bg_bottom_bar</item>
+    </style>
+</resources>

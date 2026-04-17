@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="60"
+    android:viewportHeight="60">
+    <!-- Adjusted magnifying glass: Use Stroke mode to match the thickness of the turtle line art -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M25,25m-11,0a11,11 0,1 0,22 0a11,11 0,1 0,-22 0 M33,33 L45,45" />
+</vector>

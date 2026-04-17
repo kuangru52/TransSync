@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardView"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="8dp"
+    android:layout_marginVertical="4dp"
+    app:cardBackgroundColor="@color/selector_torrent_item_bg"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="@color/divider">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="12dp">
+
+        <FrameLayout
+            android:id="@+id/btnStatus"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="center_vertical"
+                android:layout_marginEnd="12dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="?attr/selectableItemBackgroundBorderless">
+                <!-- ... 内容保持不变 ... -->
+
+            <ImageView
+                android:id="@+id/ivStatusCircle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/bg_circle" />
+
+            <ImageView
+                android:id="@+id/ivStatusIcon"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_pause" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="2"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                tools:text="Jumanji.The.Next.Level.iso" />
+
+            <!-- 锁定信息行高度，防止速度变化导致微调 -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="18dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tvSizeInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    tools:text="10 GB / 43.7 GB" />
+
+                <TextView
+                    android:id="@+id/tvTrackerName"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="12dp"
+                    android:background="@drawable/bg_tag_outline"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="7dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="11sp"
+                    tools:text="HDSKY" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <TextView
+                    android:id="@+id/tvDownloadSpeed"
+                    android:layout_width="75dp"
+                    android:layout_height="wrap_content"
+                    android:gravity="end"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    tools:text="1.2 MB/s ↓" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvError"
+                android:layout_width="match_parent"
+                android:layout_height="16dp"
+                android:textColor="@color/state_red"
+                android:textSize="11sp"
+                android:visibility="gone"
+                android:maxLines="1"
+                android:ellipsize="end"
+                tools:text="Error: No space left on device"
+                tools:visibility="visible" />
+
+            <!-- 锁定上传/统计行高度 -->
+            <RelativeLayout
+                android:layout_width="match_parent"
+                android:layout_height="18dp">
+
+                <TextView
+                    android:id="@+id/tvStatsLeft"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentStart="true"
+                    android:layout_toStartOf="@+id/tvUploadSpeed"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="11sp"
+                    tools:text="Uploaded: 264.3 GB (Ratio: 6.04)" />
+
+                <TextView
+                    android:id="@+id/tvUploadSpeed"
+                    android:layout_width="75dp"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentEnd="true"
+                    android:gravity="end"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp"
+                    tools:text="450 KB/s ↑" />
+            </RelativeLayout>
+
+            <!-- 进度条及百分比气泡容器 -->
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp">
+
+                <!-- 全长的灰色底线 -->
+                <View
+                    android:id="@+id/progressBg"
+                    android:layout_width="0dp"
+                    android:layout_height="2dp"
+                    android:background="#1A000000"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- 动态增长的填充线：起点对齐左边，终点跟随数字 -->
+                <View
+                    android:id="@+id/progressFill"
+                    android:layout_width="0dp"
+                    android:layout_height="2dp"
+                    android:background="@color/state_blue"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@+id/tvProgressPercent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <!-- 数字锚点：它是驱动源 -->
+                <TextView
+                    android:id="@+id/tvProgressPercent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:background="@drawable/bg_progress_bubble"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="8dp"
+                    android:textColor="@color/text_primary"
+                    android:textSize="9sp"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    tools:text="60.5" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+            <TextView
+                android:id="@+id/tvVerificationStatus"
+                android:layout_width="match_parent"
+                android:layout_height="14dp"
+                android:textColor="@color/text_secondary"
+                android:textSize="10sp"
+                android:visibility="gone"
+                tools:text="Verifying (45.2%)"
+                tools:visibility="visible" />
+
+        </LinearLayout>
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

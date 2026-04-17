@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark Theme Backgrounds -->
+    <color name="bg_main">#FF161F29</color>
+    <color name="bg_item">#FF212D3B</color>
+    <color name="bg_toolbar">#FF161F29</color>
+    <color name="bg_bottom_bar">#FF161F29</color>
+
+    <!-- Primary Colors -->
+    <color name="colorPrimary">#FF161F29</color>
+    <color name="colorPrimaryDark">#FF161F29</color>
+    <color name="colorAccent">#FF1D88E3</color>
+    <color name="fab_bg">#FF1D88E3</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#9EABB8</color>
+    <color name="text_on_toolbar">#FFFFFF</color>
+    <color name="nav_item_tint">#FFFFFF</color>
+
+    <color name="button_color">#888888</color>
+    <color name="turtle_active">#039BE5</color>
+    <color name="divider">#1AFFFFFF</color>
+    <color name="nav_divider">#040404</color>
+    <color name="selection_bg">#FF3F4348</color>
+    <color name="glass_white">#1AFFFFFF</color>
+    <color name="glass_white_heavy">#33FFFFFF</color>
+    <color name="bg_card">#FF212D3B</color>
+</resources>
