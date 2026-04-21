@@ -15,13 +15,15 @@
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/ivLogo"
-        android:layout_width="64dp"
-        android:layout_height="64dp"
+        android:layout_width="72dp"
+        android:layout_height="72dp"
         android:layout_gravity="center_horizontal"
-        android:background="?attr/selectableItemBackgroundBorderless"
+        android:padding="8dp"
         android:clickable="true"
         android:focusable="true"
-        android:src="@mipmap/ic_launcher"
+        android:src="@drawable/logo"
+        android:scaleType="fitCenter"
+        android:background="?attr/selectableItemBackgroundBorderless"
         app:shapeAppearanceOverlay="@style/RoundedRectangleShape" />
 
     <TextView

@@ -11,8 +11,8 @@ android {
         applicationId = "com.kuangru52.TransSync"
         minSdk = 24
         targetSdk = 36
-        versionCode = 5
-        versionName = "1.04"
+        versionCode = 8
+        versionName = "1.08"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -24,6 +24,13 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+        }
+    }
+
+    applicationVariants.all {
+        outputs.all {
+            val output = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            output.outputFileName = "TransSync-${versionName}.apk"
         }
     }
 

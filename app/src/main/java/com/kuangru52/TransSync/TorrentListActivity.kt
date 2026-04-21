@@ -21,6 +21,7 @@ import android.net.Uri
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.EditText
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
@@ -98,6 +99,7 @@ class TorrentListActivity : AppCompatActivity() {
     private var lastAddDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_torrent_list)
 
@@ -596,7 +598,7 @@ class TorrentListActivity : AppCompatActivity() {
 
                     // 预计算颜色与进度
                     val color = when {
-                        error != 0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_red)
+                        error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true)) -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_red)
                         status == 1 || status == 2 -> Color.parseColor("#FFF9A825") // 校验中：黄色
                         status == 0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_gray) // 暂停
                         percentDone >= 1.0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_green) // 完成：绿色
@@ -963,19 +965,38 @@ class TorrentListActivity : AppCompatActivity() {
             text = getString(R.string.cb_delete_data)
             setTextColor(ContextCompat.getColor(this@TorrentListActivity, R.color.text_secondary))
             setPadding(0, 20, 0, 20)
+            isChecked = true
         }
         container.addView(cbDeleteData)
 
-        val btnDelete = com.google.android.material.button.MaterialButton(this).apply {
-            text = getString(R.string.btn_delete)
-            setBackgroundColor("#E53935".toColorInt()) // 红色警示
-            setTextColor(Color.WHITE)
-            cornerRadius = (resources.displayMetrics.density * 28f).toInt()
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (resources.displayMetrics.density * 56f).toInt()).apply {
-                topMargin = 40
+        val btnContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = (resources.displayMetrics.density * 12f).toInt()
             }
         }
-        container.addView(btnDelete)
+
+        val btnDelete = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonStyle).apply {
+            text = getString(R.string.btn_delete)
+            backgroundTintList = ColorStateList.valueOf("#E53935".toColorInt())
+            setTextColor(Color.WHITE)
+            textSize = 12f
+            stateListAnimator = null
+            insetTop = 0
+            insetBottom = 0
+            cornerRadius = (resources.displayMetrics.density * 20f).toInt()
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                (resources.displayMetrics.density * 40f).toInt()
+            )
+            minimumWidth = (resources.displayMetrics.density * 80f).toInt()
+        }
+        btnContainer.addView(btnDelete)
+        container.addView(btnContainer)
 
         val dialog = AlertDialog.Builder(this, R.style.AppDialogTheme)
             .setView(container)
@@ -1108,7 +1129,7 @@ class TorrentListActivity : AppCompatActivity() {
         view.findViewById<View>(R.id.tilTorrentUrl)?.visibility = View.GONE
         
         cbMove?.visibility = View.VISIBLE
-        cbMove?.isChecked = false 
+        cbMove?.isChecked = true
         btnAction?.text = getString(R.string.btn_confirm)
 
         // 历史目录加载
@@ -1343,21 +1364,21 @@ class TorrentListActivity : AppCompatActivity() {
                 
                 val isNight = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
                 
-                // 统一背景色：增加浅色模式下的权重，使其视觉感官与深色模式对等
-                val bgColor = if (isNight) "#1AFFFFFF".toColorInt() else "#14000000".toColorInt()
+                // 统一背景色：使用种子列表同款配色
+                val bgColor = ContextCompat.getColor(this@TorrentListActivity, R.color.bg_tag)
                 chipBackgroundColor = ColorStateList.valueOf(bgColor)
                 
-                // 统一边框：锁定透明度和宽度
-                val strokeColor = if (isNight) "#20FFFFFF".toColorInt() else "#26000000".toColorInt()
+                // 统一边框：使用种子列表同款边框色
+                val strokeColor = ContextCompat.getColor(this@TorrentListActivity, R.color.stroke_tag)
                 chipStrokeColor = ColorStateList.valueOf(strokeColor)
                 chipStrokeWidth = resources.displayMetrics.density * 1.0f
                 
-                val textColor = if (isNight) Color.WHITE else "#FF2D3436".toColorInt()
+                val textColor = ContextCompat.getColor(this@TorrentListActivity, R.color.text_secondary)
                 setTextColor(textColor)
-                textSize = 11f
+                textSize = 12f
+                includeFontPadding = false
                 
-                // 核心修复：强制取消 Material Chip 的默认内边距和最小高度限制
-                // 解决浅色模式下由于 MaterialTheme 默认 Inset 导致的布局“稀疏”问题
+                // 彻底恢复到最初的大尺寸：侧边栏 Chip 应该是大气的操作按钮样式
                 setPadding(0, 0, 0, 0)
                 minHeight = 0
                 minimumHeight = 0
@@ -1469,6 +1490,14 @@ class TorrentListActivity : AppCompatActivity() {
             val url = etUrl.text.toString().trim()
             val downloadDir = etDir.text.toString().trim()
             
+            // 按钮动效反馈
+            btnAdd.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction {
+                btnAdd.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+            }.start()
+
+            // 立即关闭弹窗
+            dialog.dismiss()
+
             // 历史目录逻辑
             if (downloadDir.isNotEmpty()) {
                 val newHistory = historyDirs.toMutableSet()
@@ -1491,12 +1520,13 @@ class TorrentListActivity : AppCompatActivity() {
                     service.rpc(rpcUrl, null, RpcRequest("torrent-add", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                         override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                             if (response.isSuccessful) {
-                                dialog.dismiss()
                                 refreshTorrents()
                                 Toast.makeText(this@TorrentListActivity, R.string.msg_torrent_added_success, Toast.LENGTH_SHORT).show()
                             }
                         }
-                        override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+                        override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
+                            Toast.makeText(this@TorrentListActivity, R.string.msg_network_error, Toast.LENGTH_SHORT).show()
+                        }
                     })
                 }
             } else if (url.isNotEmpty()) {
@@ -1507,12 +1537,13 @@ class TorrentListActivity : AppCompatActivity() {
                 service.rpc(rpcUrl, null, RpcRequest("torrent-add", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                     override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                         if (response.isSuccessful) {
-                            dialog.dismiss()
                             refreshTorrents()
                             Toast.makeText(this@TorrentListActivity, R.string.msg_torrent_added_success, Toast.LENGTH_SHORT).show()
                         }
                     }
-                    override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+                    override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
+                        Toast.makeText(this@TorrentListActivity, R.string.msg_network_error, Toast.LENGTH_SHORT).show()
+                    }
                 })
             }
         }

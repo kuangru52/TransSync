@@ -9,6 +9,7 @@
     android:padding="24dp"
     android:gravity="center"
     android:background="@color/bg_main"
+    android:fitsSystemWindows="false"
     tools:context=".MainActivity">
 
     <View
@@ -23,15 +24,18 @@
         android:padding="24dp"
         android:elevation="8dp">
 
-        <ImageView
+        <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivLogo"
             android:layout_width="100dp"
             android:layout_height="100dp"
             android:layout_centerHorizontal="true"
             android:layout_marginTop="40dp"
             android:layout_marginBottom="16dp"
+            android:padding="12dp"
             android:scaleType="fitCenter"
             android:src="@drawable/logo"
+            android:background="@color/white"
+            app:shapeAppearanceOverlay="@style/RoundedRectangleShape"
             android:contentDescription="@string/app_name" />
 
         <com.google.android.material.textfield.TextInputLayout

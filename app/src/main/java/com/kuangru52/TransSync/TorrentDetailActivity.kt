@@ -3,6 +3,7 @@
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
@@ -18,6 +19,7 @@ class TorrentDetailActivity : AppCompatActivity() {
     private var currentStatus: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityTorrentDetailBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -39,19 +41,10 @@ class TorrentDetailActivity : AppCompatActivity() {
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
             tab.text = if (position == 0) "信息" else "节点"
         }.attach()
-
-        binding.btnStatus.setOnClickListener {
-            onStatusClick()
-        }
     }
 
     fun updateStatusIcon(status: Int) {
-        currentStatus = status
-        if (status == 0) {
-            binding.btnStatus.setImageResource(R.drawable.ic_play)
-        } else {
-            binding.btnStatus.setImageResource(R.drawable.ic_pause)
-        }
+        // 由于右侧按钮已移除，此方法可以保持空或移除相关调用
     }
 
     private fun onStatusClick() {

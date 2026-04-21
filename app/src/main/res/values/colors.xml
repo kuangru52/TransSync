@@ -4,15 +4,15 @@
     <color name="white">#FFFFFFFF</color>
 
     <!-- Light Theme Backgrounds (Default) -->
-    <color name="bg_main">#FFF5F7FA</color>
+    <color name="bg_main">#FFF0F2F5</color>
     <color name="bg_item">#FFFFFFFF</color>
-    <color name="bg_toolbar">#FF607D8B</color>
-    <color name="bg_bottom_bar">#FF607D8B</color>
-    <color name="bg_bottom_bar_tint">#FF607D8B</color>
+    <color name="bg_toolbar">#FF455A64</color>
+    <color name="bg_bottom_bar">#FF455A64</color>
+    <color name="bg_bottom_bar_tint">#FF455A64</color>
 
     <!-- Primary Colors -->
-    <color name="colorPrimary">#FF607D8B</color>
-    <color name="colorPrimaryDark">#FF455A64</color>
+    <color name="colorPrimary">#FF455A64</color>
+    <color name="colorPrimaryDark">#FF37474F</color>
     <color name="colorAccent">#FF00B0FF</color>
     <color name="fab_bg">#FFFF5252</color>
 
@@ -21,6 +21,10 @@
     <color name="text_secondary">#FF636E72</color>
     <color name="text_on_toolbar">#FFFFFF</color>
     <color name="nav_item_tint">#FF2D3436</color>
+
+    <!-- Tag/Bubble Colors -->
+    <color name="bg_tag">#E9ECEF</color>
+    <color name="stroke_tag">#CFD8DC</color>
 
     <!-- Torrent States -->
     <color name="state_green">#43A047</color>

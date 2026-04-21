@@ -172,13 +172,14 @@
             <!-- Bottom Bar -->
             <RelativeLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content">
+                android:layout_height="wrap_content"
+                android:background="@color/bg_bottom_bar">
 
                 <LinearLayout
                     android:id="@+id/bottomBar"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:background="@color/bg_bottom_bar"
+                    android:background="@android:color/transparent"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingStart="16dp"
@@ -247,7 +248,7 @@
                     android:id="@+id/layoutSearch"
                     android:layout_width="match_parent"
                     android:layout_height="56dp"
-                    android:background="@color/bg_bottom_bar"
+                    android:background="@android:color/transparent"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="16dp"
@@ -355,7 +356,7 @@
                 android:paddingTop="8dp"
                 android:paddingBottom="16dp"
                 app:chipSpacingHorizontal="8dp"
-                app:chipSpacingVertical="4dp" />
+                app:chipSpacingVertical="2dp" />
         </androidx.core.widget.NestedScrollView>
 
         <View
