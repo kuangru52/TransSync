@@ -26,12 +26,12 @@
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivLogo"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
             android:layout_centerHorizontal="true"
-            android:layout_marginTop="40dp"
+            android:layout_marginTop="32dp"
             android:layout_marginBottom="16dp"
-            android:padding="12dp"
+            android:padding="10dp"
             android:scaleType="fitCenter"
             android:src="@drawable/logo"
             android:background="@color/white"

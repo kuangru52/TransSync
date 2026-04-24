@@ -67,7 +67,7 @@ class FeedbackActivity : AppCompatActivity() {
         val versionName = try {
             packageManager.getPackageInfo(packageName, 0).versionName
         } catch (e: Exception) {
-            "1.07"
+            "1.12"
         }
         tvVersion.text = "v$versionName"
     }

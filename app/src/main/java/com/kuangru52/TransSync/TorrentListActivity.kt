@@ -28,6 +28,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.toColorInt
 import androidx.core.view.isVisible
 import androidx.core.content.edit
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.google.android.material.textfield.TextInputLayout
 import com.google.android.material.textfield.TextInputEditText
 import android.widget.ImageView
@@ -118,6 +121,29 @@ class TorrentListActivity : AppCompatActivity() {
             else -> if (currentFilter.startsWith("tracker:")) currentFilter.substringAfter("tracker:") else getString(R.string.nav_all)
         }
 
+        // 彻底修复：精准处理全屏模式下的顶部和底部偏移，解决键盘遮挡问题
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.drawerLayout)) { v, insets ->
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            
+            // 1. 确保根布局不设置 Padding，维持底层沉浸式
+            v.setPadding(0, 0, 0, 0)
+            
+            // 2. 手动给顶栏加状态栏高度，确保不被刘海/状态栏遮挡
+            findViewById<View>(R.id.toolbarContainer).updatePadding(top = systemBars.top)
+            
+            // 3. 给底部容器加 Padding。关键：它会把中间的 RecyclerView “挤压”变短
+            // 取系统栏和键盘高度的较大值，确保无论是否弹出键盘都显示正确
+            val bottomPadding = if (insets.isVisible(WindowInsetsCompat.Type.ime())) {
+                imeInsets.bottom
+            } else {
+                systemBars.bottom
+            }
+            findViewById<View>(R.id.bottomContainer).setPadding(0, 0, 0, bottomPadding)
+            
+            insets
+        }
+
         rpcUrl = intent.getStringExtra("rpcUrl") ?: ""
         user = intent.getStringExtra("user") ?: ""
         pass = intent.getStringExtra("pass") ?: ""
@@ -132,7 +158,7 @@ class TorrentListActivity : AppCompatActivity() {
         val versionName = try {
             packageManager.getPackageInfo(packageName, 0).versionName
         } catch (e: Exception) {
-            "1.0"
+            "1.12"
         }
         tvAppName.text = "TransSync v$versionName"
         tvAppName.setOnClickListener {
@@ -577,6 +603,11 @@ class TorrentListActivity : AppCompatActivity() {
                                 val lastSeen = activeTorrentsLastSeen[id] ?: 0L
                                 (status != 1 && status != 2) && (dlSpeed <= 0 && ulSpeed <= 0) && (currentTime - lastSeen >= GRACE_PERIOD_MS)
                             }
+                            "Error" -> {
+                                val error = (t["error"] as? Number)?.toInt() ?: 0
+                                val errorString = (t["errorString"] as? String) ?: ""
+                                error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true))
+                            }
                             else -> true
                         }
                     }
@@ -741,6 +772,7 @@ class TorrentListActivity : AppCompatActivity() {
                 R.id.nav_paused -> filterAndDisplay("Paused")
                 R.id.nav_active -> filterAndDisplay("Active")
                 R.id.nav_inactive -> filterAndDisplay("Inactive")
+                R.id.nav_error -> filterAndDisplay("Error")
             }
             drawerLayout.closeDrawers()
             true
@@ -754,15 +786,17 @@ class TorrentListActivity : AppCompatActivity() {
         val ivCloseSearch = findViewById<ImageView>(R.id.ivCloseSearch)
 
         ivSearch.setOnClickListener {
+            layoutSearch.translationX = layoutSearch.width.toFloat()
             layoutSearch.visibility = View.VISIBLE
+            
+            // 立即请求焦点并显示输入法，这样输入法会和搜索框同步弹起
+            etSearch.requestFocus()
+            val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+            imm.showSoftInput(etSearch, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
+
             layoutSearch.animate()
                 .translationX(0f)
                 .setDuration(300)
-                .withEndAction {
-                    etSearch.requestFocus()
-                val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
-                    imm.showSoftInput(etSearch, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
-                }
                 .start()
         }
 
@@ -809,23 +843,80 @@ class TorrentListActivity : AppCompatActivity() {
             val id = (t["id"] as? Number)?.toInt() ?: -1
             (t["name"] as String).lowercase().contains(query) || id in selectedIds
         }
-        val gson = Gson()
-        val json = gson.toJson(filtered)
-        val torrentList: List<Torrent> = gson.fromJson(json, object : TypeToken<List<Torrent>>() {}.type)
+
+        val torrentList = filtered.map { t ->
+            val id = (t["id"] as? Number)?.toInt() ?: 0
+            val status = (t["status"] as? Number)?.toInt() ?: 0
+            val percentDone = (t["percentDone"] as? Number)?.toDouble() ?: 0.0
+            val recheckProgress = (t["recheckProgress"] as? Number)?.toDouble() ?: 0.0
+            val totalSize = (t["totalSize"] as? Number)?.toLong() ?: 0L
+            val downloadedEver = (t["downloadedEver"] as? Number)?.toLong() ?: 0L
+            val uploadedEver = (t["uploadedEver"] as? Number)?.toLong() ?: 0L
+            val rateDownload = (t["rateDownload"] as? Number)?.toLong() ?: 0L
+            val rateUpload = (t["rateUpload"] as? Number)?.toLong() ?: 0L
+            val uploadRatio = (t["uploadRatio"] as? Number)?.toDouble() ?: 0.0
+            val error = (t["error"] as? Number)?.toInt() ?: 0
+            val errorString = (t["errorString"] as? String) ?: ""
+
+            // 预计算颜色与进度 (同步主列表逻辑)
+            val color = when {
+                error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true)) -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_red)
+                status == 1 || status == 2 -> Color.parseColor("#FFF9A825") // 校验中：黄色
+                status == 0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_gray) // 暂停
+                percentDone >= 1.0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_green) // 完成：绿色
+                else -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_blue) // 下载中：蓝色
+            }
+
+            val progress = if (status == 1 || status == 2) (recheckProgress * 1000).toInt() else (percentDone * 1000).toInt()
+            val statusText = if (status == 1 || status == 2) "校验中 (${String.format(Locale.US, "%.1f%%", recheckProgress * 100)})" else ""
+
+            val sizeStr = formatSize(totalSize)
+            val displaySize = if (percentDone >= 1.0) sizeStr else "${formatSize(downloadedEver)} / $sizeStr"
+            val displayStats = "${formatSize(uploadedEver)} (分享率 ${String.format(Locale.US, "%.2f", uploadRatio)})"
+
+            Torrent(
+                id = id,
+                name = (t["name"] as? String) ?: "",
+                status = status,
+                percentDone = percentDone,
+                recheckProgress = recheckProgress,
+                totalSize = totalSize,
+                sizeWhenDone = (t["sizeWhenDone"] as? Number)?.toLong() ?: 0L,
+                leftUntilDone = (t["leftUntilDone"] as? Number)?.toLong() ?: 0L,
+                rateDownload = rateDownload,
+                rateUpload = rateUpload,
+                downloadedEver = downloadedEver,
+                uploadedEver = uploadedEver,
+                uploadRatio = uploadRatio,
+                error = error,
+                errorString = errorString,
+                addedDate = (t["addedDate"] as? Number)?.toLong() ?: 0L,
+                doneDate = (t["doneDate"] as? Number)?.toLong() ?: 0L,
+                activityDate = (t["activityDate"] as? Number)?.toLong() ?: 0L,
+                eta = (t["eta"] as? Number)?.toLong() ?: -1L,
+                trackers = (t["trackers"] as? List<Map<String, Any>>)?.map { m ->
+                    Tracker(announce = (m["announce"] as? String) ?: "")
+                },
+                displaySize = displaySize,
+                displayStatusText = statusText,
+                displayDownloadSpeed = "${formatSpeed(rateDownload.toDouble())} ↓",
+                displayUploadSpeed = "${formatSpeed(rateUpload.toDouble())} ↑",
+                displayStats = displayStats,
+                displayProgress = progress,
+                displayColor = color
+            )
+        }
         val sortedList = torrentList.sortedByDescending { it.addedDate }
 
         // 优化策略：如果正在滚动，暂存数据不提交，直到滚动停止
         if (rvTorrents.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
             pendingFilteredList = sortedList
         } else {
-            // 关键修复：使用 ListAdapter 的时候，直接比较 currentList 和 sortedList
-            // 如果列表内容没有实质变化（基于我们定义的 areContentsTheSame），submitList 内部会处理
-            // 但为了彻底消除闪烁，我们在这里做一次前置检查
             adapter.submitList(sortedList)
             pendingFilteredList = null
         }
 
-        val totalSize = filtered.sumOf { (it["totalSize"] as? Double)?.toLong() ?: 0L }
+        val totalSize = filtered.sumOf { (it["totalSize"] as? Number)?.toDouble()?.toLong() ?: 0L }
         val formattedSize = formatSize(totalSize)
         val baseTitle = getString(R.string.search_results)
         val fullText = "$baseTitle  $formattedSize"
@@ -1260,6 +1351,11 @@ class TorrentListActivity : AppCompatActivity() {
         })
         updateItem(R.id.nav_inactive, R.string.nav_inactive, torrents.filter { 
             ((it["rateDownload"] as? Number)?.toDouble() ?: 0.0) <= 0 && ((it["rateUpload"] as? Number)?.toDouble() ?: 0.0) <= 0 
+        })
+        updateItem(R.id.nav_error, R.string.nav_error, torrents.filter {
+            val error = (it["error"] as? Number)?.toInt() ?: 0
+            val errorString = (it["errorString"] as? String) ?: ""
+            error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true))
         })
 
         updateTrackerChips(torrents)
