@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -37,7 +38,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="感谢使用 TransSync"
+                android:text="@string/feedback_thanks"
                 android:textColor="@color/text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
@@ -87,7 +88,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tips"
+                        android:text="@string/feedback_tips_title"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -96,7 +97,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="1，点击侧边栏 logo 可在深色模式/浅色模式切换\n2，连点 5 次应用名可进入隐私模式"
+                        android:text="@string/feedback_tips_content"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp"
                         android:lineSpacingExtra="4dp" />
@@ -122,7 +123,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Telegram 交流群"
+                        android:text="@string/feedback_telegram_title"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -131,17 +132,18 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
-                        android:text="本应用更新请加群组：\nhttps://t.me/+FFEviJJq9GkyOWFl"
+                        android:text="@string/telegram_text"
                         android:id="@+id/tvTelegramLink"
                         android:textColor="@color/text_secondary"
                         android:textSize="13sp"
-                        android:lineSpacingExtra="4dp" />
+                        android:lineSpacingExtra="4dp"
+                        tools:text="本应用更新请加群组：\nhttps://t.me/+FFEviJJq9GkyOWFl"/>
 
                     <TextView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="欢迎加入群组参与讨论、反馈 Bug 或提交建议。"
+                        android:text="@string/feedback_telegram_desc"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp" />
                 </LinearLayout>
@@ -166,7 +168,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="开源地址"
+                        android:text="@string/feedback_github_title"
                         android:textColor="@color/text_primary"
                         android:textSize="16sp"
                         android:textStyle="bold" />
@@ -176,7 +178,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="https://github.com/kuangru52/TransSync"
+                        android:text="@string/github_url"
                         android:textColor="@color/state_blue"
                         android:textSize="13sp" />
 
@@ -184,7 +186,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="由于本项目内置了很多站点 tracker 地址，暂时不开源。当功能完善后，我将去掉地址文件后开放源代码。"
+                        android:text="@string/feedback_github_desc"
                         android:textColor="@color/text_secondary"
                         android:textSize="12sp"
                         android:lineSpacingExtra="2dp" />
@@ -195,7 +197,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="32dp"
-                android:text="版本信息"
+                android:text="@string/feedback_version_info"
                 android:textColor="@color/text_secondary"
                 android:textSize="12sp" />
 
@@ -204,9 +206,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:text="v1.12"
                 android:textColor="@color/text_primary"
-                android:textSize="14sp" />
+                android:textSize="14sp"
+                tools:text="v1.12" />
 
         </LinearLayout>
     </ScrollView>

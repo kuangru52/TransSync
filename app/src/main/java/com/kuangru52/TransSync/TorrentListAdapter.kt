@@ -113,7 +113,11 @@ class TorrentListAdapter(
                     oldItem.displayUploadSpeed == newItem.displayUploadSpeed &&
                     oldItem.displayStats == newItem.displayStats &&
                     oldItem.error == newItem.error &&
-                    oldItem.errorString == newItem.errorString
+                    oldItem.errorString == newItem.errorString &&
+                    (oldItem.labels ?: emptyList<String>()) == (newItem.labels ?: emptyList<String>()) &&
+                    oldItem.doneDate == newItem.doneDate &&
+                    // 如果是 H&R 种子，强制返回 false 以确保每次列表刷新都能重新计算倒计时
+                    newItem.labels?.any { it.startsWith("HR:") } != true
         }
 
         override fun getChangePayload(oldItem: Torrent, newItem: Torrent): Any? {
@@ -136,6 +140,13 @@ class TorrentListAdapter(
             if (oldItem.displayStats != newItem.displayStats) {
                 payloads.add("stats")
             }
+            
+            // 只要包含 HR 标签，就强制加入刷新负载，确保倒计时随着每次列表刷新而更新
+            val hasHr = newItem.labels?.any { it.startsWith("HR:") } == true
+            if (hasHr || (oldItem.labels ?: emptyList<String>()) != (newItem.labels ?: emptyList<String>()) || oldItem.doneDate != newItem.doneDate) {
+                payloads.add("hr")
+            }
+
             return if (payloads.isEmpty()) null else payloads
         }
     }
@@ -147,13 +158,13 @@ class TorrentListAdapter(
         private val tvDownloadSpeed: TextView = itemView.findViewById(R.id.tvDownloadSpeed)
         private val tvUploadSpeed: TextView = itemView.findViewById(R.id.tvUploadSpeed)
         private val ivStatusIcon: ImageView = itemView.findViewById(R.id.ivStatusIcon)
-        private val ivStatusCircle: ImageView = itemView.findViewById(R.id.ivStatusCircle)
         private val btnStatus: View = itemView.findViewById(R.id.btnStatus)
         private val tvTrackerName: TextView = itemView.findViewById(R.id.tvTrackerName)
         private val tvStatsLeft: TextView = itemView.findViewById(R.id.tvStatsLeft)
         private val tvVerificationStatus: TextView = itemView.findViewById(R.id.tvVerificationStatus)
         private val tvError: TextView = itemView.findViewById(R.id.tvError)
         private val tvProgressPercent: TextView = itemView.findViewById(R.id.tvProgressPercent)
+        private val tvHrTag: TextView = itemView.findViewById(R.id.tvHrTag)
 
         fun bind(torrent: Torrent, isSelected: Boolean) {
             itemView.isSelected = isSelected
@@ -185,6 +196,7 @@ class TorrentListAdapter(
             tvUploadSpeed.text = torrent.displayUploadSpeed
 
             updateStatusIcon(torrent)
+            updateHrTag(torrent)
 
             btnStatus.setOnClickListener {
                 val pos = adapterPosition
@@ -243,6 +255,9 @@ class TorrentListAdapter(
             if (payloadSet.contains("status")) {
                 updateStatusIcon(torrent)
             }
+            if (payloadSet.contains("hr")) {
+                updateHrTag(torrent)
+            }
             if (payloadSet.contains("error")) {
                 if (torrent.error != 0) {
                     tvError.visibility = View.VISIBLE
@@ -256,9 +271,83 @@ class TorrentListAdapter(
         private fun updateStatusIcon(torrent: Torrent) {
             val context = itemView.context
             ivStatusIcon.setImageResource(if (torrent.status == 0) R.drawable.ic_play else R.drawable.ic_pause)
-            val tint = ColorStateList.valueOf(if (torrent.status == 0) ContextCompat.getColor(context, R.color.state_gray) else ContextCompat.getColor(context, R.color.button_color))
+            val color = if (torrent.status == 0) ContextCompat.getColor(context, R.color.state_gray) else ContextCompat.getColor(context, R.color.button_color)
+            val tint = ColorStateList.valueOf(color)
             ivStatusIcon.imageTintList = tint
-            ivStatusCircle.imageTintList = tint
+            btnStatus.backgroundTintList = ColorStateList.valueOf(color).withAlpha(30)
+        }
+
+        private fun updateHrTag(torrent: Torrent) {
+            val hrLabel = torrent.labels?.find { it.startsWith("HR:") }
+            if (hrLabel == null) {
+                tvHrTag.visibility = View.GONE
+                return
+            }
+
+            val hours = hrLabel.substringAfter("HR:").toIntOrNull() ?: 0
+            if (hours <= 0) {
+                tvHrTag.visibility = View.GONE
+                return
+            }
+
+            tvHrTag.visibility = View.VISIBLE
+            
+            val context = itemView.context
+            val density = context.resources.displayMetrics.density
+            val px8 = (8 * density).toInt()
+            val px18 = (18 * density).toInt()
+            
+            // 重置为默认胶囊样式
+            tvHrTag.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
+            tvHrTag.setPadding(px8, 0, px8, 0)
+            tvHrTag.setBackgroundResource(R.drawable.bg_tag_capsule)
+            tvHrTag.backgroundTintList = null
+            val params = tvHrTag.layoutParams
+            params.width = ViewGroup.LayoutParams.WRAP_CONTENT
+            tvHrTag.layoutParams = params
+            androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(tvHrTag, null)
+
+            // 如果还没下载完，显示 "H&R"
+            if (torrent.percentDone < 1.0) {
+                tvHrTag.text = context.getString(R.string.hr_tag)
+                tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                return
+            }
+
+            // 如果已完成，计算剩余时间
+            val doneDate = torrent.doneDate * 1000L // 转换为毫秒
+            val currentTime = System.currentTimeMillis()
+            val totalRequiredMs = hours * 3600 * 1000L
+            val elapsedMs = currentTime - doneDate
+            val remainingMs = totalRequiredMs - elapsedMs
+            val bufferMs = 20 * 60 * 1000L // 20分钟缓冲
+
+            if (remainingMs <= -bufferMs) {
+                // 已达标且超过缓冲期 - 直接显示图标，不带文字，不带背景
+                tvHrTag.text = ""
+                tvHrTag.setPadding(0, 0, 0, 0)
+                params.width = px18
+                tvHrTag.layoutParams = params
+                
+                // 彻底移除背景胶囊，只显示图标本身颜色
+                tvHrTag.background = null
+                
+                val doneDrawable = ContextCompat.getDrawable(context, R.drawable.ic_done)
+                val iconSize = px18
+                doneDrawable?.setBounds(0, 0, iconSize, iconSize)
+                
+                tvHrTag.setCompoundDrawables(doneDrawable, null, null, null)
+                // 再次确保没有 Tint 影响，使用图标原始色彩（绿圆底白对号）
+                androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(tvHrTag, null)
+            } else {
+                // 倒计时状态（含20分钟缓冲期）
+                tvHrTag.backgroundTintList = null 
+                val totalMins = if (remainingMs > 0) remainingMs / (60 * 1000L) else 0L
+                val hrs = totalMins / 60
+                val mins = totalMins % 60
+                tvHrTag.text = context.getString(R.string.hr_list_countdown_format, hrs, mins)
+                tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.state_blue))
+            }
         }
 
         private fun updateProgressPercent(torrent: Torrent) {

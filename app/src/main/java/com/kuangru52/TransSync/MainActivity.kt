@@ -1,5 +1,6 @@
 ﻿package com.kuangru52.TransSync
 
+import android.content.pm.ActivityInfo
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
@@ -17,6 +18,12 @@ import retrofit2.Response
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val isTablet = resources.getBoolean(R.bool.isTablet)
+        requestedOrientation = if (isTablet) {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
@@ -53,11 +60,7 @@ class MainActivity : AppCompatActivity() {
         val btnLogin = findViewById<Button>(R.id.btnLogin)
 
         // Pre-fill fields if we have saved info
-        val displayUrl = if (savedRpcUrl != null) {
-            savedRpcUrl.substringBefore("/transmission/rpc").removeSuffix("/")
-        } else {
-            ""
-        }
+        val displayUrl = savedRpcUrl?.substringBefore("/transmission/rpc")?.removeSuffix("/") ?: ""
         etHost.setText(displayUrl)
         etUsername.setText(savedUser ?: "")
         etPassword.setText(savedPass ?: "")

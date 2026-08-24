@@ -21,20 +21,13 @@
 
         <FrameLayout
             android:id="@+id/btnStatus"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_gravity="center_vertical"
-                android:layout_marginEnd="12dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:background="?attr/selectableItemBackgroundBorderless">
-                <!-- ... 内容保持不变 ... -->
-
-            <ImageView
-                android:id="@+id/ivStatusCircle"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:src="@drawable/bg_circle" />
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center_vertical"
+            android:layout_marginEnd="12dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="@drawable/bg_status_circle">
 
             <ImageView
                 android:id="@+id/ivStatusIcon"
@@ -80,7 +73,7 @@
                     android:id="@+id/tvTrackerName"
                     android:layout_width="wrap_content"
                     android:layout_height="18dp"
-                    android:layout_marginStart="12dp"
+                    android:layout_marginStart="8dp"
                     android:background="@drawable/bg_tag_capsule"
                     android:gravity="center"
                     android:includeFontPadding="false"
@@ -88,6 +81,21 @@
                     android:textColor="@color/text_secondary"
                     android:textSize="10sp"
                     tools:text="HDSKY" />
+
+                <TextView
+                    android:id="@+id/tvHrTag"
+                    android:layout_width="wrap_content"
+                    android:layout_height="18dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/bg_tag_capsule"
+                    android:gravity="center"
+                    android:includeFontPadding="false"
+                    android:paddingHorizontal="8dp"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="10sp"
+                    android:visibility="gone"
+                    tools:text="H&amp;R 2d 12h"
+                    tools:visibility="visible" />
 
                 <View
                     android:layout_width="0dp"

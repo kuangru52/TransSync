@@ -1,5 +1,6 @@
 ﻿package com.kuangru52.TransSync
 
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.MenuItem
 import android.widget.Toast
@@ -19,6 +20,12 @@ class TorrentDetailActivity : AppCompatActivity() {
     private var currentStatus: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val isTablet = resources.getBoolean(R.bool.isTablet)
+        requestedOrientation = if (isTablet) {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         binding = ActivityTorrentDetailBinding.inflate(layoutInflater)
@@ -39,7 +46,7 @@ class TorrentDetailActivity : AppCompatActivity() {
         }
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager) { tab, position ->
-            tab.text = if (position == 0) "信息" else "节点"
+            tab.text = if (position == 0) getString(R.string.tab_info) else getString(R.string.tab_peers)
         }.attach()
     }
 
@@ -67,11 +74,11 @@ class TorrentDetailActivity : AppCompatActivity() {
                 if (response.isSuccessful) {
                     // 等待下一轮轮询刷新状态
                 } else {
-                    Toast.makeText(this@TorrentDetailActivity, "操作失败: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@TorrentDetailActivity, getString(R.string.error_operation_failed, response.code()), Toast.LENGTH_SHORT).show()
                 }
             }
             override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
-                Toast.makeText(this@TorrentDetailActivity, "网络错误", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@TorrentDetailActivity, R.string.error_network, Toast.LENGTH_SHORT).show()
             }
         })
     }

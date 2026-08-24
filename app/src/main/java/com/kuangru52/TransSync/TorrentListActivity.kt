@@ -1,5 +1,7 @@
 ﻿package com.kuangru52.TransSync
 
+import android.content.pm.ActivityInfo
+import android.annotation.SuppressLint
 import android.content.res.ColorStateList
 import android.graphics.BlurMaskFilter
 import android.graphics.Color
@@ -49,15 +51,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.chip.ChipGroup
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 class TorrentListActivity : AppCompatActivity() {
 
-    private lateinit var drawerLayout: DrawerLayout
+    private var drawerLayout: View? = null
     private lateinit var rvTorrents: RecyclerView
     private lateinit var adapter: TorrentListAdapter
     private lateinit var swipeRefresh: SwipeRefreshLayout
@@ -86,7 +86,7 @@ class TorrentListActivity : AppCompatActivity() {
     private var allTorrents: List<Map<String, Any>> = emptyList()
     private var pendingFilteredList: List<Torrent>? = null // 新增：滚动时缓存待刷新的数据
     private val activeTorrentsLastSeen = mutableMapOf<Int, Long>() // id to timestamp
-    private val GRACE_PERIOD_MS = 30000L // 30 seconds grace period
+    private val gracePeriodMs = 30000L // 30 seconds grace period
     private var currentFilter: String = "All"
     private var lastBackTime = 0L
     private var isDrawerMoving = false // 新增：标记侧边栏是否正在移动
@@ -102,6 +102,12 @@ class TorrentListActivity : AppCompatActivity() {
     private var lastAddDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val isTablet = resources.getBoolean(R.bool.isTablet)
+        requestedOrientation = if (isTablet) {
+            ActivityInfo.SCREEN_ORIENTATION_SENSOR
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_torrent_list)
@@ -149,7 +155,7 @@ class TorrentListActivity : AppCompatActivity() {
         pass = intent.getStringExtra("pass") ?: ""
 
         drawerLayout = findViewById(R.id.drawerLayout)
-        drawerLayout.setStatusBarBackground(null) // 移除状态栏遮罩
+        (drawerLayout as? DrawerLayout)?.setStatusBarBackground(null) // 移除状态栏遮罩
         val navigationView = findViewById<com.google.android.material.navigation.NavigationView>(R.id.navigationView)
         val headerView = navigationView.getHeaderView(0)
         val tvAppName = headerView.findViewById<TextView>(R.id.tvAppName)
@@ -157,10 +163,10 @@ class TorrentListActivity : AppCompatActivity() {
         // 设置应用名 + 版本号
         val versionName = try {
             packageManager.getPackageInfo(packageName, 0).versionName
-        } catch (e: Exception) {
-            "1.12"
+        } catch (_: Exception) {
+            "1.20"
         }
-        tvAppName.text = "TransSync v$versionName"
+        tvAppName.text = getString(R.string.app_name_version, versionName)
         tvAppName.setOnClickListener {
             appNameClickCount++
             if (appNameClickCount >= 5) {
@@ -326,7 +332,6 @@ class TorrentListActivity : AppCompatActivity() {
 
         val layoutSearch = findViewById<View>(R.id.layoutSearch)
         val etSearch = findViewById<EditText>(R.id.etSearch)
-        val ivCloseSearch = findViewById<ImageView>(R.id.ivCloseSearch)
 
         findViewById<ImageView>(R.id.ivSearch).setOnClickListener {
             if (!layoutSearch.isVisible) {
@@ -380,10 +385,10 @@ class TorrentListActivity : AppCompatActivity() {
         }
 
         findViewById<View>(R.id.ivMenu).setOnClickListener {
-            drawerLayout.openDrawer(GravityCompat.START)
+            (drawerLayout as? DrawerLayout)?.openDrawer(GravityCompat.START)
         }
 
-        drawerLayout.addDrawerListener(object : DrawerLayout.DrawerListener {
+        (drawerLayout as? DrawerLayout)?.addDrawerListener(object : DrawerLayout.DrawerListener {
             override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
                 isDrawerMoving = true
             }
@@ -405,8 +410,9 @@ class TorrentListActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
-                    drawerLayout.closeDrawer(GravityCompat.START)
+                val dl = drawerLayout as? DrawerLayout
+                if (dl != null && dl.isDrawerOpen(GravityCompat.START)) {
+                    dl.closeDrawer(GravityCompat.START)
                 } else if (adapter.isSelectionMode) {
                     exitSelectionMode()
                 } else if (findViewById<View>(R.id.layoutSearch).isVisible) {
@@ -465,7 +471,8 @@ class TorrentListActivity : AppCompatActivity() {
     private var isSwipeCandidate = false
 
     override fun dispatchTouchEvent(ev: android.view.MotionEvent): Boolean {
-        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+        val dl = drawerLayout as? DrawerLayout
+        if (dl != null && dl.isDrawerOpen(GravityCompat.START)) {
             return super.dispatchTouchEvent(ev)
         }
 
@@ -483,7 +490,7 @@ class TorrentListActivity : AppCompatActivity() {
                     val dx = ev.x - startX
                     val dy = ev.y - startY
                     if (dx > touchSlop && dx > kotlin.math.abs(dy) * 1.5) {
-                        drawerLayout.openDrawer(GravityCompat.START)
+                        (drawerLayout as? DrawerLayout)?.openDrawer(GravityCompat.START)
                         isSwipeCandidate = false
                         // 发送 CANCEL 事件给子 View，防止触发点击
                         val cancelEvent = android.view.MotionEvent.obtain(ev)
@@ -511,7 +518,7 @@ class TorrentListActivity : AppCompatActivity() {
             "id", "name", "status", "sizeWhenDone", "leftUntilDone", "percentDone", 
             "rateDownload", "rateUpload", "eta", "errorString", "queuePosition",
             "totalSize", "downloadedEver", "uploadedEver", "uploadRatio", "trackers",
-            "addedDate", "downloadDir", "recheckProgress"
+            "addedDate", "doneDate", "downloadDir", "recheckProgress", "labels"
         )
         val request = RpcRequest("torrent-get", mapOf("fields" to fields))
 
@@ -594,14 +601,14 @@ class TorrentListActivity : AppCompatActivity() {
                                 val dlSpeed = (t["rateDownload"] as? Number)?.toDouble() ?: 0.0
                                 val ulSpeed = (t["rateUpload"] as? Number)?.toDouble() ?: 0.0
                                 val lastSeen = activeTorrentsLastSeen[id] ?: 0L
-                                (status == 1 || status == 2) || (dlSpeed > 0 || ulSpeed > 0) || (currentTime - lastSeen < GRACE_PERIOD_MS)
+                                (status == 1 || status == 2) || (dlSpeed > 0 || ulSpeed > 0) || (currentTime - lastSeen < gracePeriodMs)
                             }
                             "Inactive" -> {
                                 val status = (t["status"] as? Number)?.toInt()
                                 val dlSpeed = (t["rateDownload"] as? Number)?.toDouble() ?: 0.0
                                 val ulSpeed = (t["rateUpload"] as? Number)?.toDouble() ?: 0.0
                                 val lastSeen = activeTorrentsLastSeen[id] ?: 0L
-                                (status != 1 && status != 2) && (dlSpeed <= 0 && ulSpeed <= 0) && (currentTime - lastSeen >= GRACE_PERIOD_MS)
+                                (status != 1 && status != 2) && (dlSpeed <= 0 && ulSpeed <= 0) && (currentTime - lastSeen >= gracePeriodMs)
                             }
                             "Error" -> {
                                 val error = (t["error"] as? Number)?.toInt() ?: 0
@@ -630,7 +637,7 @@ class TorrentListActivity : AppCompatActivity() {
                     // 预计算颜色与进度
                     val color = when {
                         error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true)) -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_red)
-                        status == 1 || status == 2 -> Color.parseColor("#FFF9A825") // 校验中：黄色
+                        status == 1 || status == 2 -> "#FFF9A825".toColorInt() // 校验中：黄色
                         status == 0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_gray) // 暂停
                         percentDone >= 1.0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_green) // 完成：绿色
                         else -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_blue) // 下载中：蓝色
@@ -667,6 +674,7 @@ class TorrentListActivity : AppCompatActivity() {
                         trackers = (t["trackers"] as? List<Map<String, Any>>)?.map { m ->
                             Tracker(announce = (m["announce"] as? String) ?: "")
                         },
+                        labels = (t["labels"] as? List<*>)?.mapNotNull { it as? String },
                         displaySize = displaySize,
                         displayStatusText = statusText,
                         displayDownloadSpeed = "${formatSpeed(rateDownload.toDouble())} ↓",
@@ -684,7 +692,7 @@ class TorrentListActivity : AppCompatActivity() {
                     isUpdatingFromThread = false
                     
                     // 如果正在搜索，优先显示搜索结果
-                    if (findViewById<View>(R.id.layoutSearch).visibility == View.VISIBLE) {
+                    if (findViewById<View>(R.id.layoutSearch).isVisible) {
                         val query = findViewById<EditText>(R.id.etSearch).text.toString().lowercase()
                         if (query.isNotEmpty()) {
                             performSearch(query)
@@ -742,17 +750,6 @@ class TorrentListActivity : AppCompatActivity() {
     }
 
 
-    private fun updateStats(torrents: List<Map<String, Any>>) {
-        var dlSpeed = 0.0
-        var ulSpeed = 0.0
-        for (t in torrents) {
-            dlSpeed += (t["rateDownload"] as? Double) ?: 0.0
-            ulSpeed += (t["rateUpload"] as? Double) ?: 0.0
-        }
-        tvTotalDownloadSpeed.text = formatSpeed(dlSpeed)
-        tvTotalUploadSpeed.text = formatSpeed(ulSpeed)
-    }
-
     private fun formatSpeed(bytesPerSec: Double): String {
         if (bytesPerSec <= 0) return "0 KB/s"
         val kbs = bytesPerSec / 1024.0
@@ -774,7 +771,7 @@ class TorrentListActivity : AppCompatActivity() {
                 R.id.nav_inactive -> filterAndDisplay("Inactive")
                 R.id.nav_error -> filterAndDisplay("Error")
             }
-            drawerLayout.closeDrawers()
+            (drawerLayout as? DrawerLayout)?.closeDrawers()
             true
         }
     }
@@ -859,9 +856,10 @@ class TorrentListActivity : AppCompatActivity() {
             val errorString = (t["errorString"] as? String) ?: ""
 
             // 预计算颜色与进度 (同步主列表逻辑)
+            @Suppress("UNCHECKED_CAST")
             val color = when {
                 error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true)) -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_red)
-                status == 1 || status == 2 -> Color.parseColor("#FFF9A825") // 校验中：黄色
+                status == 1 || status == 2 -> "#FFF9A825".toColorInt() // 校验中：黄色
                 status == 0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_gray) // 暂停
                 percentDone >= 1.0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_green) // 完成：绿色
                 else -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_blue) // 下载中：蓝色
@@ -994,6 +992,7 @@ class TorrentListActivity : AppCompatActivity() {
             }
 
             popup.menu.add(0, 4, 0, getString(R.string.menu_set_location))
+            popup.menu.add(0, 7, 0, getString(R.string.menu_set_hr))
             popup.menu.add(0, 5, 0, getString(R.string.menu_verify))
             popup.menu.add(0, 6, 0, getString(R.string.menu_reannounce))
             
@@ -1003,6 +1002,7 @@ class TorrentListActivity : AppCompatActivity() {
                     2 -> stopSelected()
                     3 -> renameSelected()
                     4 -> setLocationSelected()
+                    7 -> setHrSelected()
                     5 -> performBatchAction("torrent-verify", mapOf("ids" to adapter.getSelectedIds()))
                     6 -> performBatchAction("torrent-reannounce", mapOf("ids" to adapter.getSelectedIds()))
                 }
@@ -1145,7 +1145,7 @@ class TorrentListActivity : AppCompatActivity() {
             textSize = 12f
             setTextColor(ContextCompat.getColor(this@TorrentListActivity, R.color.white))
             backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(this@TorrentListActivity, R.color.colorAccent))
-            rippleColor = ColorStateList.valueOf(Color.parseColor("#20FFFFFF"))
+            rippleColor = ColorStateList.valueOf("#20FFFFFF".toColorInt())
             stateListAnimator = null
             elevation = 2f
             isEnabled = false
@@ -1155,7 +1155,7 @@ class TorrentListActivity : AppCompatActivity() {
             insetBottom = 0
             setPadding((resources.displayMetrics.density * 16f).toInt(), 0, (resources.displayMetrics.density * 16f).toInt(), 0)
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, (resources.displayMetrics.density * 40f).toInt()).apply {
-                gravity = android.view.Gravity.END
+                gravity = Gravity.END
                 topMargin = (resources.displayMetrics.density * 12f).toInt()
             }
             minimumWidth = (resources.displayMetrics.density * 80f).toInt()
@@ -1216,8 +1216,9 @@ class TorrentListActivity : AppCompatActivity() {
         val cbMove = view.findViewById<com.google.android.material.checkbox.MaterialCheckBox>(R.id.cbMoveData)
         val btnAction = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTorrent)
         
-        // 隐藏不需要的 URL 输入框
+        // 隐藏不需要的 URL 输入框 和 HR 选择框
         view.findViewById<View>(R.id.tilTorrentUrl)?.visibility = View.GONE
+        view.findViewById<View>(R.id.tilHrLabel)?.visibility = View.GONE
         
         cbMove?.visibility = View.VISIBLE
         cbMove?.isChecked = true
@@ -1273,6 +1274,90 @@ class TorrentListActivity : AppCompatActivity() {
                 prefs.edit { putStringSet("history_dirs", newHistory) }
                 dialog.dismiss()
             }
+        }
+
+        dialog.show()
+    }
+
+    private fun setHrSelected() {
+        val ids = adapter.getSelectedIds()
+        if (ids.isEmpty()) return
+
+        val view = layoutInflater.inflate(R.layout.dialog_add_torrent, null)
+        
+        // 隐藏不必要的控件
+        val etHr = view.findViewById<AutoCompleteTextView>(R.id.etHrLabel)
+        val btnAction = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTorrent)
+        
+        view.findViewById<View>(R.id.tilTorrentUrl)?.visibility = View.GONE
+        view.findViewById<View>(R.id.tilDownloadDir)?.visibility = View.GONE
+        view.findViewById<View>(R.id.tvFreeSpace)?.visibility = View.GONE
+        
+        btnAction?.text = getString(R.string.btn_confirm)
+
+        // H&R Dropdown setup
+        val hrOptions = listOf(
+            getString(R.string.hr_none),
+            getString(R.string.hr_3_days),
+            getString(R.string.hr_5_days)
+        )
+        val hrAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, hrOptions)
+        etHr.setAdapter(hrAdapter)
+        
+        // 如果只选了一个，尝试回显当前的 HR 标签
+        if (ids.size == 1) {
+            val targetId = ids.first()
+            val torrent = adapter.currentList.find { it.id == targetId }
+            val currentHr = torrent?.labels?.find { it.startsWith("HR:") }
+            val initialText = when (currentHr) {
+                "HR:72" -> getString(R.string.hr_3_days)
+                "HR:120" -> getString(R.string.hr_5_days)
+                null -> getString(R.string.hr_none)
+                else -> {
+                    val hrs = currentHr.substringAfter("HR:").toIntOrNull() ?: 0
+                    if (hrs > 0) {
+                        val d = hrs / 24.0
+                        if (d == d.toInt().toDouble()) d.toInt().toString() else d.toString()
+                    } else getString(R.string.hr_none)
+                }
+            }
+            etHr.setText(initialText, false)
+        } else {
+            etHr.setText(hrOptions[0], false)
+        }
+
+        etHr.setOnTouchListener { v, event ->
+            if (event.action == android.view.MotionEvent.ACTION_UP) {
+                v.performClick()
+                etHr.showDropDown()
+            }
+            false
+        }
+        etHr.setOnClickListener { etHr.showDropDown() }
+
+        val dialog = AlertDialog.Builder(this, R.style.AppDialogTheme)
+            .setView(view)
+            .create()
+
+        btnAction?.setOnClickListener {
+            val selectedHr = etHr.text.toString().trim()
+            val days = if (selectedHr.isNotEmpty() && selectedHr != getString(R.string.hr_none)) {
+                selectedHr.toDoubleOrNull() ?: 0.0
+            } else 0.0
+            
+            val hours = (days * 24).toInt()
+            val hrLabel = if (hours > 0) "HR:$hours" else null
+
+            // 获取当前的 labels 并更新
+            // 注意：Transmission 的 torrent-set 会覆盖整个 labels 列表
+            // 如果我们需要保留其他 label，可能需要先获取现有的。但目前应用内只用 HR label。
+            val labels = if (hrLabel != null) listOf(hrLabel) else emptyList<String>()
+            
+            performBatchAction("torrent-set", mapOf(
+                "ids" to ids,
+                "labels" to labels
+            ))
+            dialog.dismiss()
         }
 
         dialog.show()
@@ -1458,8 +1543,6 @@ class TorrentListActivity : AppCompatActivity() {
                 gravity = Gravity.CENTER
                 textAlignment = View.TEXT_ALIGNMENT_CENTER
                 
-                val isNight = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
-                
                 // 统一背景色：使用种子列表同款配色
                 val bgColor = ContextCompat.getColor(this@TorrentListActivity, R.color.bg_tag)
                 chipBackgroundColor = ColorStateList.valueOf(bgColor)
@@ -1506,7 +1589,7 @@ class TorrentListActivity : AppCompatActivity() {
                         updateTrackerChips(allTorrents)
                     } else {
                         filterAndDisplay("tracker:$trackerName")
-                        drawerLayout.closeDrawer(GravityCompat.START)
+                        (drawerLayout as? DrawerLayout)?.closeDrawer(GravityCompat.START)
                     }
                 }
             }
@@ -1521,8 +1604,24 @@ class TorrentListActivity : AppCompatActivity() {
         val tilUrl = view.findViewById<TextInputLayout>(R.id.tilTorrentUrl)
         val etUrl = view.findViewById<TextInputEditText>(R.id.etTorrentUrl)
         val etDir = view.findViewById<AutoCompleteTextView>(R.id.etDownloadDir)
+        val etHr = view.findViewById<AutoCompleteTextView>(R.id.etHrLabel)
         val btnAdd = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTorrent)
         val tvFree = view.findViewById<TextView>(R.id.tvFreeSpace)
+
+        // H&R Dropdown setup
+        val hrOptions = listOf(
+            getString(R.string.hr_none),
+            getString(R.string.hr_3_days),
+            getString(R.string.hr_5_days)
+        )
+        val hrAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, hrOptions)
+        etHr.setAdapter(hrAdapter)
+        etHr.setText(hrOptions[0], false)
+        etHr.setOnTouchListener { v, _ ->
+            etHr.showDropDown()
+            v.performClick()
+            false
+        }
 
         // 记录历史目录
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
@@ -1534,6 +1633,7 @@ class TorrentListActivity : AppCompatActivity() {
         
         val dirAdapter = ArrayAdapter(this, R.layout.item_dropdown_compact, allDirs)
         etDir.setAdapter(dirAdapter)
+        @SuppressLint("ClickableViewAccessibility")
         etDir.setOnTouchListener { v, _ ->
             etDir.showDropDown()
             v.performClick()
@@ -1585,6 +1685,11 @@ class TorrentListActivity : AppCompatActivity() {
         btnAdd.setOnClickListener {
             val url = etUrl.text.toString().trim()
             val downloadDir = etDir.text.toString().trim()
+            val selectedHr = etHr.text.toString().trim()
+            val hrLabel = if (selectedHr.isNotEmpty() && selectedHr != getString(R.string.hr_none)) {
+                val days = selectedHr.toDoubleOrNull() ?: 0.0
+                if (days > 0) "HR:${(days * 24).toInt()}" else null
+            } else null
             
             // 按钮动效反馈
             btnAdd.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction {
@@ -1612,6 +1717,7 @@ class TorrentListActivity : AppCompatActivity() {
                     val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
                     val args = mutableMapOf<String, Any>("metainfo" to base64)
                     if (downloadDir.isNotEmpty()) args["download-dir"] = downloadDir
+                    hrLabel?.let { args["labels"] = listOf(it) }
                     
                     service.rpc(rpcUrl, null, RpcRequest("torrent-add", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                         override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
@@ -1629,6 +1735,7 @@ class TorrentListActivity : AppCompatActivity() {
                 // 添加链接
                 val args = mutableMapOf<String, Any>("filename" to url)
                 if (downloadDir.isNotEmpty()) args["download-dir"] = downloadDir
+                hrLabel?.let { args["labels"] = listOf(it) }
                 
                 service.rpc(rpcUrl, null, RpcRequest("torrent-add", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                     override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {

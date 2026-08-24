@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.core.content.ContextCompat
+import android.content.res.ColorStateList
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.kuangru52.TransSync.databinding.FragmentTorrentInfoBinding
@@ -84,7 +86,7 @@ class TorrentInfoFragment : Fragment() {
         val fields = listOf(
             "id", "name", "status", "totalSize", "percentDone", "downloadDir", "trackers", "trackerStats", "downloadedEver",
             "uploadedEver", "uploadRatio", "addedDate", "doneDate", "activityDate", "secondsSeeding", "files",
-            "error", "errorString", "eta"
+            "error", "errorString", "eta", "labels"
         )
         val request = RpcRequest("torrent-get", mapOf("ids" to listOf(torrentId), "fields" to fields))
 
@@ -147,6 +149,60 @@ class TorrentInfoFragment : Fragment() {
         binding.tvDoneDate.text = if (torrent.doneDate > 0) formatDate(torrent.doneDate) else getString(R.string.state_not_finished)
         binding.tvActivityDate.text = if (torrent.activityDate > 0) formatDate(torrent.activityDate) else getString(R.string.state_none)
         binding.tvSeedingTime.text = formatDuration(torrent.secondsSeeding)
+
+        // H&R Status
+        val hrLabel = torrent.labels?.find { it.startsWith("HR:") }
+        if (hrLabel != null) {
+            val requiredHours = hrLabel.substringAfter("HR:").toLongOrNull() ?: 0L
+            if (torrent.percentDone < 1.0) {
+                binding.tvHrStatus.text = getString(R.string.hr_tag)
+                binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            } else if (torrent.doneDate > 0) {
+                val doneTimeMs = torrent.doneDate * 1000L
+                val limitTimeMs = doneTimeMs + (requiredHours * 3600 * 1000L)
+                val currentTime = System.currentTimeMillis()
+                val remainingMs = limitTimeMs - currentTime
+                val bufferMs = 20 * 60 * 1000L
+
+                if (remainingMs > -bufferMs) {
+                    if (remainingMs > 0) {
+                        val days = remainingMs / (24 * 3600 * 1000L)
+                        val hours = (remainingMs % (24 * 3600 * 1000L)) / (3600 * 1000L)
+                        val mins = (remainingMs % (3600 * 1000L)) / (60 * 1000L)
+                        
+                        val timeStr = buildString {
+                            if (days > 0) append("${days}d ")
+                            if (hours > 0 || days > 0) append("${hours}h ")
+                            append("${mins}m")
+                        }
+                        binding.tvHrStatus.text = "剩余 $timeStr"
+                        binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.state_orange))
+                    } else {
+                        // 在 20 分钟缓冲期内
+                        binding.tvHrStatus.text = getString(R.string.hr_waiting_sync)
+                        binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.state_blue))
+                    }
+                    binding.tvHrStatus.setCompoundDrawables(null, null, null, null)
+                } else {
+                    binding.tvHrStatus.text = getString(R.string.hr_met)
+                    binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.state_green))
+                    val checkMark = ContextCompat.getDrawable(requireContext(), R.drawable.ic_done)?.mutate()
+                    val iconSize = (binding.tvHrStatus.textSize * 1.2).toInt()
+                    checkMark?.setBounds(0, 0, iconSize, iconSize)
+                    binding.tvHrStatus.setCompoundDrawables(null, null, checkMark, null)
+                    binding.tvHrStatus.compoundDrawablePadding = 8
+                    // 彻底清除 Tint，确保显示 ic_done.xml 自带的绿底白勾色彩
+                    androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(binding.tvHrStatus, null)
+                }
+            } else {
+                binding.tvHrStatus.text = getString(R.string.hr_tag)
+                binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            }
+        } else {
+            binding.tvHrStatus.text = getString(R.string.state_none)
+            binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            binding.tvHrStatus.setCompoundDrawables(null, null, null, null)
+        }
 
         // Update files
         torrent.files?.let { fileAdapter?.setFiles(it) }
@@ -247,7 +303,7 @@ class TorrentInfoFragment : Fragment() {
                         minLines = 5
                     }
 
-                    androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AppDialogTheme)
                         .setTitle(R.string.dialog_edit_tracker_title)
                         .setView(input)
                         .setPositiveButton(R.string.dialog_save) { _, _ ->

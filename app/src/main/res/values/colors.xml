@@ -31,6 +31,7 @@
     <color name="state_blue">#2196F3</color>
     <color name="state_gray">#737373</color>
     <color name="state_red">#F44336</color>
+    <color name="state_orange">#FB8C00</color>
 
     <color name="button_color">#888888</color>
     <color name="turtle_active">#FF1D88E3</color>

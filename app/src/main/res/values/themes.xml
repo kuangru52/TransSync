@@ -70,6 +70,11 @@
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="buttonBarPositiveButtonStyle">@style/DialogButtonStyle</item>
         <item name="buttonBarNegativeButtonStyle">@style/DialogButtonStyle</item>
+        <!-- 设置对话框圆角 -->
+        <item name="android:windowBackground">@drawable/dialog_background</item>
+        <item name="android:dialogCornerRadius">16dp</item>
+        <item name="shapeAppearance">@style/RoundedRectangleShape</item>
+        <item name="shapeAppearanceOverlay">@style/RoundedRectangleShape</item>
     </style>
 
     <style name="DialogAnimation">

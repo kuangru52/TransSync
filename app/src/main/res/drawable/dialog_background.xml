@@ -5,7 +5,7 @@
     android:insetRight="16dp"
     android:insetTop="16dp">
     <shape>
-        <solid android:color="?attr/colorSurface" />
-        <corners android:radius="28dp" />
+        <solid android:color="@color/bg_item" />
+        <corners android:radius="16dp" />
     </shape>
 </inset>

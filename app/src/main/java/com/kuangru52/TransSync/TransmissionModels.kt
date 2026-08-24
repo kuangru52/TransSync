@@ -44,6 +44,7 @@ data class Torrent(
     val trackerStats: List<TrackerStats>? = null,
     val peers: List<Peer>? = null,
     val files: List<TorrentFile>? = null,
+    val labels: List<String>? = null,
 
     // 预计算字段，用于 UI 极速渲染
     var displaySize: String = "",

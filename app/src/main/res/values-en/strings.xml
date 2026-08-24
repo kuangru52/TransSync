@@ -67,4 +67,12 @@
     <string name="hint_torrent_url">Torrent Link / Magnet</string>
     <string name="hint_download_dir">Download Directory (Optional)</string>
     <string name="search_results">Search results</string>
+    <string name="label_hr">H&amp;R (Days)</string>
+    <string name="hr_none">None</string>
+    <string name="hr_3_days">3 Days</string>
+    <string name="hr_5_days">5 Days</string>
+    <string name="hr_tag">H&amp;R</string>
+    <string name="hr_tag_prefix">H&amp;R</string>
+    <string name="hr_met">H&amp;R Passed</string>
+    <string name="hr_countdown_format">H&amp;R %1$s</string>
 </resources>
