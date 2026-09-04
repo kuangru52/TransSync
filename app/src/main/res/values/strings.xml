@@ -52,6 +52,7 @@
     <string name="msg_exit_press_again">再按一次退出</string>
     <string name="msg_select_only_one">请仅选择一个项目</string>
     <string name="msg_torrent_added_success">种子已成功添加</string>
+    <string name="msg_reannounce_success">已请求重新汇报，正在寻找更多节点</string>
     <string name="hint_new_name">新名称</string>
     <string name="dialog_rename_title">重命名种子</string>
     <string name="dialog_delete_title">删除种子</string>

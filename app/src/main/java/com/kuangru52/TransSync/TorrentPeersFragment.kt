@@ -10,6 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import android.widget.Toast
 import com.kuangru52.transsync.databinding.FragmentTorrentPeersBinding
 import retrofit2.Call
 import retrofit2.Callback
@@ -44,6 +45,10 @@ class TorrentPeersFragment : Fragment() {
         adapter = PeerListAdapter()
         binding.rvPeers.layoutManager = LinearLayoutManager(context)
         binding.rvPeers.adapter = adapter
+
+        binding.swipeRefresh.setOnRefreshListener {
+            reannounce()
+        }
         
         fetchPeers()
     }
@@ -56,6 +61,33 @@ class TorrentPeersFragment : Fragment() {
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(refreshRunnable)
+    }
+
+    private fun reannounce() {
+        val activity = activity as? TorrentDetailActivity ?: return
+        val intent = activity.intent
+        val rpcUrl = intent.getStringExtra("rpcUrl") ?: ""
+        val user = intent.getStringExtra("user") ?: ""
+        val pass = intent.getStringExtra("pass") ?: ""
+
+        val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+        val request = RpcRequest("torrent-reannounce", mapOf("ids" to listOf(torrentId)))
+
+        service.rpc(rpcUrl, null, request).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+            override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                if (_binding == null) return
+                binding.swipeRefresh.isRefreshing = false
+                if (response.isSuccessful) {
+                    Toast.makeText(context, R.string.msg_reannounce_success, Toast.LENGTH_SHORT).show()
+                    fetchPeers()
+                }
+            }
+            override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
+                if (_binding == null) return
+                binding.swipeRefresh.isRefreshing = false
+                Toast.makeText(context, R.string.msg_network_error, Toast.LENGTH_SHORT).show()
+            }
+        })
     }
 
     private fun fetchPeers() {

@@ -94,11 +94,9 @@ class TorrentListActivity : AppCompatActivity() {
     private var lastBackTime = 0L
     private var isDrawerMoving = false 
 
-    private var selectedFileUri: Uri? = null
     private val filePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
-            selectedFileUri = it
-            lastAddDialog?.findViewById<TextInputEditText>(R.id.etTorrentUrl)?.setText(it.lastPathSegment ?: "Local file selected")
+            showAddTorrentDialog(initialFileUri = it)
         }
     }
     private var lastAddDialog: AlertDialog? = null
@@ -541,7 +539,7 @@ class TorrentListActivity : AppCompatActivity() {
     }
 
     private fun updateTitleWithTotalSize(filter: String, totalSize: Long) {
-        val formattedSize = viewModel.formatSize(totalSize)
+        val formattedSize = FormatUtils.formatSize(totalSize)
         val baseTitle = if (filter.startsWith("tracker:")) {
             filter.substringAfter("tracker:")
         } else {
@@ -704,7 +702,14 @@ class TorrentListActivity : AppCompatActivity() {
                             }
                         }
                     }
-                    7 -> setHrSelected()
+                    7 -> {
+                        DialogUtils.showSetHrDialog(
+                            this, rpcUrl, user, pass, adapter.getSelectedIds(), viewModel.torrents.value
+                        ) {
+                            exitSelectionMode()
+                            refreshTorrents()
+                        }
+                    }
                     5 -> viewModel.performBatchAction(rpcUrl, user, pass, "torrent-verify", adapter.getSelectedIds()) {
                         exitSelectionMode()
                         refreshTorrents()
@@ -814,71 +819,6 @@ class TorrentListActivity : AppCompatActivity() {
         )
     }
 
-    private fun setHrSelected() {
-        val ids = adapter.getSelectedIds()
-        if (ids.isEmpty()) return
-
-        val view = layoutInflater.inflate(R.layout.dialog_add_torrent, null)
-        
-        val etHr = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etHrLabel)
-        val llHrQuickButtons = view.findViewById<LinearLayout>(R.id.llHrQuickButtons)
-        val btnAction = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTorrent)
-        
-        view.findViewById<View>(R.id.tilTorrentUrl)?.visibility = View.GONE
-        view.findViewById<View>(R.id.tilDownloadDir)?.visibility = View.GONE
-        view.findViewById<View>(R.id.tvFreeSpace)?.visibility = View.GONE
-        
-        btnAction?.text = getString(R.string.btn_confirm)
-
-        setupHrSlidingInput(llHrQuickButtons, etHr)
-
-        val tilHr = view.findViewById<TextInputLayout>(R.id.tilHrLabel)
-        etHr.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                tilHr.prefixText = if (s.isNullOrEmpty()) "-- " else null
-            }
-        })
-
-        if (ids.size == 1) {
-            val targetId = ids.first()
-            val torrent = adapter.currentList.find { it.id == targetId }
-            val currentHr = torrent?.labels?.find { it.startsWith("HR:") }
-            if (currentHr != null) {
-                val hrs = currentHr.substringAfter("HR:").toIntOrNull() ?: 0
-                if (hrs > 0) {
-                    val d = hrs / 24.0
-                    val initialText = if (d == d.toInt().toDouble()) d.toInt().toString() else d.toString()
-                    etHr.setText(initialText)
-                }
-            }
-        }
-
-        val dialog = AlertDialog.Builder(this, R.style.FabDialogTheme)
-            .setView(view)
-            .create()
-
-        btnAction?.setOnClickListener {
-            val selectedHr = etHr.text.toString().trim()
-            val days = if (selectedHr.isNotEmpty() && selectedHr != getString(R.string.hr_none)) {
-                selectedHr.toDoubleOrNull() ?: 0.0
-            } else 0.0
-            
-            val hours = (days * 24).toInt()
-            val hrLabel = if (hours > 0) "HR:$hours" else null
-            val labels = if (hrLabel != null) listOf(hrLabel) else emptyList<String>()
-            
-            viewModel.setLabels(rpcUrl, user, pass, ids, labels) {
-                exitSelectionMode()
-                refreshTorrents()
-            }
-            dialog.dismiss()
-        }
-
-        dialog.show()
-    }
-
     private fun updateDrawerCounts(data: Map<String, DrawerItemData>) {
         val navigationView = findViewById<com.google.android.material.navigation.NavigationView>(R.id.navigationView)
         val menu = navigationView.menu
@@ -904,7 +844,7 @@ class TorrentListActivity : AppCompatActivity() {
                 textSize = 12f
                 item.actionView = this
             }
-            actionView.text = getString(R.string.count_bracket, viewModel.formatSize(itemData.totalSize))
+            actionView.text = getString(R.string.count_bracket, FormatUtils.formatSize(itemData.totalSize))
         }
 
         updateItem(R.id.nav_all, R.string.nav_all, "All")
@@ -1034,50 +974,6 @@ class TorrentListActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupHrSlidingInput(container: LinearLayout, editText: EditText) {
-        val touchListener = View.OnTouchListener { v, event ->
-            when (event.action) {
-                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
-                    for (i in 0 until container.childCount) {
-                        val child = container.getChildAt(i)
-                        if (event.x >= child.left && event.x <= child.right) {
-                            val value = (child as? TextView)?.text?.toString() ?: ""
-                            if (value.isNotEmpty() && editText.text.toString() != value) {
-                                editText.setText(value)
-                            }
-                            child.isPressed = true
-                        } else {
-                            child.isPressed = false
-                        }
-                    }
-                    if (event.action == MotionEvent.ACTION_DOWN) {
-                        v.performClick()
-                    }
-                    true
-                }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                    for (i in 0 until container.childCount) {
-                        container.getChildAt(i).isPressed = false
-                    }
-                    true
-                }
-                else -> false
-            }
-        }
-        
-        container.setOnTouchListener(touchListener)
-        for (i in 0 until container.childCount) {
-            val child = container.getChildAt(i)
-            child.setOnTouchListener { _, ev ->
-                val offsetEvent = MotionEvent.obtain(ev)
-                offsetEvent.offsetLocation(child.left.toFloat(), child.top.toFloat())
-                val handled = touchListener.onTouch(container, offsetEvent)
-                offsetEvent.recycle()
-                handled
-            }
-        }
-    }
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -1118,116 +1014,18 @@ class TorrentListActivity : AppCompatActivity() {
     }
 
     private fun showAddTorrentDialog(onDismiss: (() -> Unit)? = null, initialUrl: String? = null, initialFileUri: Uri? = null) {
-        val view = layoutInflater.inflate(R.layout.dialog_add_torrent, null)
-        val tilUrl = view.findViewById<TextInputLayout>(R.id.tilTorrentUrl)
-        val etUrl = view.findViewById<TextInputEditText>(R.id.etTorrentUrl)
-        val etDir = view.findViewById<android.widget.AutoCompleteTextView>(R.id.etDownloadDir)
-        val etHr = view.findViewById<TextInputEditText>(R.id.etHrLabel)
-        val llHrQuickButtons = view.findViewById<LinearLayout>(R.id.llHrQuickButtons)
-        val btnAdd = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTorrent)
-        val tvFree = view.findViewById<TextView>(R.id.tvFreeSpace)
-
-        if (initialUrl != null) {
-            etUrl.setText(initialUrl)
-        }
-        
-        selectedFileUri = initialFileUri
-        if (initialFileUri != null) {
-            etUrl.setText(initialFileUri.lastPathSegment ?: "Local file selected")
-        }
-
-        setupHrSlidingInput(llHrQuickButtons, etHr)
-
-        val tilHr = view.findViewById<TextInputLayout>(R.id.tilHrLabel)
-        etHr.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                tilHr.prefixText = if (s.isNullOrEmpty()) "-- " else null
-            }
-        })
-
-        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-        val historyDirs = prefs.getStringSet("history_dirs", mutableSetOf())?.toMutableList() ?: mutableListOf()
-        
-        // 统一使用 DownloadDirManager 获取目录列表
-        val allDirs = DownloadDirManager.getAllDirs(this, viewModel.torrents.value)
-        DownloadDirManager.setupAdapter(etDir, allDirs)
-        
-        // 观察数据更新，一旦加载完成，自动刷新下拉列表
-        viewModel.torrents.observe(this) { torrents ->
-            DownloadDirManager.setupAdapter(etDir, DownloadDirManager.getAllDirs(this, torrents))
-        }
-
-        val dialog = AlertDialog.Builder(this, R.style.FabDialogTheme)
-            .setView(view)
-            .create()
-
-        btnAdd.setOnClickListener {
-            val url = etUrl.text.toString().trim()
-            val downloadDir = etDir.text.toString().trim()
-            val selectedHr = etHr.text.toString().trim()
-            val hrLabel = if (selectedHr.isNotEmpty() && selectedHr != getString(R.string.hr_none)) {
-                val days = selectedHr.toDoubleOrNull() ?: 0.0
-                if (days > 0) "HR:${(days * 24).toInt()}" else null
-            } else null
-            
-            btnAdd.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction {
-                btnAdd.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
-            }.start()
-
-            dialog.dismiss()
-
-            if (downloadDir.isNotEmpty()) {
-                DownloadDirManager.saveDirToHistory(this, downloadDir)
-            }
-
-            val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
-            
-            if (selectedFileUri != null) {
-                val inputStream = contentResolver.openInputStream(selectedFileUri!!)
-                val bytes = inputStream?.readBytes()
-                inputStream?.close()
-                if (bytes != null) {
-                    val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
-                    val args = mutableMapOf<String, Any>("metainfo" to base64)
-                    if (downloadDir.isNotEmpty()) args["download-dir"] = downloadDir
-                    hrLabel?.let { args["labels"] = listOf(it) }
-                    
-                    service.rpc(rpcUrl, null, RpcRequest("torrent-add", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
-                        override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
-                            if (response.isSuccessful) {
-                                refreshTorrents()
-                                Toast.makeText(this@TorrentListActivity, R.string.msg_torrent_added_success, Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                        override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
-                            Toast.makeText(this@TorrentListActivity, R.string.msg_network_error, Toast.LENGTH_SHORT).show()
-                        }
-                    })
-                }
-            } else if (url.isNotEmpty()) {
-                val args = mutableMapOf<String, Any>("filename" to url)
-                if (downloadDir.isNotEmpty()) args["download-dir"] = downloadDir
-                hrLabel?.let { args["labels"] = listOf(it) }
-                
-                service.rpc(rpcUrl, null, RpcRequest("torrent-add", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
-                    override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
-                        if (response.isSuccessful) {
-                            refreshTorrents()
-                            Toast.makeText(this@TorrentListActivity, R.string.msg_torrent_added_success, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                    override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
-                        Toast.makeText(this@TorrentListActivity, R.string.msg_network_error, Toast.LENGTH_SHORT).show()
-                    }
-                })
-            }
-        }
-
-        dialog.setOnDismissListener {
-            onDismiss?.invoke()
-        }
-        dialog.show()
+        DialogUtils.showAddTorrentDialog(
+            context = this,
+            rpcUrl = rpcUrl,
+            user = user,
+            pass = pass,
+            initialUrl = initialUrl,
+            initialFileUri = initialFileUri,
+            allTorrents = viewModel.torrents.value,
+            onPickFile = { filePickerLauncher.launch("application/x-bittorrent") },
+            onSuccess = { refreshTorrents() },
+            onDismiss = onDismiss
+        )
     }
+
 }

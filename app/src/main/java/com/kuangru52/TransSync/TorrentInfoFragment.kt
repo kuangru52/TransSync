@@ -142,8 +142,8 @@ class TorrentInfoFragment : Fragment() {
 
         binding.tvName.text = torrent.name
         val progressStr = String.format(Locale.US, "%.1f%%", torrent.percentDone * 100)
-        binding.tvDownloaded.text = formatSize(torrent.downloadedEver) + " ($progressStr)"
-        binding.tvTotalSize.text = formatSize(torrent.totalSize)
+        binding.tvDownloaded.text = FormatUtils.formatSize(torrent.downloadedEver) + " ($progressStr)"
+        binding.tvTotalSize.text = FormatUtils.formatSize(torrent.totalSize)
         binding.tvDownloadDir.text = torrent.downloadDir
 
         // ETA Display
@@ -166,7 +166,7 @@ class TorrentInfoFragment : Fragment() {
         } ?: getString(R.string.state_none)
         binding.tvTracker.text = trackerDisplay
 
-        binding.tvUploaded.text = formatSize(torrent.uploadedEver)
+        binding.tvUploaded.text = FormatUtils.formatSize(torrent.uploadedEver)
         binding.tvRatio.text = String.format(Locale.US, "%.2f", torrent.uploadRatio)
         binding.tvAddedDate.text = formatDate(torrent.addedDate)
         binding.tvDoneDate.text = if (torrent.doneDate > 0) formatDate(torrent.doneDate) else getString(R.string.state_not_finished)
@@ -236,23 +236,6 @@ class TorrentInfoFragment : Fragment() {
             binding.tvPeers.text = "${stats.seederCount} / ${stats.leecherCount} / ${stats.downloadCount}"
         } else {
             binding.tvPeers.text = "0 / 0 / 0"
-        }
-    }
-
-    private fun formatSize(bytes: Long): String {
-        if (bytes <= 0) return "0 B"
-        val units = arrayOf("B", "KB", "MB", "GB", "TB")
-        val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
-        return String.format(Locale.US, "%.1f %s", bytes / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
-    }
-
-    private fun formatSpeed(bytesPerSec: Long): String {
-        if (bytesPerSec <= 0) return "0 KB/s"
-        val kbs = bytesPerSec / 1024.0
-        return if (kbs < 1024) {
-            String.format(Locale.getDefault(), "%.1f KB/s", kbs)
-        } else {
-            String.format(Locale.getDefault(), "%.1f MB/s", kbs / 1024.0)
         }
     }
 

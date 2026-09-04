@@ -1,5 +1,8 @@
 package com.kuangru52.transsync
 
+import android.net.Uri
+import android.util.Base64
+import android.widget.EditText
 import com.kuangru52.transsync.R
 import android.annotation.SuppressLint
 import android.content.Context
@@ -281,6 +284,247 @@ object DialogUtils {
         dialog.show()
     }
 
+    fun showAddTorrentDialog(
+        context: Context,
+        rpcUrl: String,
+        user: String,
+        pass: String,
+        initialUrl: String? = null,
+        initialFileUri: Uri? = null,
+        allTorrents: List<Torrent>? = null,
+        onPickFile: (() -> Unit)? = null,
+        onSuccess: () -> Unit,
+        onDismiss: (() -> Unit)? = null
+    ) {
+        val view = LayoutInflater.from(context).inflate(R.layout.dialog_add_torrent, null)
+        val tilUrl = view.findViewById<TextInputLayout>(R.id.tilTorrentUrl)
+        val etUrl = view.findViewById<TextInputEditText>(R.id.etTorrentUrl)
+        val etDir = view.findViewById<AutoCompleteTextView>(R.id.etDownloadDir)
+        val etHr = view.findViewById<TextInputEditText>(R.id.etHrLabel)
+        val llHrQuickButtons = view.findViewById<LinearLayout>(R.id.llHrQuickButtons)
+        val btnAdd = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTorrent)
+        val tvFree = view.findViewById<TextView>(R.id.tvFreeSpace)
+
+        tilUrl.setEndIconOnClickListener {
+            onPickFile?.invoke()
+        }
+
+        if (initialUrl != null) {
+            etUrl.setText(initialUrl)
+        }
+
+        if (initialFileUri != null) {
+            etUrl.setText(initialFileUri.lastPathSegment ?: "Local file selected")
+        }
+
+        setupHrSlidingInput(llHrQuickButtons, etHr)
+
+        val tilHr = view.findViewById<TextInputLayout>(R.id.tilHrLabel)
+        etHr.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                tilHr.prefixText = if (s.isNullOrEmpty()) "-- " else null
+            }
+        })
+
+        val allDirs = DownloadDirManager.getAllDirs(context, allTorrents)
+        DownloadDirManager.setupAdapter(etDir, allDirs)
+
+        val dialog = AlertDialog.Builder(context, R.style.FabDialogTheme)
+            .setView(view)
+            .create()
+
+        btnAdd.setOnClickListener {
+            val url = etUrl.text.toString().trim()
+            val downloadDir = etDir.text.toString().trim()
+            val selectedHr = etHr.text.toString().trim()
+            val hrLabel = if (selectedHr.isNotEmpty() && selectedHr != context.getString(R.string.hr_none)) {
+                val days = selectedHr.toDoubleOrNull() ?: 0.0
+                if (days > 0) "HR:${(days * 24).toInt()}" else null
+            } else null
+
+            btnAdd.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction {
+                btnAdd.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
+            }.start()
+
+            dialog.dismiss()
+
+            if (downloadDir.isNotEmpty()) {
+                DownloadDirManager.saveDirToHistory(context, downloadDir)
+            }
+
+            val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+
+            if (initialFileUri != null) {
+                val inputStream = context.contentResolver.openInputStream(initialFileUri)
+                val bytes = inputStream?.readBytes()
+                inputStream?.close()
+                if (bytes != null) {
+                    val base64 = Base64.encodeToString(bytes, Base64.NO_WRAP)
+                    val args = mutableMapOf<String, Any>("metainfo" to base64)
+                    if (downloadDir.isNotEmpty()) args["download-dir"] = downloadDir
+                    hrLabel?.let { args["labels"] = listOf(it) }
+
+                    service.rpc(rpcUrl, null, RpcRequest("torrent-add", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+                        override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                            if (response.isSuccessful) {
+                                onSuccess()
+                                Toast.makeText(context, R.string.msg_torrent_added_success, Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
+                            Toast.makeText(context, R.string.msg_network_error, Toast.LENGTH_SHORT).show()
+                        }
+                    })
+                }
+            } else if (url.isNotEmpty()) {
+                val args = mutableMapOf<String, Any>("filename" to url)
+                if (downloadDir.isNotEmpty()) args["download-dir"] = downloadDir
+                hrLabel?.let { args["labels"] = listOf(it) }
+
+                service.rpc(rpcUrl, null, RpcRequest("torrent-add", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+                    override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                        if (response.isSuccessful) {
+                            onSuccess()
+                            Toast.makeText(context, R.string.msg_torrent_added_success, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
+                        Toast.makeText(context, R.string.msg_network_error, Toast.LENGTH_SHORT).show()
+                    }
+                })
+            }
+        }
+
+        dialog.setOnDismissListener {
+            onDismiss?.invoke()
+        }
+        dialog.show()
+    }
+
+    fun showSetHrDialog(
+        context: Context,
+        rpcUrl: String,
+        user: String,
+        pass: String,
+        torrentIds: List<Int>,
+        allTorrents: List<Torrent>?,
+        onSuccess: () -> Unit
+    ) {
+        val view = LayoutInflater.from(context).inflate(R.layout.dialog_add_torrent, null)
+        val etHr = view.findViewById<TextInputEditText>(R.id.etHrLabel)
+        val llHrQuickButtons = view.findViewById<LinearLayout>(R.id.llHrQuickButtons)
+        val btnAction = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTorrent)
+
+        view.findViewById<View>(R.id.tilTorrentUrl)?.visibility = View.GONE
+        view.findViewById<View>(R.id.tilDownloadDir)?.visibility = View.GONE
+        view.findViewById<View>(R.id.tvFreeSpace)?.visibility = View.GONE
+
+        btnAction?.text = context.getString(R.string.btn_confirm)
+
+        setupHrSlidingInput(llHrQuickButtons, etHr)
+
+        val tilHr = view.findViewById<TextInputLayout>(R.id.tilHrLabel)
+        etHr.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                tilHr.prefixText = if (s.isNullOrEmpty()) "-- " else null
+            }
+        })
+
+        if (torrentIds.size == 1) {
+            val targetId = torrentIds.first()
+            val torrent = allTorrents?.find { it.id == targetId }
+            val currentHr = torrent?.labels?.find { it.startsWith("HR:") }
+            if (currentHr != null) {
+                val hrs = currentHr.substringAfter("HR:").toIntOrNull() ?: 0
+                if (hrs > 0) {
+                    val d = hrs / 24.0
+                    val initialText = if (d == d.toInt().toDouble()) d.toInt().toString() else d.toString()
+                    etHr.setText(initialText)
+                }
+            }
+        }
+
+        val dialog = AlertDialog.Builder(context, R.style.FabDialogTheme)
+            .setView(view)
+            .create()
+
+        btnAction?.setOnClickListener {
+            val selectedHr = etHr.text.toString().trim()
+            val days = if (selectedHr.isNotEmpty() && selectedHr != context.getString(R.string.hr_none)) {
+                selectedHr.toDoubleOrNull() ?: 0.0
+            } else 0.0
+
+            val hours = (days * 24).toInt()
+            val hrLabel = if (hours > 0) "HR:$hours" else null
+            val labels = if (hrLabel != null) listOf(hrLabel) else emptyList<String>()
+
+            val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+            service.rpc(rpcUrl, null, RpcRequest("torrent-set", mapOf("ids" to torrentIds, "labels" to labels)))
+                .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+                    override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                        if (response.isSuccessful) {
+                            onSuccess()
+                            dialog.dismiss()
+                        } else {
+                            Toast.makeText(context, context.getString(R.string.msg_update_failed, response.code()), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
+                        Toast.makeText(context, R.string.msg_network_error, Toast.LENGTH_SHORT).show()
+                    }
+                })
+        }
+        dialog.show()
+    }
+
+    private fun setupHrSlidingInput(container: LinearLayout, editText: EditText) {
+        val touchListener = View.OnTouchListener { v, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                    for (i in 0 until container.childCount) {
+                        val child = container.getChildAt(i)
+                        if (event.x >= child.left && event.x <= child.right) {
+                            val value = (child as? TextView)?.text?.toString() ?: ""
+                            if (value.isNotEmpty() && editText.text.toString() != value) {
+                                editText.setText(value)
+                            }
+                            child.isPressed = true
+                        } else {
+                            child.isPressed = false
+                        }
+                    }
+                    if (event.action == MotionEvent.ACTION_DOWN) {
+                        v.performClick()
+                    }
+                    true
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    for (i in 0 until container.childCount) {
+                        container.getChildAt(i).isPressed = false
+                    }
+                    true
+                }
+                else -> false
+            }
+        }
+
+        container.setOnTouchListener(touchListener)
+        for (i in 0 until container.childCount) {
+            val child = container.getChildAt(i)
+            child.setOnTouchListener { _, ev ->
+                val offsetEvent = MotionEvent.obtain(ev)
+                offsetEvent.offsetLocation(child.left.toFloat(), child.top.toFloat())
+                val handled = touchListener.onTouch(container, offsetEvent)
+                offsetEvent.recycle()
+                handled
+            }
+        }
+    }
+
     fun showSetLocationDialog(
         context: Context,
         rpcUrl: String,
@@ -313,7 +557,7 @@ object DialogUtils {
                 override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                     if (response.isSuccessful) {
                         val size = (response.body()?.arguments?.get("size-bytes") as? Double)?.toLong() ?: 0L
-                        tvFree.text = context.getString(R.string.free_space_label, formatSize(size))
+                        tvFree.text = context.getString(R.string.free_space_label, FormatUtils.formatSize(size))
                         tvFree.visibility = View.VISIBLE
                     }
                 }
@@ -366,17 +610,5 @@ object DialogUtils {
         }
 
         dialog.show()
-    }
-
-    @SuppressLint("ClickableViewAccessibility")
-    fun setupDownloadDirAdapter(etDir: AutoCompleteTextView, dirs: List<String>) {
-        DownloadDirManager.setupAdapter(etDir, dirs)
-    }
-
-    private fun formatSize(bytes: Long): String {
-        if (bytes <= 0) return "0 B"
-        val units = arrayOf("B", "KB", "MB", "GB", "TB")
-        val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
-        return String.format(java.util.Locale.US, "%.1f %s", bytes / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
     }
 }

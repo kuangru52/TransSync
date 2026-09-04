@@ -26,8 +26,8 @@ class PeerListAdapter : ListAdapter<Peer, PeerListAdapter.ViewHolder>(DiffCallba
             binding.tvPeerClient.text = peer.clientName
             binding.tvPeerFlags.text = peer.flagStr
             binding.tvPeerProgress.text = binding.root.context.getString(R.string.peer_progress, "${(peer.progress * 100).toInt()}%")
-            binding.tvPeerDownSpeed.text = "↓ ${formatSpeed(peer.rateToClient.toLong())}"
-            binding.tvPeerUpSpeed.text = "↑ ${formatSpeed(peer.rateToPeer.toLong())}"
+            binding.tvPeerDownSpeed.text = "↓ ${FormatUtils.formatSpeed(peer.rateToClient.toDouble())}"
+            binding.tvPeerUpSpeed.text = "↑ ${FormatUtils.formatSpeed(peer.rateToPeer.toDouble())}"
 
             // Fetch and set country emoji
             binding.tvPeerFlag.visibility = android.view.View.GONE
@@ -36,16 +36,6 @@ class PeerListAdapter : ListAdapter<Peer, PeerListAdapter.ViewHolder>(DiffCallba
                     binding.tvPeerFlag.text = emoji
                     binding.tvPeerFlag.visibility = android.view.View.VISIBLE
                 }
-            }
-        }
-
-        private fun formatSpeed(bytesPerSec: Long): String {
-            if (bytesPerSec <= 0) return "0 KB/s"
-            val kbs = bytesPerSec / 1024.0
-            return if (kbs < 1024) {
-                String.format(Locale.US, "%.1f KB/s", kbs)
-            } else {
-                String.format(Locale.US, "%.1f MB/s", kbs / 1024.0)
             }
         }
     }

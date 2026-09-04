@@ -112,8 +112,8 @@ class TorrentListViewModel : ViewModel() {
             }
 
             // 预计算 UI 字段
-            torrent.displayDownloadSpeed = "${formatSpeed(torrent.rateDownload.toDouble())} ↓"
-            torrent.displayUploadSpeed = "${formatSpeed(torrent.rateUpload.toDouble())} ↑"
+            torrent.displayDownloadSpeed = "${FormatUtils.formatSpeed(torrent.rateDownload.toDouble())} ↓"
+            torrent.displayUploadSpeed = "${FormatUtils.formatSpeed(torrent.rateUpload.toDouble())} ↑"
             
             val color = when {
                 torrent.error != 0 || (torrent.errorString.isNotEmpty() && !torrent.errorString.contains("none", ignoreCase = true)) -> 
@@ -131,14 +131,14 @@ class TorrentListViewModel : ViewModel() {
             torrent.displayStatusText = if (torrent.status == 1 || torrent.status == 2) 
                 "校验中 (${String.format(Locale.US, "%.1f%%", torrent.recheckProgress * 100)})" else ""
 
-            val sizeStr = formatSize(torrent.totalSize)
-            torrent.displaySize = if (torrent.percentDone >= 1.0) sizeStr else "${formatSize(torrent.downloadedEver)} / $sizeStr"
-            torrent.displayStats = "${formatSize(torrent.uploadedEver)} (分享率 ${String.format(Locale.US, "%.2f", torrent.uploadRatio)})"
+            val sizeStr = FormatUtils.formatSize(torrent.totalSize)
+            torrent.displaySize = if (torrent.percentDone >= 1.0) sizeStr else "${FormatUtils.formatSize(torrent.downloadedEver)} / $sizeStr"
+            torrent.displayStats = "${FormatUtils.formatSize(torrent.uploadedEver)} (分享率 ${String.format(Locale.US, "%.2f", torrent.uploadRatio)})"
         }
         
         allTorrentsRaw = list
-        _totalDownloadSpeed.postValue(formatSpeed(totalDown))
-        _totalUploadSpeed.postValue(formatSpeed(totalUp))
+        _totalDownloadSpeed.postValue(FormatUtils.formatSpeed(totalDown))
+        _totalUploadSpeed.postValue(FormatUtils.formatSpeed(totalUp))
         
         updateDrawerData(list)
         updateTrackerData(list)
@@ -223,7 +223,7 @@ class TorrentListViewModel : ViewModel() {
             override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                 if (response.isSuccessful) {
                     val size = (response.body()?.arguments?.get("size-bytes") as? Number)?.toLong() ?: 0L
-                    _freeSpace.postValue(formatSize(size))
+                    _freeSpace.postValue(FormatUtils.formatSize(size))
                 }
             }
             override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
@@ -284,16 +284,4 @@ class TorrentListViewModel : ViewModel() {
             })
     }
 
-    fun formatSpeed(rate: Double): String {
-        val kbs = rate / 1024.0
-        return if (kbs < 1024) String.format(Locale.US, "%.1f KB/s", kbs)
-        else String.format(Locale.US, "%.1f MB/s", kbs / 1024.0)
-    }
-
-    fun formatSize(bytes: Long): String {
-        if (bytes <= 0) return "0 B"
-        val units = arrayOf("B", "KB", "MB", "GB", "TB")
-        val digitGroups = (log10(bytes.toDouble()) / log10(1024.0)).toInt()
-        return String.format(Locale.US, "%.1f %s", bytes / 1024.0.pow(digitGroups.toDouble()), units[digitGroups])
-    }
 }

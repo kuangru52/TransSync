@@ -154,17 +154,10 @@ class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>()
                 ivIcon.visibility = View.INVISIBLE
                 tvFileSize.visibility = View.VISIBLE
                 tvFileProgress.visibility = View.VISIBLE
-                tvFileSize.text = formatSize(node.length)
+                tvFileSize.text = FormatUtils.formatSize(node.length)
                 val progress = if (node.length > 0) (node.bytesCompleted.toDouble() / node.length * 100) else 0.0
                 tvFileProgress.text = String.format(Locale.US, "%.1f%%", progress)
             }
-        }
-
-        private fun formatSize(bytes: Long): String {
-            if (bytes <= 0) return "0 B"
-            val units = arrayOf("B", "KB", "MB", "GB", "TB")
-            val digitGroups = (Math.log10(bytes.toDouble()) / Math.log10(1024.0)).toInt()
-            return String.format(Locale.US, "%.1f %s", bytes / Math.pow(1024.0, digitGroups.toDouble()), units[digitGroups])
         }
     }
 }
