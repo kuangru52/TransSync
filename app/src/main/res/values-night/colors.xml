@@ -23,12 +23,10 @@
     <color name="divider">#1AFFFFFF</color>
     <color name="nav_divider">#040404</color>
     <color name="selection_bg">#FF3F4348</color>
-    <color name="glass_white">#1AFFFFFF</color>
-    <color name="glass_white_heavy">#33FFFFFF</color>
     <color name="bg_card">#FF212D3B</color>
 
     <!-- Tag/Bubble Colors for Dark Mode -->
-    <color name="bg_tag">#FF2A3749</color>
+    <color name="bg_tag">#FF212D3B</color>
     <color name="stroke_tag">#FF34495E</color>
 
     <color name="state_green">#43A047</color>

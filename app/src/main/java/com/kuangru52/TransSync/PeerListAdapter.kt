@@ -1,11 +1,12 @@
-﻿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
+import com.kuangru52.transsync.R
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.kuangru52.TransSync.databinding.ItemPeerBinding
+import com.kuangru52.transsync.databinding.ItemPeerBinding
 import java.util.*
 
 class PeerListAdapter : ListAdapter<Peer, PeerListAdapter.ViewHolder>(DiffCallback()) {
@@ -25,8 +26,8 @@ class PeerListAdapter : ListAdapter<Peer, PeerListAdapter.ViewHolder>(DiffCallba
             binding.tvPeerClient.text = peer.clientName
             binding.tvPeerFlags.text = peer.flagStr
             binding.tvPeerProgress.text = binding.root.context.getString(R.string.peer_progress, "${(peer.progress * 100).toInt()}%")
-            binding.tvPeerDownSpeed.text = "${formatSpeed(peer.rateToClient.toLong())} ↓"
-            binding.tvPeerUpSpeed.text = "${formatSpeed(peer.rateToPeer.toLong())} ↑"
+            binding.tvPeerDownSpeed.text = "↓ ${formatSpeed(peer.rateToClient.toLong())}"
+            binding.tvPeerUpSpeed.text = "↑ ${formatSpeed(peer.rateToPeer.toLong())}"
 
             // Fetch and set country emoji
             binding.tvPeerFlag.visibility = android.view.View.GONE
@@ -54,4 +55,3 @@ class PeerListAdapter : ListAdapter<Peer, PeerListAdapter.ViewHolder>(DiffCallba
         override fun areContentsTheSame(oldItem: Peer, newItem: Peer) = oldItem == newItem
     }
 }
-

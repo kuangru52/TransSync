@@ -1,4 +1,4 @@
-ï»¿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
 import com.google.gson.annotations.SerializedName
 
@@ -46,7 +46,7 @@ data class Torrent(
     val files: List<TorrentFile>? = null,
     val labels: List<String>? = null,
 
-    // é¢„è®¡ç®—å­—æ®µï¼Œç”¨äº UI æé€Ÿæ¸²æŸ“
+    // Ô¤¼ÆËã×Ö¶Î£¬ÓÃÓÚ UI ¼«ËÙäÖÈ¾
     var displaySize: String = "",
     var displayStatusText: String = "",
     var displayDownloadSpeed: String = "",

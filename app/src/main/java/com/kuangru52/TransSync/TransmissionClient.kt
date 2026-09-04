@@ -1,4 +1,4 @@
-﻿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
 import okhttp3.Credentials
 import okhttp3.Interceptor

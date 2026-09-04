@@ -1,12 +1,16 @@
-﻿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
+import com.kuangru52.transsync.R
 import android.content.pm.ActivityInfo
 import android.content.Intent
+import android.net.Uri
+import androidx.core.net.toUri
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -27,20 +31,36 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            val requestPermissionLauncher = registerForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { isGranted: Boolean ->
+                if (!isGranted) {
+                    Toast.makeText(this, "Notification permission denied. You won't receive download completion alerts.", Toast.LENGTH_LONG).show()
+                }
+            }
+            requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+        }
+
         val prefs = getSharedPreferences("auth", MODE_PRIVATE)
         val savedRpcUrl = prefs.getString("rpcUrl", null)
         val savedUser = prefs.getString("user", null)
         val savedPass = prefs.getString("pass", null)
 
         val isEditing = intent.getBooleanExtra("isEditing", false)
+        val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+        val externalUri = intent.data ?: intent.getParcelableExtra(Intent.EXTRA_STREAM)
 
         if (!isEditing && savedRpcUrl != null && savedUser != null && savedPass != null) {
-            val intent = Intent(this, TorrentListActivity::class.java).apply {
+            val nextIntent = Intent(this, TorrentListActivity::class.java).apply {
                 putExtra("rpcUrl", savedRpcUrl)
                 putExtra("user", savedUser)
                 putExtra("pass", savedPass)
+                data = externalUri
+                putExtra(Intent.EXTRA_STREAM, intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+                putExtra(Intent.EXTRA_TEXT, sharedText)
             }
-            startActivity(intent)
+            startActivity(nextIntent)
             finish()
             return
         }
@@ -120,12 +140,15 @@ class MainActivity : AppCompatActivity() {
                         apply()
                     }
 
-                    val intent = Intent(this@MainActivity, TorrentListActivity::class.java).apply {
+                    val nextIntent = Intent(this@MainActivity, TorrentListActivity::class.java).apply {
                         putExtra("rpcUrl", rpcUrl)
                         putExtra("user", user)
                         putExtra("pass", pass)
+                        data = intent.data
+                        putExtra(Intent.EXTRA_STREAM, intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+                        putExtra(Intent.EXTRA_TEXT, intent.getStringExtra(Intent.EXTRA_TEXT))
                     }
-                    startActivity(intent)
+                    startActivity(nextIntent)
                     finish()
                 } else {
                     Toast.makeText(this@MainActivity, "Login failed: ${response.code()}", Toast.LENGTH_SHORT).show()

@@ -1,4 +1,4 @@
-﻿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
 import org.junit.Test
 

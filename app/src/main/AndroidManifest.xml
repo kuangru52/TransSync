@@ -3,9 +3,10 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:name=".TransSyncApp"
+        android:name="com.kuangru52.transsync.TransSyncApp"
         android:allowBackup="true"
         android:networkSecurityConfig="@xml/network_security_config"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -21,8 +22,57 @@
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- 处理磁力链接 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="magnet" />
+            </intent-filter>
+
+            <!-- 处理 .torrent 文件 -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/x-bittorrent" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.torrent" />
+                <data android:pathPattern=".*\\..*\\.torrent" />
+                <data android:pathPattern=".*\\..*\\..*\\.torrent" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.torrent" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.torrent" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/x-bittorrent" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+                <data android:pathPattern=".*\\.torrent" />
+            </intent-filter>
+
+            <!-- 处理分享的文本链接 -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
         <activity

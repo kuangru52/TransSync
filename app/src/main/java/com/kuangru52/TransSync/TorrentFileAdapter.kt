@@ -1,5 +1,6 @@
-﻿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
+import com.kuangru52.transsync.R
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,8 +11,8 @@ import java.util.Locale
 
 class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>() {
 
-    private var allNodes = mutableListOf<FileNode>() // 鎵€鏈夌殑鍘熷鏍戣妭鐐癸紙閫昏緫缁撴瀯锛?
-    private var visibleNodes = mutableListOf<FileNode>() // 褰撳墠鏄剧ず鐨勮妭鐐癸紙鎵撳钩鍚庣殑鍒楄〃锛?
+    private var allNodes = mutableListOf<FileNode>() // 所有的原始树节点（逻辑结构�?
+    private var visibleNodes = mutableListOf<FileNode>() // 当前显示的节点（打平后的列表�?
 
     data class FileNode(
         val name: String,
@@ -76,12 +77,12 @@ class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>()
                     )
                     currentNode.children.add(child)
                 } else if (isLast) {
-                    // 濡傛灉鏄噸澶嶇殑鏂囦欢璺緞锛堢悊璁轰笂涓嶅簲璇ワ紝浣嗛槻姝竾涓€锛?
+                    // 如果是重复的文件路径（理论上不应该，但防止万一�?
                 }
                 currentNode = child
             }
         }
-        // 瀵逛簬鍙湁涓€涓《灞傜洰褰曠殑鎯呭喌锛屽鏋滄兂鐩存帴鏄剧ず鍐呭锛屽彲浠ヨ繑鍥?root.children
+        // 对于只有一个顶层目录的情况，如果想直接显示内容，可以返�?root.children
         return root.children
     }
 
@@ -90,7 +91,7 @@ class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>()
         fun addNode(node: FileNode) {
             visibleNodes.add(node)
             if (node.isFolder && node.isExpanded) {
-                node.children.sortBy { !it.isFolder } // 鏂囦欢澶规帓鍦ㄥ墠闈?
+                node.children.sortBy { !it.isFolder } // 文件夹排在前�?
                 node.children.forEach { addNode(it) }
             }
         }
@@ -137,9 +138,9 @@ class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>()
         private val tvFileProgress: TextView = view.findViewById(R.id.tvFileProgress)
 
         fun bind(node: FileNode) {
-            // 璁剧疆缂╄繘
+            // 设置缩进
             val params = vIndent.layoutParams
-            params.width = node.level * 48 // 姣忎竴灞傜缉杩?48px
+            params.width = node.level * 32 // 每一层缩�?32px
             vIndent.layoutParams = params
 
             tvFileName.text = node.name

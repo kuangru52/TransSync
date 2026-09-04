@@ -4,15 +4,15 @@ plugins {
 }
 
 android {
-    namespace = "com.kuangru52.TransSync"
+    namespace = "com.kuangru52.transsync"
     compileSdk = 36
 
     defaultConfig {
         applicationId = "com.kuangru52.TransSync"
         minSdk = 24
         targetSdk = 36
-        versionCode = 20
-        versionName = "1.20"
+        versionCode = 24
+        versionName = "2.01"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -64,6 +64,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
     implementation(libs.gson)
+    implementation(libs.androidx.work.runtime.ktx)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -20,9 +20,9 @@
     <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/glass_background"
+        android:background="@drawable/bg_item_rounded"
         android:padding="24dp"
-        android:elevation="8dp">
+        android:elevation="4dp">
 
         <com.google.android.material.imageview.ShapeableImageView
             android:id="@+id/ivLogo"
@@ -132,7 +132,6 @@
             android:layout_alignParentEnd="true"
             android:text="@string/login_button"
             android:textSize="12sp"
-            android:backgroundTint="@color/glass_white"
             android:textColor="@color/colorAccent"
             android:insetTop="0dp"
             android:insetBottom="0dp"

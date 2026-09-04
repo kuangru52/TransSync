@@ -1,5 +1,6 @@
-package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
+import com.kuangru52.transsync.R
 import android.content.pm.ActivityInfo
 import android.content.ClipboardManager
 import android.content.Context

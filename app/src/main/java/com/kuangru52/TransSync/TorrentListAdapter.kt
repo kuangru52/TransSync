@@ -1,19 +1,17 @@
-﻿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
+import com.kuangru52.transsync.R
 import android.content.res.ColorStateList
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.util.Locale
-import kotlin.math.pow
 
 class TorrentListAdapter(
     private val onTorrentClick: (Torrent) -> Unit,
@@ -47,7 +45,7 @@ class TorrentListAdapter(
             }
         }
 
-    fun getSelectedIds(): Set<Int> = selectedIds
+    fun getSelectedIds(): List<Int> = selectedIds.toList()
 
     fun toggleSelection(id: Int) {
         val index = currentList.indexOfFirst { it.id == id }
@@ -116,7 +114,7 @@ class TorrentListAdapter(
                     oldItem.errorString == newItem.errorString &&
                     (oldItem.labels ?: emptyList<String>()) == (newItem.labels ?: emptyList<String>()) &&
                     oldItem.doneDate == newItem.doneDate &&
-                    // 如果是 H&R 种子，强制返回 false 以确保每次列表刷新都能重新计算倒计时
+                    // ����� H&R ���ӣ�ǿ�Ʒ��� false ��ȷ��ÿ���б�ˢ�¶������¼��㵹��ʱ
                     newItem.labels?.any { it.startsWith("HR:") } != true
         }
 
@@ -141,7 +139,7 @@ class TorrentListAdapter(
                 payloads.add("stats")
             }
             
-            // 只要包含 HR 标签，就强制加入刷新负载，确保倒计时随着每次列表刷新而更新
+            // ֻҪ���� HR ��ǩ����ǿ�Ƽ���ˢ�¸��أ�ȷ������ʱ����ÿ���б�ˢ�¶�����
             val hasHr = newItem.labels?.any { it.startsWith("HR:") } == true
             if (hasHr || (oldItem.labels ?: emptyList<String>()) != (newItem.labels ?: emptyList<String>()) || oldItem.doneDate != newItem.doneDate) {
                 payloads.add("hr")
@@ -284,7 +282,7 @@ class TorrentListAdapter(
                 return
             }
 
-            val hours = hrLabel.substringAfter("HR:").toIntOrNull() ?: 0
+            val hours = hrLabel.substringAfter("HR:").toDoubleOrNull() ?: 0.0
             if (hours <= 0) {
                 tvHrTag.visibility = View.GONE
                 return
@@ -297,7 +295,7 @@ class TorrentListAdapter(
             val px8 = (8 * density).toInt()
             val px18 = (18 * density).toInt()
             
-            // 重置为默认胶囊样式
+            // ����ΪĬ�Ͻ�����ʽ
             tvHrTag.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
             tvHrTag.setPadding(px8, 0, px8, 0)
             tvHrTag.setBackgroundResource(R.drawable.bg_tag_capsule)
@@ -307,29 +305,29 @@ class TorrentListAdapter(
             tvHrTag.layoutParams = params
             androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(tvHrTag, null)
 
-            // 如果还没下载完，显示 "H&R"
+            // �����û�����꣬��ʾ "H&R"
             if (torrent.percentDone < 1.0) {
                 tvHrTag.text = context.getString(R.string.hr_tag)
                 tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
                 return
             }
 
-            // 如果已完成，计算剩余时间
-            val doneDate = torrent.doneDate * 1000L // 转换为毫秒
+            // �������ɣ�����ʣ��ʱ��
+            val doneDate = torrent.doneDate * 1000L // ת��Ϊ����
             val currentTime = System.currentTimeMillis()
-            val totalRequiredMs = hours * 3600 * 1000L
+            val totalRequiredMs = (hours * 3600 * 1000L).toLong()
             val elapsedMs = currentTime - doneDate
             val remainingMs = totalRequiredMs - elapsedMs
-            val bufferMs = 20 * 60 * 1000L // 20分钟缓冲
+            val bufferMs = 30 * 60 * 1000L // 30���ӻ���
 
             if (remainingMs <= -bufferMs) {
-                // 已达标且超过缓冲期 - 直接显示图标，不带文字，不带背景
+                // �Ѵ���ҳ��������� - ֱ����ʾͼ�꣬�������֣���������
                 tvHrTag.text = ""
                 tvHrTag.setPadding(0, 0, 0, 0)
                 params.width = px18
                 tvHrTag.layoutParams = params
                 
-                // 彻底移除背景胶囊，只显示图标本身颜色
+                // �����Ƴ��������ң�ֻ��ʾͼ�걾����ɫ
                 tvHrTag.background = null
                 
                 val doneDrawable = ContextCompat.getDrawable(context, R.drawable.ic_done)
@@ -337,15 +335,24 @@ class TorrentListAdapter(
                 doneDrawable?.setBounds(0, 0, iconSize, iconSize)
                 
                 tvHrTag.setCompoundDrawables(doneDrawable, null, null, null)
-                // 再次确保没有 Tint 影响，使用图标原始色彩（绿圆底白对号）
+                // �ٴ�ȷ��û�� Tint Ӱ�죬ʹ��ͼ��ԭʼɫ�ʣ���Բ�װ׶Ժţ�
                 androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(tvHrTag, null)
-            } else {
-                // 倒计时状态（含20分钟缓冲期）
+            } else if (remainingMs > 0) {
+                // �������ֵ���ʱ
                 tvHrTag.backgroundTintList = null 
-                val totalMins = if (remainingMs > 0) remainingMs / (60 * 1000L) else 0L
+                val totalMins = remainingMs / (60 * 1000L)
                 val hrs = totalMins / 60
                 val mins = totalMins % 60
                 tvHrTag.text = context.getString(R.string.hr_list_countdown_format, hrs, mins)
+                tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.state_blue))
+            } else {
+                // ��ȴʱ�䣨30���ӻ����ڣ�
+                tvHrTag.backgroundTintList = null 
+                val remainingBufferMs = bufferMs + remainingMs
+                val totalSecs = Math.max(0, remainingBufferMs / 1000L)
+                val mins = totalSecs / 60
+                val secs = totalSecs % 60
+                tvHrTag.text = String.format(Locale.US, "%02d:%02d", mins, secs)
                 tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.state_blue))
             }
         }
@@ -365,7 +372,7 @@ class TorrentListAdapter(
             val percentText = String.format(Locale.US, "%.1f", progress)
             tvProgressPercent.text = percentText
             
-            // 控制数字的位置，从而通过约束拉动 progressFill
+            // �������ֵ�λ�ã��Ӷ�ͨ��Լ������ progressFill
             params.horizontalBias = torrent.displayProgress / 1000f
             tvProgressPercent.layoutParams = params
         }

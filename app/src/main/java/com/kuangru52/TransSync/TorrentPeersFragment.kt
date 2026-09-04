@@ -1,4 +1,4 @@
-﻿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
 import android.os.Bundle
 import android.os.Handler
@@ -10,7 +10,7 @@ import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.kuangru52.TransSync.databinding.FragmentTorrentPeersBinding
+import com.kuangru52.transsync.databinding.FragmentTorrentPeersBinding
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response

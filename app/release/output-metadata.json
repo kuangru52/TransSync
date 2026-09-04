@@ -11,9 +11,9 @@
       "type": "SINGLE",
       "filters": [],
       "attributes": [],
-      "versionCode": 13,
-      "versionName": "1.13",
-      "outputFile": "TransSync-1.13.apk"
+      "versionCode": 20,
+      "versionName": "1.20",
+      "outputFile": "TransSync-1.20.apk"
     }
   ],
   "elementType": "File",
@@ -22,14 +22,14 @@
       "minApi": 28,
       "maxApi": 30,
       "baselineProfiles": [
-        "baselineProfiles/1/TransSync-1.13.dm"
+        "baselineProfiles/1/TransSync-1.20.dm"
       ]
     },
     {
       "minApi": 31,
       "maxApi": 2147483647,
       "baselineProfiles": [
-        "baselineProfiles/0/TransSync-1.13.dm"
+        "baselineProfiles/0/TransSync-1.20.dm"
       ]
     }
   ],

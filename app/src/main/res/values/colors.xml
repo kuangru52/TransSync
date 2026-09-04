@@ -23,8 +23,8 @@
     <color name="nav_item_tint">#FF2D3436</color>
 
     <!-- Tag/Bubble Colors -->
-    <color name="bg_tag">#E9ECEF</color>
-    <color name="stroke_tag">#CFD8DC</color>
+    <color name="bg_tag">#F0F2F5</color>
+    <color name="stroke_tag">#E0E0E0</color>
 
     <!-- Torrent States -->
     <color name="state_green">#43A047</color>
@@ -36,17 +36,7 @@
     <color name="button_color">#888888</color>
     <color name="turtle_active">#FF1D88E3</color>
     <color name="divider">#FFE0E0E0</color>
-    <color name="selection_bg">#FFE3F2FD</color>
-    <!-- 优化磨砂玻璃颜色：大幅提高不透明度以保证可读性 -->
-    <color name="glass_bg">#F2FFFFFF</color> <!-- 95% 不透明白 -->
-    <color name="glass_bg_heavy">#FAFFFFFF</color>
-    <color name="glass_stroke">#B3FFFFFF</color>
-    <color name="glass_stroke_thick">#E6FFFFFF</color>
-    <color name="glass_input_bg">#F0F2F5</color>
-    <color name="glass_white">#F2FFFFFF</color>
-    <color name="glass_white_heavy">#FAFFFFFF</color>
-    <color name="glass_border">#B3FFFFFF</color>
-    <color name="glass_accent">#4D00B0FF</color>
+    <color name="selection_bg">#1A2196F3</color>
     <color name="nav_divider">#00000000</color>
     <color name="bg_card">#FFFFFF</color>
 </resources>

@@ -43,7 +43,7 @@
                 android:layout_marginTop="8dp"
                 android:nestedScrollingEnabled="false"
                 android:visibility="gone"
-                tools:listitem="@layout/item_file"
+                tools:listitem="@layout/item_torrent_file"
                 tools:visibility="visible" />
         </LinearLayout>
 
@@ -59,22 +59,22 @@
             android:layout_marginBottom="12dp">
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="总大小" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_total_size" android:textColor="@color/text_secondary" android:textSize="11sp" />
                 <TextView android:id="@+id/tvTotalSize" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" tools:text="10 GB" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="分享率" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_ratio_stat" android:textColor="@color/text_secondary" android:textSize="11sp" />
                 <TextView android:id="@+id/tvRatio" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" tools:text="0.20" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="已下载" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_downloaded" android:textColor="@color/text_secondary" android:textSize="11sp" />
                 <TextView android:id="@+id/tvDownloaded" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/state_blue" android:textSize="14sp" android:textStyle="bold" tools:text="5 GB" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="已上传" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_uploaded" android:textColor="@color/text_secondary" android:textSize="11sp" />
                 <TextView android:id="@+id/tvUploaded" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/state_green" android:textSize="14sp" android:textStyle="bold" tools:text="1 GB" />
             </LinearLayout>
 
@@ -109,7 +109,7 @@
                 <TextView
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
-                    android:text="保存位置"
+                    android:text="@string/label_download_dir"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
                 <TextView
@@ -120,6 +120,15 @@
                     android:textColor="@color/text_primary"
                     android:textSize="13sp"
                     tools:text="/downloads/complete/movies" />
+                <ImageView
+                    android:id="@+id/ivEditLocation"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:padding="6dp"
+                    android:src="@drawable/ic_file_open"
+                    app:tint="@color/text_secondary"
+                    android:contentDescription="@string/menu_set_location" />
             </LinearLayout>
 
             <LinearLayout
@@ -131,7 +140,7 @@
                 <TextView
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
-                    android:text="Tracker"
+                    android:text="@string/label_tracker"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
                 <TextView
@@ -149,7 +158,8 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:padding="6dp"
                     android:src="@drawable/ic_edit"
-                    app:tint="@color/text_secondary" />
+                    app:tint="@color/text_secondary"
+                    android:contentDescription="@string/dialog_edit_tracker_title" />
             </LinearLayout>
 
             <!-- Error Info (Hidden by default) -->
@@ -165,7 +175,7 @@
                 <TextView
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
-                    android:text="错误信息"
+                    android:text="@string/label_error_info"
                     android:textColor="#E53935"
                     android:textSize="12sp"
                     android:textStyle="bold" />
@@ -177,6 +187,9 @@
                     android:textColor="#E53935"
                     android:textSize="13sp"
                     tools:text="No space left on device" />
+                <View
+                    android:layout_width="32dp"
+                    android:layout_height="32dp" />
             </LinearLayout>
         </LinearLayout>
 
@@ -199,7 +212,7 @@
                 <TextView
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
-                    android:text="预计剩余"
+                    android:text="@string/label_eta_stat"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
                 <TextView
@@ -211,6 +224,9 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     tools:text="2h 15m" />
+                <View
+                    android:layout_width="32dp"
+                    android:layout_height="32dp" />
             </LinearLayout>
 
             <LinearLayout
@@ -222,7 +238,7 @@
                 <TextView
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
-                    android:text="H&amp;R 考核"
+                    android:text="@string/label_hr_stat"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
                 <TextView
@@ -234,6 +250,15 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     tools:text="剩余 2天 12小时" />
+                <ImageView
+                    android:id="@+id/ivHrStatus"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:padding="6dp"
+                    android:visibility="gone"
+                    tools:visibility="visible"
+                    tools:src="@drawable/ic_done"
+                    android:contentDescription="@string/hr_met" />
             </LinearLayout>
 
             <LinearLayout
@@ -245,7 +270,7 @@
                 <TextView
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
-                    android:text="添加日期"
+                    android:text="@string/label_added_date"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
                 <TextView
@@ -257,6 +282,9 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     tools:text="2023-10-01 12:00:00" />
+                <View
+                    android:layout_width="32dp"
+                    android:layout_height="32dp" />
             </LinearLayout>
 
             <LinearLayout
@@ -268,7 +296,7 @@
                 <TextView
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
-                    android:text="完成日期"
+                    android:text="@string/label_done_date"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
                 <TextView
@@ -280,6 +308,9 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     tools:text="2023-10-02 15:30:00" />
+                <View
+                    android:layout_width="32dp"
+                    android:layout_height="32dp" />
             </LinearLayout>
 
             <LinearLayout
@@ -291,7 +322,7 @@
                 <TextView
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
-                    android:text="最后活动"
+                    android:text="@string/label_activity_date"
                     android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
                 <TextView
@@ -303,6 +334,9 @@
                     android:textSize="13sp"
                     android:textStyle="bold"
                     tools:text="2023-10-03 09:15:22" />
+                <View
+                    android:layout_width="32dp"
+                    android:layout_height="32dp" />
             </LinearLayout>
 
         </LinearLayout>

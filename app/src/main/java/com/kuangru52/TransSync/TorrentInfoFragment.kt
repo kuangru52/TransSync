@@ -1,5 +1,6 @@
-﻿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
+import com.kuangru52.transsync.R
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -11,7 +12,7 @@ import androidx.core.content.ContextCompat
 import android.content.res.ColorStateList
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.kuangru52.TransSync.databinding.FragmentTorrentInfoBinding
+import com.kuangru52.transsync.databinding.FragmentTorrentInfoBinding
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -48,14 +49,37 @@ class TorrentInfoFragment : Fragment() {
             showEditTrackersDialog()
         }
 
+        binding.ivEditLocation.setOnClickListener {
+            showSetLocationDialog()
+        }
+
         binding.tvName.setOnClickListener {
-            val isVisible = binding.rvFiles.visibility == View.VISIBLE
-            if (isVisible) {
+            if (binding.rvFiles.visibility == View.VISIBLE) {
                 binding.rvFiles.visibility = View.GONE
-                fileAdapter?.collapseAll()
             } else {
                 binding.rvFiles.visibility = View.VISIBLE
             }
+        }
+
+        binding.tvName.setOnLongClickListener {
+            val activity = activity as? TorrentDetailActivity ?: return@setOnLongClickListener true
+            val intent = activity.intent
+            val rpcUrl = intent.getStringExtra("rpcUrl") ?: ""
+            val user = intent.getStringExtra("user") ?: ""
+            val pass = intent.getStringExtra("pass") ?: ""
+            
+            DialogUtils.showRenameDialog(
+                context = requireContext(),
+                rpcUrl = rpcUrl,
+                user = user,
+                pass = pass,
+                torrentId = torrentId,
+                currentName = binding.tvName.text.toString(),
+                onSuccess = {
+                    fetchTorrentDetails()
+                }
+            )
+            true
         }
 
         fileAdapter = TorrentFileAdapter()
@@ -100,7 +124,6 @@ class TorrentInfoFragment : Fragment() {
                     val torrents: List<Torrent> = Gson().fromJson(torrentsJson, type)
                     torrents.firstOrNull()?.let { 
                         updateUi(it)
-                        (activity as? TorrentDetailActivity)?.updateStatusIcon(it.status)
                     }
                 }
             }
@@ -129,7 +152,7 @@ class TorrentInfoFragment : Fragment() {
         } else if (torrent.percentDone >= 1.0 || (torrent.eta != null && torrent.eta == 0L)) {
             "0"
         } else {
-            "∞"
+            "��"
         }
 
         // Tracker Display (Domain only for privacy)
@@ -153,16 +176,16 @@ class TorrentInfoFragment : Fragment() {
         // H&R Status
         val hrLabel = torrent.labels?.find { it.startsWith("HR:") }
         if (hrLabel != null) {
-            val requiredHours = hrLabel.substringAfter("HR:").toLongOrNull() ?: 0L
+            val requiredHours = hrLabel.substringAfter("HR:").toDoubleOrNull() ?: 0.0
             if (torrent.percentDone < 1.0) {
                 binding.tvHrStatus.text = getString(R.string.hr_tag)
                 binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             } else if (torrent.doneDate > 0) {
                 val doneTimeMs = torrent.doneDate * 1000L
-                val limitTimeMs = doneTimeMs + (requiredHours * 3600 * 1000L)
+                val limitTimeMs = doneTimeMs + (requiredHours * 3600 * 1000L).toLong()
                 val currentTime = System.currentTimeMillis()
                 val remainingMs = limitTimeMs - currentTime
-                val bufferMs = 20 * 60 * 1000L
+                val bufferMs = 30 * 60 * 1000L
 
                 if (remainingMs > -bufferMs) {
                     if (remainingMs > 0) {
@@ -175,33 +198,33 @@ class TorrentInfoFragment : Fragment() {
                             if (hours > 0 || days > 0) append("${hours}h ")
                             append("${mins}m")
                         }
-                        binding.tvHrStatus.text = "剩余 $timeStr"
+                        binding.tvHrStatus.text = getString(R.string.label_hr_remaining, timeStr)
                         binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.state_orange))
                     } else {
-                        // 在 20 分钟缓冲期内
-                        binding.tvHrStatus.text = getString(R.string.hr_waiting_sync)
+                        // �� 30 ���ӻ�������
+                        val remainingBufferMs = bufferMs + remainingMs
+                        val totalSecs = Math.max(0, remainingBufferMs / 1000L)
+                        val mins = totalSecs / 60
+                        val secs = totalSecs % 60
+                        binding.tvHrStatus.text = String.format(Locale.US, "%02d:%02d", mins, secs)
                         binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.state_blue))
                     }
-                    binding.tvHrStatus.setCompoundDrawables(null, null, null, null)
+                    binding.ivHrStatus.visibility = View.GONE
                 } else {
                     binding.tvHrStatus.text = getString(R.string.hr_met)
                     binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.state_green))
-                    val checkMark = ContextCompat.getDrawable(requireContext(), R.drawable.ic_done)?.mutate()
-                    val iconSize = (binding.tvHrStatus.textSize * 1.2).toInt()
-                    checkMark?.setBounds(0, 0, iconSize, iconSize)
-                    binding.tvHrStatus.setCompoundDrawables(null, null, checkMark, null)
-                    binding.tvHrStatus.compoundDrawablePadding = 8
-                    // 彻底清除 Tint，确保显示 ic_done.xml 自带的绿底白勾色彩
-                    androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(binding.tvHrStatus, null)
+                    binding.ivHrStatus.visibility = View.VISIBLE
+                    binding.ivHrStatus.setImageResource(R.drawable.ic_done)
                 }
             } else {
                 binding.tvHrStatus.text = getString(R.string.hr_tag)
                 binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+                binding.ivHrStatus.visibility = View.GONE
             }
         } else {
             binding.tvHrStatus.text = getString(R.string.state_none)
             binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
-            binding.tvHrStatus.setCompoundDrawables(null, null, null, null)
+            binding.ivHrStatus.visibility = View.GONE
         }
 
         // Update files
@@ -296,24 +319,16 @@ class TorrentInfoFragment : Fragment() {
                     
                     val trackerUrls = oldTrackers.map { it.announce }.joinToString("\n")
                     
-                    val input = android.widget.EditText(context).apply {
-                        setText(trackerUrls)
-                        setPadding(48, 48, 48, 48)
-                        gravity = android.view.Gravity.TOP
-                        minLines = 5
-                    }
-
-                    androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AppDialogTheme)
-                        .setTitle(R.string.dialog_edit_tracker_title)
-                        .setView(input)
-                        .setPositiveButton(R.string.dialog_save) { _, _ ->
-                            val newUrls = input.text.toString().split("\n")
+                    DialogUtils.showEditTrackersDialog(
+                        context = requireContext(),
+                        currentUrls = trackerUrls,
+                        onSave = { newText ->
+                            val newUrls = newText.split("\n")
                                 .map { it.trim() }
                                 .filter { it.isNotEmpty() }
                             updateTrackers(newUrls, oldTrackers)
                         }
-                        .setNegativeButton(R.string.dialog_cancel, null)
-                        .show()
+                    )
                 }
             }
             override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
@@ -361,6 +376,29 @@ class TorrentInfoFragment : Fragment() {
                 android.widget.Toast.makeText(context, R.string.msg_network_error, android.widget.Toast.LENGTH_SHORT).show()
             }
         })
+    }
+
+    private fun showSetLocationDialog() {
+        val activity = activity as? TorrentDetailActivity ?: return
+        val intent = activity.intent
+        val rpcUrl = intent.getStringExtra("rpcUrl") ?: ""
+        val user = intent.getStringExtra("user") ?: ""
+        val pass = intent.getStringExtra("pass") ?: ""
+
+        val currentDir = binding.tvDownloadDir.text.toString()
+
+        DialogUtils.showSetLocationDialog(
+            context = requireContext(),
+            rpcUrl = rpcUrl,
+            user = user,
+            pass = pass,
+            torrentIds = listOf(torrentId),
+            currentDir = currentDir,
+            allTorrents = null, // 此处传入 null，DownloadDirManager 将使用已嗅探的历史记录
+            onSuccess = {
+                fetchTorrentDetails()
+            }
+        )
     }
 
     override fun onDestroyView() {

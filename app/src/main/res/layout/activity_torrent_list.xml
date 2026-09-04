@@ -77,7 +77,7 @@
                         android:scaleType="fitCenter"
                         android:src="@drawable/ic_turtle_outline"
                         app:tint="@color/white"
-                        android:contentDescription="@null" />
+                        android:contentDescription="@string/nav_active" />
 
                     <RelativeLayout
                         android:id="@+id/layoutSelectionBar"
@@ -124,7 +124,7 @@
                             android:scaleType="center"
                             android:src="@drawable/ic_select_all"
                             app:tint="@color/white"
-                            android:contentDescription="@null" />
+                            android:contentDescription="@string/nav_all" />
 
                         <ImageView
                             android:id="@+id/ivDeleteSelected"
@@ -144,7 +144,7 @@
                             android:scaleType="center"
                             android:src="@drawable/ic_more_vert"
                             app:tint="@color/white"
-                            android:contentDescription="@null" />
+                            android:contentDescription="@string/nav_settings" />
                     </LinearLayout>
                 </RelativeLayout>
                 </RelativeLayout>
@@ -181,7 +181,7 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingStart="16dp"
-                    android:paddingEnd="12dp">
+                    android:paddingEnd="24dp">
 
                     <LinearLayout
                         android:layout_width="0dp"
@@ -196,7 +196,7 @@
                             android:layout_marginEnd="6dp"
                             android:src="@drawable/ic_arrow_down"
                             app:tint="@color/state_green"
-                            android:contentDescription="@null" />
+                            android:contentDescription="@string/status_downloading" />
 
                         <TextView
                             android:id="@+id/tvTotalDownloadSpeed"
@@ -219,7 +219,7 @@
                             android:layout_marginEnd="6dp"
                             android:src="@drawable/ic_arrow_up"
                             app:tint="@color/state_red"
-                            android:contentDescription="@null" />
+                            android:contentDescription="@string/status_seeding" />
 
                         <TextView
                             android:id="@+id/tvTotalUploadSpeed"
@@ -240,7 +240,8 @@
                         android:focusable="true"
                         android:padding="12dp"
                         android:src="@drawable/ic_search"
-                        app:tint="@color/text_on_toolbar" />
+                        app:tint="@color/text_on_toolbar"
+                        android:contentDescription="@string/search_hint" />
                 </LinearLayout>
 
                 <!-- Sliding Search Bar -->
@@ -251,7 +252,8 @@
                     android:background="@color/bg_bottom_bar"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="32dp"
                     android:elevation="2dp"
                     android:visibility="gone">
 
@@ -262,7 +264,7 @@
                         android:padding="4dp"
                         android:src="@drawable/ic_search"
                         app:tint="#88FFFFFF"
-                        android:contentDescription="@null" />
+                        android:contentDescription="@string/search_hint" />
 
                     <EditText
                         android:id="@+id/etSearch"
@@ -306,7 +308,7 @@
             app:maxImageSize="30dp"
             app:shapeAppearanceOverlay="@style/CircleFab"
             app:tint="@color/white"
-            android:contentDescription="@null" />
+            android:contentDescription="@string/btn_confirm" />
 
         <View
             android:id="@+id/vDimOverlay"
@@ -396,7 +398,7 @@
                 android:padding="16dp"
                 android:text="@string/free_space_label"
                 android:textColor="@color/text_secondary"
-                android:textSize="12sp"
+                android:textSize="14sp"
                 tools:text="Free space: --" />
 
             <TextView

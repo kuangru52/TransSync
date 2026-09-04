@@ -1,10 +1,10 @@
-ï»¿package com.kuangru52.TransSync
+package com.kuangru52.transsync
 
 object TrackerUtils {
     fun getTrackerNameFromUrl(url: String): String? {
         if (url.isEmpty()) return null
         
-        // é¢„å®šä¹‰æ˜ å°„
+        // Ô¤¶¨ÒåÓ³Éä
         val mapping = mapOf(
             "pt.btschool.club" to "BTSchool",
             "agsvpt.trackers.work" to "AGSV",
@@ -68,7 +68,7 @@ object TrackerUtils {
             if (url.contains(key, ignoreCase = true)) return value
         }
 
-        // å…œåº•é€»è¾‘ï¼šå°è¯•è‡ªåŠ¨æå–åŸŸå
+        // ¶µµ×Âß¼­£º³¢ÊÔ×Ô¶¯ÌáÈ¡ÓòÃû
         return try {
             val uri = java.net.URI(url)
             val host = uri.host ?: url

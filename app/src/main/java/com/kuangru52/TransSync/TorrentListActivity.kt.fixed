@@ -2,7 +2,6 @@
 
 import android.content.pm.ActivityInfo
 import android.annotation.SuppressLint
-import com.kuangru52.transsync.R
 import android.content.res.ColorStateList
 import android.graphics.BlurMaskFilter
 import android.graphics.Color
@@ -90,14 +89,16 @@ class TorrentListActivity : AppCompatActivity() {
         }
     }
 
+     // ����������ʱ�����ˢ�µ�����
     private var currentFilter: String = "All"
     private var lastBackTime = 0L
-    private var isDrawerMoving = false 
+    private var isDrawerMoving = false // ��������ǲ�����Ƿ������ƶ�
 
     private var selectedFileUri: Uri? = null
     private val filePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             selectedFileUri = it
+            // ����ڶԻ����У���Ҫ������ʾ
             lastAddDialog?.findViewById<TextInputEditText>(R.id.etTorrentUrl)?.setText(it.lastPathSegment ?: "Local file selected")
         }
     }
@@ -118,6 +119,7 @@ class TorrentListActivity : AppCompatActivity() {
         user = intent.getStringExtra("user") ?: ""
         pass = intent.getStringExtra("pass") ?: ""
 
+        // �۲����ݱ仯
         viewModel.torrents.observe(this) { torrents ->
             adapter.submitList(torrents)
         }
@@ -143,7 +145,7 @@ class TorrentListActivity : AppCompatActivity() {
         }
 
         viewModel.freeSpace.observe(this) { space ->
-            findViewById<TextView>(R.id.tvFreeSpace)?.text = getString(R.string.free_space_label, space)
+            findViewById<TextView>(R.id.tvFreeSpace).text = getString(R.string.free_space_label, space)
         }
 
         viewModel.isLoading.observe(this) { isLoading ->
@@ -155,10 +157,12 @@ class TorrentListActivity : AppCompatActivity() {
             ivTurtle.imageTintList = if (enabled) ColorStateList.valueOf("#FFF9A825".toColorInt()) else null
         }
 
+        // ��ȡ�ϴα���Ĺ�����
         val filterPrefs = getSharedPreferences("filter_prefs", MODE_PRIVATE)
         currentFilter = filterPrefs.getString("last_filter", "All") ?: "All"
         viewModel.setFilter(currentFilter)
 
+        // ���ö�������
         val tvTitle = findViewById<TextView>(R.id.tvTitle)
         tvTitle.text = when(currentFilter) {
             "Downloading" -> getString(R.string.nav_downloading)
@@ -169,13 +173,19 @@ class TorrentListActivity : AppCompatActivity() {
             else -> if (currentFilter.startsWith("tracker:")) currentFilter.substringAfter("tracker:") else getString(R.string.nav_all)
         }
 
+        // �����޸�����׼����ȫ��ģʽ�µĶ����͵ײ�ƫ�ƣ���������ڵ�����
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.drawerLayout)) { v, insets ->
             val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             
+            // 1. ȷ�������ֲ����� Padding��ά�ֵײ����ʽ
             v.setPadding(0, 0, 0, 0)
+            
+            // 2. �ֶ���������״̬���߶ȣ�ȷ����������/״̬���ڵ�
             findViewById<View>(R.id.toolbarContainer).updatePadding(top = systemBars.top)
             
+            // 3. ���ײ������� Padding���ؼ���������м�� RecyclerView ����ѹ�����
+            // ȡϵͳ���ͼ��̸߶ȵĽϴ�ֵ��ȷ�������Ƿ񵯳����̶���ʾ��ȷ
             val bottomPadding = if (insets.isVisible(WindowInsetsCompat.Type.ime())) {
                 imeInsets.bottom
             } else {
@@ -186,6 +196,7 @@ class TorrentListActivity : AppCompatActivity() {
             insets
         }
 
+        // �����ⲿ��������ӻ��ļ�
         val externalUri = intent.data ?: intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
         val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
 
@@ -199,11 +210,12 @@ class TorrentListActivity : AppCompatActivity() {
         }
 
         drawerLayout = findViewById(R.id.drawerLayout)
-        (drawerLayout as? DrawerLayout)?.setStatusBarBackground(null)
+        (drawerLayout as? DrawerLayout)?.setStatusBarBackground(null) // �Ƴ�״̬������
         val navigationView = findViewById<com.google.android.material.navigation.NavigationView>(R.id.navigationView)
         val headerView = navigationView.getHeaderView(0)
         val tvAppName = headerView.findViewById<TextView>(R.id.tvAppName)
         
+        // ����Ӧ���� + �汾��
         val versionName = try {
             packageManager.getPackageInfo(packageName, 0).versionName
         } catch (_: Exception) {
@@ -213,8 +225,9 @@ class TorrentListActivity : AppCompatActivity() {
         tvAppName.setOnClickListener {
             appNameClickCount++
             if (appNameClickCount >= 5) {
+                // �л���˽ģʽ״̬
                 isTrackerBlurEnabled = !isTrackerBlurEnabled
-                revealedTrackerNames.clear()
+                revealedTrackerNames.clear() // �л�ģʽʱ����ѽ����б�
                 viewModel.trackerData.value?.let { updateTrackerChips(it) } 
                 
                 val msg = if (isTrackerBlurEnabled) "Privacy mode enabled" else "Privacy mode disabled"
@@ -240,24 +253,31 @@ class TorrentListActivity : AppCompatActivity() {
         }
 
         rvTorrents.layoutManager = LinearLayoutManager(this)
-        rvTorrents.itemAnimator = null 
+        rvTorrents.itemAnimator = null // ���׽��ö���������ˢ��ʱ��λ�ƶ���
         adapter = TorrentListAdapter(
             onStatusClick = { torrent ->
+                // ǿ��ˢ�µ�ǰ������״̬�ж���������Ϊ�б�ˢ���ӳٵ��µ��߼�����
                 val currentTorrent = adapter.currentList.find { it.id == torrent.id } ?: torrent
                 val effectiveIsPaused = currentTorrent.status == 0
                 
                 val method = if (effectiveIsPaused) "torrent-start" else "torrent-stop"
                 val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
                 
+                android.util.Log.d("TorrentList", "Action on ID: ${torrent.id}, Status: ${currentTorrent.status}, Method: $method")
+                
                 service.rpc(rpcUrl, null, RpcRequest(method, mapOf("ids" to listOf(torrent.id)))).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                     override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                         if (response.isSuccessful) {
+                            // �������±���״̬�����輴ʱ����
                             val newList = adapter.currentList.map { 
                                 if (it.id == torrent.id) it.copy(status = if (effectiveIsPaused) 4 else 0) else it 
                             }
                             adapter.submitList(newList)
+                            
                             handler.postDelayed({ refreshTorrents() }, 500)
                         } else {
+                            val errorMsg = response.errorBody()?.string() ?: ""
+                            android.util.Log.e("TorrentList", "RPC Error: $errorMsg")
                             Toast.makeText(this@TorrentListActivity, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                         }
                     }
@@ -276,6 +296,7 @@ class TorrentListActivity : AppCompatActivity() {
                         adapter.isSelectionMode = false
                     }
                 } else {
+                    // ��ȫ���ã����ģʽ������ûѡ������ǿ�ƹر�ģʽ��������ҳ
                     if (adapter.isSelectionMode) {
                         adapter.isSelectionMode = false
                         adapter.clearSelection()
@@ -310,20 +331,31 @@ class TorrentListActivity : AppCompatActivity() {
         )
         rvTorrents.adapter = adapter
         
+        // �����޸������׽��� Item ���ݱ��ʱ�Ľ��䶯������˸��������ף�
         (rvTorrents.itemAnimator as? androidx.recyclerview.widget.SimpleItemAnimator)?.supportsChangeAnimations = false
 
         val fabAdd = findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabAdd)
 
+        // �������������������ֹͣ����ʱ����˸/�������⣬������ FAB ͸����
         rvTorrents.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    // ����������ֹͣ�󣬼���Ƿ��д����µ�����
+                    pendingFilteredList?.let {
+                        adapter.submitList(it)
+                        pendingFilteredList = null
+                    }
+                    // ֹͣ������ָ� FAB ͸����
                     fabAdd.animate().alpha(1.0f).setDuration(200).start()
-                    fabAdd.setImageAlpha(255)
-                } else {
-                    // 滑动中（包括拖动和惯性滑动）
+                } else if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    // ��ʼ����ʱ FAB ���͸��
                     fabAdd.animate().alpha(0.4f).setDuration(200).start()
-                    fabAdd.setImageAlpha(0)
                 }
+            }
+
+            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(recyclerView, dx, dy)
+                // Ҳ������������� dy ��һ��΢������ state �仯ͨ���㹻ƽ��
             }
         })
 
@@ -336,6 +368,7 @@ class TorrentListActivity : AppCompatActivity() {
 
         setupDrawer(navigationView)
         
+        // ���ݻָ��Ĺ��������ò˵�ѡ��
         val menuItemId = when (currentFilter) {
             "Downloading" -> R.id.nav_downloading
             "Seeding" -> R.id.nav_seeding
@@ -348,7 +381,9 @@ class TorrentListActivity : AppCompatActivity() {
             navigationView.setCheckedItem(menuItemId)
         }
         
+        // ����ͼ�����л�����
         val ivLogo = headerView.findViewById<ImageView>(R.id.ivLogo)
+        
         ivLogo.setOnClickListener {
             val isNight = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
             val newMode = if (isNight) {
@@ -357,8 +392,10 @@ class TorrentListActivity : AppCompatActivity() {
                 AppCompatDelegate.MODE_NIGHT_YES
             }
             AppCompatDelegate.setDefaultNightMode(newMode)
-            getSharedPreferences("theme_prefs", MODE_PRIVATE).edit { putInt("theme_mode", newMode) }
-        }
+            
+            // �����û��ֶ�ѡ�������
+                getSharedPreferences("theme_prefs", MODE_PRIVATE).edit { putInt("theme_mode", newMode) }
+            }
 
         val layoutSearch = findViewById<View>(R.id.layoutSearch)
         val etSearch = findViewById<EditText>(R.id.etSearch)
@@ -435,7 +472,7 @@ class TorrentListActivity : AppCompatActivity() {
         })
 
         ivTurtle.setOnClickListener {
-            viewModel.toggleAltSpeedLimits(rpcUrl, user, pass)
+            toggleAltSpeedLimits()
         }
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -459,7 +496,7 @@ class TorrentListActivity : AppCompatActivity() {
         })
     }
 
-    private fun updateServerInfoText() {
+    private fun updateServerInfoText\(\) {
         val fullUrl = rpcUrl.substringBefore("/transmission/rpc")
         val navigationView = findViewById<com.google.android.material.navigation.NavigationView>(R.id.navigationView)
         val tvServerInfo = navigationView.getHeaderView(0).findViewById<TextView>(R.id.tvServerInfo)
@@ -495,6 +532,7 @@ class TorrentListActivity : AppCompatActivity() {
         handler.removeCallbacks(refreshRunnable)
     }
 
+
     private var startX = 0f
     private var startY = 0f
     private var isSwipeCandidate = false
@@ -521,6 +559,7 @@ class TorrentListActivity : AppCompatActivity() {
                     if (dx > touchSlop && dx > kotlin.math.abs(dy) * 1.5) {
                         (drawerLayout as? DrawerLayout)?.openDrawer(GravityCompat.START)
                         isSwipeCandidate = false
+                        // ���� CANCEL �¼����� View����ֹ�������
                         val cancelEvent = android.view.MotionEvent.obtain(ev)
                         cancelEvent.action = android.view.MotionEvent.ACTION_CANCEL
                         super.dispatchTouchEvent(cancelEvent)
@@ -536,11 +575,202 @@ class TorrentListActivity : AppCompatActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
+    private var isUpdatingFromThread = false
+
     private fun refreshTorrents() {
         viewModel.refreshTorrents(this, rpcUrl, user, pass)
     }
 
-    private fun updateTitleWithTotalSize(filter: String, totalSize: Long) {
+    private fun viewModel.updateFreeSpace(rpcUrl, user, pass) {
+        viewModel.updateFreeSpace(rpcUrl, user, pass)
+    }
+
+    private fun viewModel.checkAltSpeedStatus(rpcUrl, user, pass) {
+        viewModel.checkAltSpeedStatus(rpcUrl, user, pass)
+    }
+
+    private fun viewModel.toggleAltSpeedLimits(rpcUrl, user, pass) {
+        viewModel.toggleAltSpeedLimits(rpcUrl, user, pass)
+    }
+
+    private fun viewModel.setFilter\(filter: String) {
+        if (isUpdatingFromThread) return
+        isUpdatingFromThread = true
+
+        currentFilter = filter
+        getSharedPreferences("filter_prefs", MODE_PRIVATE).edit { putString("last_filter", filter) }
+
+        val selectedIds = adapter.getSelectedIds()
+        val currentTime = System.currentTimeMillis()
+
+        Thread {
+            try {
+                var totalDlSpeed = 0.0
+                var totalUlSpeed = 0.0
+                
+                // �����������ֹ�ں�̨�̱߳���ʱ���ⲿ�޸ĵ��� ConcurrentModificationException
+                val torrentsSnapshot = ArrayList(allTorrents)
+                
+                torrentsSnapshot.forEach { t ->
+                    val id = (t["id"] as? Number)?.toInt() ?: -1
+                    val dlSpeed = (t["rateDownload"] as? Number)?.toDouble() ?: 0.0
+                    val ulSpeed = (t["rateUpload"] as? Number)?.toDouble() ?: 0.0
+                    
+                    totalDlSpeed += dlSpeed
+                    totalUlSpeed += ulSpeed
+                    
+                    if (dlSpeed > 0 || ulSpeed > 0) {
+                        activeTorrentsLastSeen[id] = currentTime
+                    }
+                }
+
+                val filteredMap = allTorrents.filter { t ->
+                    val id = (t["id"] as? Number)?.toInt() ?: -1
+                    if (id in selectedIds) return@filter true
+
+                    if (filter.startsWith("tracker:")) {
+                        val trackerName = filter.substringAfter("tracker:")
+                        @Suppress("UNCHECKED_CAST")
+                        val trackers = t["trackers"] as? List<Map<String, Any>>
+                        val firstTrackerUrl = trackers?.firstOrNull()?.get("announce") as? String
+                        if (firstTrackerUrl != null) {
+                            TrackerUtils.getTrackerNameFromUrl(firstTrackerUrl) == trackerName
+                        } else {
+                            false
+                        }
+                    } else {
+                        when (filter) {
+                            "Downloading" -> (t["status"] as? Number)?.toInt() == 4
+                            "Seeding" -> (t["status"] as? Number)?.toInt() == 6
+                            "Paused" -> (t["status"] as? Number)?.toInt() == 0
+                            "Active" -> {
+                                val status = (t["status"] as? Number)?.toInt()
+                                val dlSpeed = (t["rateDownload"] as? Number)?.toDouble() ?: 0.0
+                                val ulSpeed = (t["rateUpload"] as? Number)?.toDouble() ?: 0.0
+                                val lastSeen = activeTorrentsLastSeen[id] ?: 0L
+                                (status == 1 || status == 2) || (dlSpeed > 0 || ulSpeed > 0) || (currentTime - lastSeen < gracePeriodMs)
+                            }
+                            "Inactive" -> {
+                                val status = (t["status"] as? Number)?.toInt()
+                                val dlSpeed = (t["rateDownload"] as? Number)?.toDouble() ?: 0.0
+                                val ulSpeed = (t["rateUpload"] as? Number)?.toDouble() ?: 0.0
+                                val lastSeen = activeTorrentsLastSeen[id] ?: 0L
+                                (status != 1 && status != 2) && (dlSpeed <= 0 && ulSpeed <= 0) && (currentTime - lastSeen >= gracePeriodMs)
+                            }
+                            "Error" -> {
+                                val error = (t["error"] as? Number)?.toInt() ?: 0
+                                val errorString = (t["errorString"] as? String) ?: ""
+                                error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true))
+                            }
+                            else -> true
+                        }
+                    }
+                }
+                
+                val torrentList = filteredMap.map { t ->
+                    val id = (t["id"] as? Number)?.toInt() ?: 0
+                    val status = (t["status"] as? Number)?.toInt() ?: 0
+                    val percentDone = (t["percentDone"] as? Number)?.toDouble() ?: 0.0
+                    val recheckProgress = (t["recheckProgress"] as? Number)?.toDouble() ?: 0.0
+                    val totalSize = (t["totalSize"] as? Number)?.toLong() ?: 0L
+                    val downloadedEver = (t["downloadedEver"] as? Number)?.toLong() ?: 0L
+                    val uploadedEver = (t["uploadedEver"] as? Number)?.toLong() ?: 0L
+                    val rateDownload = (t["rateDownload"] as? Number)?.toLong() ?: 0L
+                    val rateUpload = (t["rateUpload"] as? Number)?.toLong() ?: 0L
+                    val uploadRatio = (t["uploadRatio"] as? Number)?.toDouble() ?: 0.0
+                    val error = (t["error"] as? Number)?.toInt() ?: 0
+                    val errorString = (t["errorString"] as? String) ?: ""
+
+                    // Ԥ������ɫ�����
+                    val color = when {
+                        error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true)) -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_red)
+                        status == 1 || status == 2 -> "#FFF9A825".toColorInt() // У���У���ɫ
+                        status == 0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_gray) // ��ͣ
+                        percentDone >= 1.0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_green) // ��ɣ���ɫ
+                        else -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_blue) // �����У���ɫ
+                    }
+
+                    val progress = if (status == 1 || status == 2) (recheckProgress * 1000).toInt() else (percentDone * 1000).toInt()
+                    val statusText = if (status == 1 || status == 2) "У���� (${String.format(Locale.US, "%.1f%%", recheckProgress * 100)})" else ""
+
+                    // Ԥ�����ַ���
+                    val sizeStr = viewModel.formatSize(totalSize)
+                    val displaySize = if (percentDone >= 1.0) sizeStr else "${viewModel.formatSize(downloadedEver)} / $sizeStr"
+                    val displayStats = "${viewModel.formatSize(uploadedEver)} (������ ${String.format(Locale.US, "%.2f", uploadRatio)})"
+
+                    Torrent(
+                        id = id,
+                        name = (t["name"] as? String) ?: "",
+                        status = status,
+                        percentDone = percentDone,
+                        recheckProgress = recheckProgress,
+                        totalSize = totalSize,
+                        sizeWhenDone = (t["sizeWhenDone"] as? Number)?.toLong() ?: 0L,
+                        leftUntilDone = (t["leftUntilDone"] as? Number)?.toLong() ?: 0L,
+                        rateDownload = rateDownload,
+                        rateUpload = rateUpload,
+                        downloadedEver = downloadedEver,
+                        uploadedEver = uploadedEver,
+                        uploadRatio = uploadRatio,
+                        error = error,
+                        errorString = errorString,
+                        addedDate = (t["addedDate"] as? Number)?.toLong() ?: 0L,
+                        doneDate = (t["doneDate"] as? Number)?.toLong() ?: 0L,
+                        activityDate = (t["activityDate"] as? Number)?.toLong() ?: 0L,
+                        eta = (t["eta"] as? Number)?.toLong() ?: -1L,
+                        trackers = (t["trackers"] as? List<Map<String, Any>>)?.map { m ->
+                            Tracker(announce = (m["announce"] as? String) ?: "")
+                        },
+                        labels = (t["labels"] as? List<*>)?.mapNotNull { it as? String },
+                        displaySize = displaySize,
+                        displayStatusText = statusText,
+                        displayDownloadSpeed = "${viewModel.formatSpeed(rateDownload.toDouble())} ��",
+                        displayUploadSpeed = "${viewModel.formatSpeed(rateUpload.toDouble())} ��",
+                        displayStats = displayStats,
+                        displayProgress = progress,
+                        displayColor = color
+                    )
+                }
+                val sortedList = torrentList.sortedByDescending { it.addedDate }
+                val totalSizeValue = filteredMap.sumOf { (it["totalSize"] as? Number)?.toDouble()?.toLong() ?: 0L }
+
+                // �������̸߳��� UI
+                runOnUiThread {
+                    isUpdatingFromThread = false
+                    
+                    // �������������������ʾ�������
+                    if (findViewById<View>(R.id.layoutSearch).isVisible) {
+                        val query = findViewById<EditText>(R.id.etSearch).text.toString().lowercase()
+                        if (query.isNotEmpty()) {
+                            performSearch(query)
+                            return@runOnUiThread
+                        }
+                    }
+
+                    // ֻ���ڿ���ʱ���ύ�ش�ṹ�Ը��£���������ͨ��ֵ�仯��ֱ���ύ
+                    if (rvTorrents.scrollState == RecyclerView.SCROLL_STATE_IDLE) {
+                        adapter.submitList(sortedList)
+                        pendingFilteredList = null
+                    } else {
+                        // ����ʱ��������Ȼ���� adapter �е����ݣ���������Щ�ᵼ�� Layout ���ұ仯���߼�
+                        // ListAdapter �� DiffUtil �Ѿ������߳����ˣ���������ֱ�� submit ��ʵ�ǰ�ȫ��
+                        adapter.submitList(sortedList)
+                    }
+
+                    updateTitleWithTotalSize(filter, totalSizeValue)
+                    tvTotalDownloadSpeed.text = viewModel.formatSpeed(totalDlSpeed)
+                    tvTotalUploadSpeed.text = viewModel.formatSpeed(totalUlSpeed)
+                    
+                    
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                runOnUiThread { isUpdatingFromThread = false }
+            }
+        }.start()
+    }
+
+    private fun updateTitleWithTotalSize\(filter: String, totalSize: Long) {
         val formattedSize = viewModel.formatSize(totalSize)
         val baseTitle = if (filter.startsWith("tracker:")) {
             filter.substringAfter("tracker:")
@@ -565,6 +795,9 @@ class TorrentListActivity : AppCompatActivity() {
         
         findViewById<TextView>(R.id.tvTitle).text = spannable
     }
+
+
+
 
     private fun setupDrawer(navigationView: com.google.android.material.navigation.NavigationView) {
         navigationView.setNavigationItemSelectedListener { item ->
@@ -597,6 +830,7 @@ class TorrentListActivity : AppCompatActivity() {
             layoutSearch.translationX = layoutSearch.width.toFloat()
             layoutSearch.visibility = View.VISIBLE
             
+            // �������󽹵㲢��ʾ���뷨���������뷨���������ͬ������
             etSearch.requestFocus()
             val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
             imm.showSoftInput(etSearch, android.view.inputmethod.InputMethodManager.SHOW_IMPLICIT)
@@ -644,7 +878,125 @@ class TorrentListActivity : AppCompatActivity() {
         })
     }
 
-    private fun setupSelectionActions() {
+    private fun viewModel.setSearchQuery\(query: String) {
+        val selectedIds = adapter.getSelectedIds()
+        val filtered = allTorrents.filter { t ->
+            val id = (t["id"] as? Number)?.toInt() ?: -1
+            (t["name"] as String).lowercase().contains(query) || id in selectedIds
+        }
+
+        val torrentList = filtered.map { t ->
+            val id = (t["id"] as? Number)?.toInt() ?: 0
+            val status = (t["status"] as? Number)?.toInt() ?: 0
+            val percentDone = (t["percentDone"] as? Number)?.toDouble() ?: 0.0
+            val recheckProgress = (t["recheckProgress"] as? Number)?.toDouble() ?: 0.0
+            val totalSize = (t["totalSize"] as? Number)?.toLong() ?: 0L
+            val downloadedEver = (t["downloadedEver"] as? Number)?.toLong() ?: 0L
+            val uploadedEver = (t["uploadedEver"] as? Number)?.toLong() ?: 0L
+            val rateDownload = (t["rateDownload"] as? Number)?.toLong() ?: 0L
+            val rateUpload = (t["rateUpload"] as? Number)?.toLong() ?: 0L
+            val uploadRatio = (t["uploadRatio"] as? Number)?.toDouble() ?: 0.0
+            val error = (t["error"] as? Number)?.toInt() ?: 0
+            val errorString = (t["errorString"] as? String) ?: ""
+
+            // Ԥ������ɫ����� (ͬ�����б��߼�)
+            @Suppress("UNCHECKED_CAST")
+            val color = when {
+                error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true)) -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_red)
+                status == 1 || status == 2 -> "#FFF9A825".toColorInt() // У���У���ɫ
+                status == 0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_gray) // ��ͣ
+                percentDone >= 1.0 -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_green) // ��ɣ���ɫ
+                else -> ContextCompat.getColor(this@TorrentListActivity, R.color.state_blue) // �����У���ɫ
+            }
+
+            val progress = if (status == 1 || status == 2) (recheckProgress * 1000).toInt() else (percentDone * 1000).toInt()
+            val statusText = if (status == 1 || status == 2) "У���� (${String.format(Locale.US, "%.1f%%", recheckProgress * 100)})" else ""
+
+            val sizeStr = viewModel.formatSize(totalSize)
+            val displaySize = if (percentDone >= 1.0) sizeStr else "${viewModel.formatSize(downloadedEver)} / $sizeStr"
+            val displayStats = "${viewModel.formatSize(uploadedEver)} (������ ${String.format(Locale.US, "%.2f", uploadRatio)})"
+
+            Torrent(
+                id = id,
+                name = (t["name"] as? String) ?: "",
+                status = status,
+                percentDone = percentDone,
+                recheckProgress = recheckProgress,
+                totalSize = totalSize,
+                sizeWhenDone = (t["sizeWhenDone"] as? Number)?.toLong() ?: 0L,
+                leftUntilDone = (t["leftUntilDone"] as? Number)?.toLong() ?: 0L,
+                rateDownload = rateDownload,
+                rateUpload = rateUpload,
+                downloadedEver = downloadedEver,
+                uploadedEver = uploadedEver,
+                uploadRatio = uploadRatio,
+                error = error,
+                errorString = errorString,
+                addedDate = (t["addedDate"] as? Number)?.toLong() ?: 0L,
+                doneDate = (t["doneDate"] as? Number)?.toLong() ?: 0L,
+                activityDate = (t["activityDate"] as? Number)?.toLong() ?: 0L,
+                eta = (t["eta"] as? Number)?.toLong() ?: -1L,
+                trackers = (t["trackers"] as? List<Map<String, Any>>)?.map { m ->
+                    Tracker(announce = (m["announce"] as? String) ?: "")
+                },
+                displaySize = displaySize,
+                displayStatusText = statusText,
+                displayDownloadSpeed = "${viewModel.formatSpeed(rateDownload.toDouble())} ��",
+                displayUploadSpeed = "${viewModel.formatSpeed(rateUpload.toDouble())} ��",
+                displayStats = displayStats,
+                displayProgress = progress,
+                displayColor = color
+            )
+        }
+        val sortedList = torrentList.sortedByDescending { it.addedDate }
+
+        // �Ż����ԣ�������ڹ������ݴ����ݲ��ύ��ֱ������ֹͣ
+        if (rvTorrents.scrollState != RecyclerView.SCROLL_STATE_IDLE) {
+            pendingFilteredList = sortedList
+        } else {
+            adapter.submitList(sortedList)
+            pendingFilteredList = null
+        }
+
+        val totalSize = filtered.sumOf { (it["totalSize"] as? Number)?.toDouble()?.toLong() ?: 0L }
+        val formattedSize = viewModel.formatSize(totalSize)
+        val baseTitle = getString(R.string.search_results)
+        val fullText = "$baseTitle  $formattedSize"
+        val spannable = SpannableString(fullText)
+        val start = baseTitle.length
+        
+        spannable.setSpan(AbsoluteSizeSpan(12, true), start, fullText.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        spannable.setSpan(ForegroundColorSpan("#B3FFFFFF".toColorInt()), start, fullText.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        
+        findViewById<TextView>(R.id.tvTitle).text = spannable
+    }
+
+    private fun viewModel.updateFreeSpace(rpcUrl, user, pass) {
+        val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+        // ��ȡĬ������Ŀ¼
+        service.rpc(rpcUrl, null, RpcRequest("session-get", emptyMap())).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+            override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                if (response.isSuccessful) {
+                    val downloadDir = response.body()?.arguments?.get("download-dir") as? String
+                    if (downloadDir != null) {
+                        // ��ȡָ��Ŀ¼�Ŀ��ÿռ�
+                        service.rpc(rpcUrl, null, RpcRequest("free-space", mapOf("path" to downloadDir))).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+                            override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                                if (response.isSuccessful) {
+                                    val size = (response.body()?.arguments?.get("size-bytes") as? Double)?.toLong() ?: 0L
+                                    findViewById<TextView>(R.id.tvFreeSpace).text = getString(R.string.free_space_label, viewModel.formatSize(size))
+                                }
+                            }
+                            override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+                        })
+                    }
+                }
+            }
+            override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+        })
+    }
+
+    private fun setupSelectionActions\(\) {
         findViewById<View>(R.id.ivSelectAll).setOnClickListener { 
             val allIds = adapter.currentList.map { it.id }
             adapter.selectAll()
@@ -659,9 +1011,11 @@ class TorrentListActivity : AppCompatActivity() {
             val popupContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.AppPopupTheme)
             val popup = androidx.appcompat.widget.PopupMenu(popupContext, v)
             
+            // ��ʾ����
             vDimOverlay.visibility = View.VISIBLE
             vDimOverlay.animate().alpha(1f).setDuration(200).start()
 
+            // �˵��ر�ʱȡ������
             popup.setOnDismissListener {
                 vDimOverlay.animate().alpha(0f).setDuration(200).withEndAction {
                     vDimOverlay.visibility = View.GONE
@@ -697,7 +1051,7 @@ class TorrentListActivity : AppCompatActivity() {
                             val firstId = ids.first()
                             val torrent = adapter.currentList.find { it.id == firstId }
                             DialogUtils.showSetLocationDialog(
-                                this, rpcUrl, user, pass, ids, torrent?.downloadDir, adapter.currentList
+                                this, rpcUrl, user, pass, ids, torrent?.downloadDir
                             ) {
                                 exitSelectionMode()
                                 refreshTorrents()
@@ -720,7 +1074,7 @@ class TorrentListActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateSelectionUI(count: Int) {
+    private fun updateSelectionUI\(count: Int) {
         val selectionBar = findViewById<View>(R.id.layoutSelectionBar)
         val tvCount = findViewById<TextView>(R.id.tvSelectionCount)
         if (count > 0) {
@@ -735,45 +1089,25 @@ class TorrentListActivity : AppCompatActivity() {
         adapter.isSelectionMode = false
         adapter.clearSelection()
         updateSelectionUI(0)
-        
+        // �˳�ѡ��ģʽʱ����Ӧ�õ�ǰɸѡ����ֹ֮ǰ��Ϊѡ�ж���ǿ����ʾ�Ĳ��ɼ���Ŀ��ʧ
         val etSearch = findViewById<EditText>(R.id.etSearch)
         if (findViewById<View>(R.id.layoutSearch).isVisible && etSearch.text.isNotEmpty()) {
-            viewModel.setSearchQuery(etSearch.text.toString().lowercase())
+            performSearch(etSearch.text.toString().lowercase())
         } else {
-            viewModel.setFilter(currentFilter)
+            filterAndDisplay(currentFilter)
         }
     }
 
-    private fun confirmDeleteSelected() {
-        val selectedIds = adapter.getSelectedIds()
-        if (selectedIds.isEmpty()) return
-
-        // 检查是否有任何选中的种子处于 H&R 未完成状态
-        val hasActiveHr = adapter.currentList.filter { selectedIds.contains(it.id) }.any { torrent ->
-            val hrLabel = torrent.labels?.find { it.startsWith("HR:") }
-            if (hrLabel != null) {
-                val hours = hrLabel.substringAfter("HR:").toDoubleOrNull() ?: 0.0
-                if (hours > 0) {
-                    if (torrent.percentDone < 1.0) {
-                        true // 未下载完成，H&R 肯定没结束
-                    } else {
-                        // 已下载完成，计算剩余考核时间
-                        val doneDateMs = torrent.doneDate * 1000L
-                        val requiredMs = (hours * 3600 * 1000L).toLong()
-                        val elapsedMs = System.currentTimeMillis() - doneDateMs
-                        elapsedMs < requiredMs // 如果已过时间小于要求时间，则 H&R 未结束
-                    }
-                } else false
-            } else false
-        }
+    private fun confirmDeleteSelected\(\) {
+        val ids = adapter.getSelectedIds()
+        if (ids.isEmpty()) return
 
         DialogUtils.showDeleteDialog(
             context = this,
             rpcUrl = rpcUrl,
             user = user,
             pass = pass,
-            torrentIds = selectedIds,
-            deleteDataByDefault = !hasActiveHr, // 如果有未完成的 H&R，则默认不删除数据
+            torrentIds = ids,
             onSuccess = {
                 exitSelectionMode()
                 refreshTorrents()
@@ -781,17 +1115,17 @@ class TorrentListActivity : AppCompatActivity() {
         )
     }
 
-    private fun startSelected() = viewModel.performBatchAction(rpcUrl, user, pass, "torrent-start", adapter.getSelectedIds()) {
+    private fun startSelected() = viewModel.performBatchAction("torrent-start", rpcUrl, user, pass, adapter.getSelectedIds()) {
         exitSelectionMode()
         refreshTorrents()
     }
 
-    private fun stopSelected() = viewModel.performBatchAction(rpcUrl, user, pass, "torrent-stop", adapter.getSelectedIds()) {
+    private fun stopSelected() = viewModel.performBatchAction("torrent-stop", rpcUrl, user, pass, adapter.getSelectedIds()) {
         exitSelectionMode()
         refreshTorrents()
     }
 
-    private fun renameSelected() {
+    private fun renameSelected\(\) {
         val ids = adapter.getSelectedIds()
         if (ids.size != 1) {
             Toast.makeText(this@TorrentListActivity, R.string.msg_select_only_one, Toast.LENGTH_SHORT).show()
@@ -814,12 +1148,31 @@ class TorrentListActivity : AppCompatActivity() {
         )
     }
 
-    private fun setHrSelected() {
+    private fun setLocationSelected\(\) {
+        val ids = adapter.getSelectedIds()
+        if (ids.isEmpty()) return
+
+        DialogUtils.showSetLocationDialog(
+            context = this,
+            rpcUrl = rpcUrl,
+            user = user,
+            pass = pass,
+            torrentIds = ids,
+            currentDir = null, // In batch mode, we don't necessarily have a single current dir
+            onSuccess = {
+                exitSelectionMode()
+                refreshTorrents()
+            }
+        )
+    }
+
+    private fun setHrSelected\(\) {
         val ids = adapter.getSelectedIds()
         if (ids.isEmpty()) return
 
         val view = layoutInflater.inflate(R.layout.dialog_add_torrent, null)
         
+        // ���ز���Ҫ�Ŀؼ�
         val etHr = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etHrLabel)
         val llHrQuickButtons = view.findViewById<LinearLayout>(R.id.llHrQuickButtons)
         val btnAction = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTorrent)
@@ -841,6 +1194,7 @@ class TorrentListActivity : AppCompatActivity() {
             }
         })
 
+        // ���ֻѡ��һ�������Ի��Ե�ǰ�� HR ��ǩ
         if (ids.size == 1) {
             val targetId = ids.first()
             val torrent = adapter.currentList.find { it.id == targetId }
@@ -867,6 +1221,10 @@ class TorrentListActivity : AppCompatActivity() {
             
             val hours = (days * 24).toInt()
             val hrLabel = if (hours > 0) "HR:$hours" else null
+
+            // ��ȡ��ǰ�� labels ������
+            // ע�⣺Transmission �� torrent-set �Ḳ������ labels �б�
+            // ���������Ҫ�������� label��������Ҫ�Ȼ�ȡ���еġ���ĿǰӦ����ֻ�� HR label��
             val labels = if (hrLabel != null) listOf(hrLabel) else emptyList<String>()
             
             viewModel.setLabels(rpcUrl, user, pass, ids, labels) {
@@ -879,16 +1237,52 @@ class TorrentListActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun updateDrawerCounts(data: Map<String, DrawerItemData>) {
+    private fun viewModel.toggleAltSpeedLimits(rpcUrl, user, pass) {
+        val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+        service.rpc(rpcUrl, null, RpcRequest("session-get", emptyMap())).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+            override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                if (response.isSuccessful) {
+                    val current = response.body()?.arguments?.get("alt-speed-enabled") as? Boolean ?: false
+                    service.rpc(rpcUrl, null, RpcRequest("session-set", mapOf("alt-speed-enabled" to !current))).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+                        override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                            if (response.isSuccessful) checkAltSpeedStatus()
+                        }
+                        override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+                    })
+                }
+            }
+            override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+        })
+    }
+
+    private fun viewModel.checkAltSpeedStatus(rpcUrl, user, pass) {
+        val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+        service.rpc(rpcUrl, null, RpcRequest("session-get", emptyMap())).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+            override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                if (isFinishing || isDestroyed) return
+                if (response.isSuccessful) {
+                    val enabled = response.body()?.arguments?.get("alt-speed-enabled") as? Boolean ?: false
+                    ivTurtle.setImageResource(if (enabled) R.drawable.ic_turtle else R.drawable.ic_turtle_outline)
+                    ivTurtle.imageTintList = if (enabled) ColorStateList.valueOf("#FFF9A825".toColorInt()) else null
+                }
+            }
+            override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+        })
+    }
+
+    private fun updateDrawerCounts\(torrents: List<Map<String, Any>>) {
         val navigationView = findViewById<com.google.android.material.navigation.NavigationView>(R.id.navigationView)
         val menu = navigationView.menu
 
-        fun updateItem(itemId: Int, nameRes: Int, key: String) {
+        fun updateItem(itemId: Int, nameRes: Int, list: List<Map<String, Any>>) {
             val item = menu.findItem(itemId) ?: return
-            val itemData = data[key] ?: DrawerItemData(0, 0L)
+            val count = list.size
+            // �Ż��������� UI �߳�ʹ�� sumOf ���д����ݱ�������������������ں�̨��ô���
+            val size = list.sumOf { (it["totalSize"] as? Number)?.toLong() ?: 0L }
             
-            item.title = "${getString(nameRes)} (${itemData.count})"
+            item.title = "${getString(nameRes)} ($count)"
             
+            // ʹ�� ActionView ʵ���Ҳ���ʾ����
             val actionView = item.actionView as? TextView ?: TextView(this).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -898,31 +1292,60 @@ class TorrentListActivity : AppCompatActivity() {
                 val color = if (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
                     "#88FFFFFF".toColorInt()
                 } else {
-                    "#FF636E72".toColorInt() 
+                    "#FF636E72".toColorInt() // ǳɫģʽ��ʹ�ô�Ҫ������ɫ��ȷ���Աȶ�
                 }
                 setTextColor(color)
                 textSize = 12f
                 item.actionView = this
             }
-            actionView.text = getString(R.string.count_bracket, viewModel.formatSize(itemData.totalSize))
+            actionView.text = getString(R.string.count_bracket, viewModel.formatSize(size))
         }
 
-        updateItem(R.id.nav_all, R.string.nav_all, "All")
-        updateItem(R.id.nav_downloading, R.string.nav_downloading, "Downloading")
-        updateItem(R.id.nav_seeding, R.string.nav_seeding, "Seeding")
-        updateItem(R.id.nav_paused, R.string.nav_paused, "Paused")
-        updateItem(R.id.nav_active, R.string.nav_active, "Active")
-        updateItem(R.id.nav_inactive, R.string.nav_inactive, "Inactive")
-        updateItem(R.id.nav_error, R.string.nav_error, "Error")
+        updateItem(R.id.nav_all, R.string.nav_all, torrents)
+        updateItem(R.id.nav_downloading, R.string.nav_downloading, torrents.filter { (it["status"] as? Number)?.toInt() == 4 })
+        updateItem(R.id.nav_seeding, R.string.nav_seeding, torrents.filter { (it["status"] as? Number)?.toInt() == 6 })
+        updateItem(R.id.nav_paused, R.string.nav_paused, torrents.filter { (it["status"] as? Number)?.toInt() == 0 })
+        updateItem(R.id.nav_active, R.string.nav_active, torrents.filter { 
+            ((it["rateDownload"] as? Number)?.toDouble() ?: 0.0) > 0 || ((it["rateUpload"] as? Number)?.toDouble() ?: 0.0) > 0 
+        })
+        updateItem(R.id.nav_inactive, R.string.nav_inactive, torrents.filter { 
+            ((it["rateDownload"] as? Number)?.toDouble() ?: 0.0) <= 0 && ((it["rateUpload"] as? Number)?.toDouble() ?: 0.0) <= 0 
+        })
+        updateItem(R.id.nav_error, R.string.nav_error, torrents.filter {
+            val error = (it["error"] as? Number)?.toInt() ?: 0
+            val errorString = (it["errorString"] as? String) ?: ""
+            error != 0 || (errorString.isNotEmpty() && !errorString.contains("none", ignoreCase = true))
+        })
+
+        updateTrackerChips(torrents)
     }
+
+
 
     private var lastTrackerData: Map<String, Int>? = null
     private var lastBlurState: Boolean = false
 
-    private fun updateTrackerChips(trackerMap: Map<String, Int>) {
+    private fun updateTrackerChips\(torrents: List<Map<String, Any>>) {
         val cgTrackers = findViewById<ChipGroup>(R.id.cgTrackers) ?: return
+        
+        // �����������ڻ�������ֹ���²��֣���ֹ����
         if (isDrawerMoving) return
 
+        val trackerMap = mutableMapOf<String, Int>()
+
+        for (t in torrents) {
+            @Suppress("UNCHECKED_CAST")
+            val trackers = t["trackers"] as? List<Map<String, Any>>
+            val firstTrackerUrl = trackers?.firstOrNull()?.get("announce") as? String
+            if (firstTrackerUrl != null) {
+                val name = TrackerUtils.getTrackerNameFromUrl(firstTrackerUrl)
+                if (name != null) {
+                    trackerMap[name] = (trackerMap[name] ?: 0) + 1
+                }
+            }
+        }
+
+        // ״̬�ж������ݱ��� ���� ��˽ģʽ���ر��ˣ����������ˢ���߼�
         val stateChanged = trackerMap != lastTrackerData || isTrackerBlurEnabled != lastBlurState
         if (!stateChanged) return
         
@@ -930,6 +1353,8 @@ class TorrentListActivity : AppCompatActivity() {
         lastBlurState = isTrackerBlurEnabled
 
         val sortedEntries = trackerMap.entries.sortedByDescending { it.value }
+        
+        // 1. ��ǲ��Ƴ�������Ҫ�� Chip
         val newNames = sortedEntries.map { it.key }.toSet()
         val chipsToRemove = mutableListOf<View>()
         for (i in 0 until cgTrackers.childCount) {
@@ -938,11 +1363,14 @@ class TorrentListActivity : AppCompatActivity() {
         }
         chipsToRemove.forEach { cgTrackers.removeView(it) }
 
+        // 2. �������� Chip ������� Chip
         sortedEntries.forEach { entry ->
             val trackerName = entry.key
             val displayCount = entry.value
             val isRevealed = revealedTrackerNames.contains(trackerName)
             
+            // �������� Chip
+            // �������� Chip
             var existingChip: com.google.android.material.chip.Chip? = null
             for (i in 0 until cgTrackers.childCount) {
                 val child = cgTrackers.getChildAt(i) as? com.google.android.material.chip.Chip
@@ -961,6 +1389,7 @@ class TorrentListActivity : AppCompatActivity() {
                 val isCurrentlyBlur = paint.maskFilter != null
                 val targetText = getString(R.string.tracker_count_format, trackerName, displayCount)
 
+                // �����޸�������״̬�����ı�ʱ����������ȫ���ؽ����µ���˸
                 if (shouldBlur) {
                     if (!isCurrentlyBlur || text != targetText) {
                         text = targetText
@@ -983,9 +1412,11 @@ class TorrentListActivity : AppCompatActivity() {
                 gravity = Gravity.CENTER
                 textAlignment = View.TEXT_ALIGNMENT_CENTER
                 
+                // ͳһ����ɫ��ʹ�������б�ͬ����ɫ
                 val bgColor = ContextCompat.getColor(this@TorrentListActivity, R.color.bg_tag)
                 chipBackgroundColor = ColorStateList.valueOf(bgColor)
                 
+                // ͳһ�߿�ʹ�������б�ͬ��߿�ɫ
                 val strokeColor = ContextCompat.getColor(this@TorrentListActivity, R.color.stroke_tag)
                 chipStrokeColor = ColorStateList.valueOf(strokeColor)
                 chipStrokeWidth = resources.displayMetrics.density * 1.0f
@@ -995,11 +1426,13 @@ class TorrentListActivity : AppCompatActivity() {
                 textSize = 12f
                 includeFontPadding = false
                 
+                // ���׻ָ�������Ĵ�ߴ磺����� Chip Ӧ���Ǵ����Ĳ�����ť��ʽ
                 minHeight = 0
                 minimumHeight = 0
                 chipMinHeight = resources.displayMetrics.density * 28f
                 minimumWidth = 0 
                 
+                // �����ɫģʽ����˽�л���˸�����׽��ø߶ȡ�Overlay��״̬����
                 elevation = 0f
                 stateListAnimator = null
                 
@@ -1020,10 +1453,10 @@ class TorrentListActivity : AppCompatActivity() {
                 setOnClickListener {
                     if (isTrackerBlurEnabled && !revealedTrackerNames.contains(trackerName)) {
                         revealedTrackerNames.add(trackerName)
-                        lastBlurState = !isTrackerBlurEnabled
+                        lastBlurState = !isTrackerBlurEnabled // �յ��´�ǿ��ˢ��
                         viewModel.trackerData.value?.let { updateTrackerChips(it) }
                     } else {
-                        viewModel.setFilter("tracker:$trackerName")
+                        filterAndDisplay("tracker:$trackerName")
                         (drawerLayout as? DrawerLayout)?.closeDrawer(GravityCompat.START)
                     }
                 }
@@ -1035,11 +1468,12 @@ class TorrentListActivity : AppCompatActivity() {
     }
 
     private fun setupHrSlidingInput(container: LinearLayout, editText: EditText) {
-        val touchListener = View.OnTouchListener { v, event ->
+        val touchListener = View.OnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
                     for (i in 0 until container.childCount) {
                         val child = container.getChildAt(i)
+                        // ��鴥���Ƿ�������ͼ��Χ�ڣ����Ǹ������ڵ�������꣩
                         if (event.x >= child.left && event.x <= child.right) {
                             val value = (child as? TextView)?.text?.toString() ?: ""
                             if (value.isNotEmpty() && editText.text.toString() != value) {
@@ -1049,9 +1483,6 @@ class TorrentListActivity : AppCompatActivity() {
                         } else {
                             child.isPressed = false
                         }
-                    }
-                    if (event.action == MotionEvent.ACTION_DOWN) {
-                        v.performClick()
                     }
                     true
                 }
@@ -1066,10 +1497,12 @@ class TorrentListActivity : AppCompatActivity() {
         }
         
         container.setOnTouchListener(touchListener)
+        // Ϊ����ͼ�������ü�����ȷ�����Ҳ�ܴ���������ȷת��������������߼�
         for (i in 0 until container.childCount) {
             val child = container.getChildAt(i)
             child.setOnTouchListener { _, ev ->
                 val offsetEvent = MotionEvent.obtain(ev)
+                // ������ͼ�Ĵ�������ת��Ϊ����������
                 offsetEvent.offsetLocation(child.left.toFloat(), child.top.toFloat())
                 val handled = touchListener.onTouch(container, offsetEvent)
                 offsetEvent.recycle()
@@ -1099,10 +1532,12 @@ class TorrentListActivity : AppCompatActivity() {
         if (scheme == "magnet" || scheme == "http" || scheme == "https") {
             showAddTorrentDialog(initialUrl = uri.toString())
         } else if (scheme == "file" || scheme == "content") {
+            // Check if it's a .torrent file by name even if mimeType is generic
             val fileName = uri.path?.lowercase()
             if (fileName?.endsWith(".torrent") == true || contentResolver.getType(uri) == "application/x-bittorrent") {
                 showAddTorrentDialog(initialFileUri = uri)
             } else {
+                // If it's a direct URL to a torrent file (e.g. from a browser)
                 showAddTorrentDialog(initialUrl = uri.toString())
             }
         }
@@ -1110,6 +1545,7 @@ class TorrentListActivity : AppCompatActivity() {
 
     private fun handleSharedText(text: String) {
         val trimmed = text.trim()
+        // Extract URL using regex if it's not just a pure link
         val urlRegex = """(https?|magnet):[^\s]+""".toRegex(RegexOption.IGNORE_CASE)
         val match = urlRegex.find(trimmed)
         val url = match?.value ?: trimmed
@@ -1121,7 +1557,7 @@ class TorrentListActivity : AppCompatActivity() {
         val view = layoutInflater.inflate(R.layout.dialog_add_torrent, null)
         val tilUrl = view.findViewById<TextInputLayout>(R.id.tilTorrentUrl)
         val etUrl = view.findViewById<TextInputEditText>(R.id.etTorrentUrl)
-        val etDir = view.findViewById<android.widget.AutoCompleteTextView>(R.id.etDownloadDir)
+        val etDir = view.findViewById<AutoCompleteTextView>(R.id.etDownloadDir)
         val etHr = view.findViewById<TextInputEditText>(R.id.etHrLabel)
         val llHrQuickButtons = view.findViewById<LinearLayout>(R.id.llHrQuickButtons)
         val btnAdd = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAddTorrent)
@@ -1147,21 +1583,57 @@ class TorrentListActivity : AppCompatActivity() {
             }
         })
 
+        // ��¼��ʷĿ¼
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         val historyDirs = prefs.getStringSet("history_dirs", mutableSetOf())?.toMutableList() ?: mutableListOf()
         
-        // 统一使用 DownloadDirManager 获取目录列表
-        val allDirs = DownloadDirManager.getAllDirs(this, viewModel.torrents.value)
-        DownloadDirManager.setupAdapter(etDir, allDirs)
+        // �ӵ�ǰ�����б���ȡĿ¼
+        val currentDirs = viewModel.torrents.value?.mapNotNull { it["downloadDir"] as? String }.distinct()
+        val allDirs = (historyDirs + currentDirs).distinct().sorted()
         
-        // 观察数据更新，一旦加载完成，自动刷新下拉列表
-        viewModel.torrents.observe(this) { torrents ->
-            DownloadDirManager.setupAdapter(etDir, DownloadDirManager.getAllDirs(this, torrents))
+        DialogUtils.setupDownloadDirAdapter(etDir, allDirs)
+
+        fun updateFreeSpaceForPath(path: String) {
+            if (path.isEmpty()) {
+                tvFree.isVisible = false
+                return
+            }
+            val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+            service.rpc(rpcUrl, null, RpcRequest("free-space", mapOf("path" to path))).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+                override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                    if (response.isSuccessful) {
+                        val size = (response.body()?.arguments?.get("size-bytes") as? Double)?.toLong() ?: 0L
+                        tvFree.text = getString(R.string.free_space_label, viewModel.formatSize(size))
+                        tvFree.isVisible = true
+                    }
+                }
+                override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+            })
         }
+
+        etDir.setOnItemClickListener { parent, _, position, _ ->
+            val selectedPath = parent.getItemAtPosition(position) as String
+            updateFreeSpaceForPath(selectedPath)
+        }
+
+        etDir.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateFreeSpaceForPath(s.toString().trim())
+            }
+        })
 
         val dialog = AlertDialog.Builder(this, R.style.FabDialogTheme)
             .setView(view)
             .create()
+        
+        lastAddDialog = dialog
+        selectedFileUri = null
+
+        tilUrl.setEndIconOnClickListener {
+            filePickerLauncher.launch("application/x-bittorrent")
+        }
 
         btnAdd.setOnClickListener {
             val url = etUrl.text.toString().trim()
@@ -1172,19 +1644,25 @@ class TorrentListActivity : AppCompatActivity() {
                 if (days > 0) "HR:${(days * 24).toInt()}" else null
             } else null
             
+            // ��ť��Ч����
             btnAdd.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction {
                 btnAdd.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
             }.start()
 
+            // �����رյ���
             dialog.dismiss()
 
+            // ��ʷĿ¼�߼�
             if (downloadDir.isNotEmpty()) {
-                DownloadDirManager.saveDirToHistory(this, downloadDir)
+                val newHistory = historyDirs.toMutableSet()
+                newHistory.add(downloadDir)
+                prefs.edit { putStringSet("history_dirs", newHistory) }
             }
 
             val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
             
             if (selectedFileUri != null) {
+                // ��������ļ�
                 val inputStream = contentResolver.openInputStream(selectedFileUri!!)
                 val bytes = inputStream?.readBytes()
                 inputStream?.close()
@@ -1207,6 +1685,7 @@ class TorrentListActivity : AppCompatActivity() {
                     })
                 }
             } else if (url.isNotEmpty()) {
+                // �������
                 val args = mutableMapOf<String, Any>("filename" to url)
                 if (downloadDir.isNotEmpty()) args["download-dir"] = downloadDir
                 hrLabel?.let { args["labels"] = listOf(it) }
@@ -1231,3 +1710,5 @@ class TorrentListActivity : AppCompatActivity() {
         dialog.show()
     }
 }
+
+

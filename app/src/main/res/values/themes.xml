@@ -1,5 +1,5 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <style name="Base.Theme.TransSync" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.TransSync" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/bg_toolbar</item>
         <item name="colorAccent">@color/colorAccent</item>
@@ -30,7 +30,6 @@
     <style name="AppPopupMenu" parent="Widget.AppCompat.PopupMenu">
         <item name="android:itemBackground">@color/bg_item</item>
         <item name="android:dropDownListViewStyle">@style/AppDropDownListView</item>
-        <item name="android:popupBackground">@drawable/menu_background</item>
         <item name="android:overlapAnchor">false</item>
         <item name="overlapAnchor">false</item>
         <item name="android:dropDownVerticalOffset">0dp</item>
@@ -63,16 +62,15 @@
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowContentOverlay">@null</item>
         <item name="android:backgroundDimEnabled">true</item>
-        <item name="android:backgroundDimAmount">0.6</item>
+        <item name="android:backgroundDimAmount">0.4</item>
+        <item name="android:colorBackground">@color/bg_item</item>
         <item name="colorPrimary">@color/colorAccent</item>
         <item name="colorAccent">@color/colorAccent</item>
         <item name="android:textColorPrimary">@color/text_primary</item>
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="buttonBarPositiveButtonStyle">@style/DialogButtonStyle</item>
         <item name="buttonBarNegativeButtonStyle">@style/DialogButtonStyle</item>
-        <!-- 设置对话框圆角 -->
-        <item name="android:windowBackground">@drawable/dialog_background</item>
-        <item name="android:dialogCornerRadius">16dp</item>
+        <item name="android:dialogCornerRadius">12dp</item>
         <item name="shapeAppearance">@style/RoundedRectangleShape</item>
         <item name="shapeAppearanceOverlay">@style/RoundedRectangleShape</item>
     </style>
@@ -82,18 +80,34 @@
         <item name="android:windowExitAnimation">@anim/dialog_exit</item>
     </style>
 
+    <style name="FabDialogTheme" parent="AppDialogTheme">
+        <item name="android:windowAnimationStyle">@style/FabDialogAnimation</item>
+    </style>
+
+    <style name="FabDialogAnimation">
+        <item name="android:windowEnterAnimation">@anim/fab_dialog_enter</item>
+        <item name="android:windowExitAnimation">@anim/fab_dialog_exit</item>
+    </style>
+
     <style name="DialogButtonStyle" parent="Widget.MaterialComponents.Button.TextButton">
         <item name="android:textColor">@color/colorAccent</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">20dp</item>
+        <item name="android:paddingEnd">20dp</item>
+        <item name="android:minWidth">90dp</item>
+        <item name="android:minHeight">44dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:letterSpacing">0.05</item>
     </style>
 
-    <style name="CircleFab" parent="">
+    <style name="CircleFab" parent="ShapeAppearance.MaterialComponents.SmallComponent">
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
 
     <style name="RoundedRectangleShape" parent="">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">16dp</item>
+        <item name="cornerSize">12dp</item>
     </style>
 </resources>
