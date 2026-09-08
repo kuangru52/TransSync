@@ -1,7 +1,5 @@
 package com.kuangru52.transsync
 
-import com.google.gson.annotations.SerializedName
-
 data class RpcRequest(
     val method: String,
     val arguments: Map<String, Any>? = null,
@@ -46,14 +44,15 @@ data class Torrent(
     val files: List<TorrentFile>? = null,
     val labels: List<String>? = null,
 
-    // Ô¤¼ÆËã×Ö¶Î£¬ÓÃÓÚ UI ¼«ËÙäÖÈ¾
+    // é¢„å¤„ç†å­—æ®µï¼Œç”¨äº UI åˆ—è¡¨æ¸²æŸ“
     var displaySize: String = "",
     var displayStatusText: String = "",
     var displayDownloadSpeed: String = "",
     var displayUploadSpeed: String = "",
     var displayStats: String = "",
     var displayProgress: Int = 0,
-    var displayColor: Int = 0
+    var displayColor: Int = 0,
+    var trackerName: String = ""
 )
 
 data class TorrentFile(
@@ -86,10 +85,4 @@ data class Tracker(
     val id: Int = 0,
     val scrape: String = "",
     val tier: Int = 0
-)
-
-data class FreeSpaceArguments(
-    val path: String,
-    @SerializedName("size-bytes")
-    val sizeBytes: Long
 )

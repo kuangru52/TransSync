@@ -3,15 +3,12 @@ package com.kuangru52.transsync
 import android.net.Uri
 import android.util.Base64
 import android.widget.EditText
-import com.kuangru52.transsync.R
-import android.annotation.SuppressLint
 import android.content.Context
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
-import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -22,7 +19,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.toColorInt
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import retrofit2.Call
@@ -59,7 +55,6 @@ object DialogUtils {
         val btnRename = com.google.android.material.button.MaterialButton(context, null, com.google.android.material.R.attr.materialButtonStyle).apply {
             id = View.generateViewId()
             text = context.getString(R.string.btn_confirm)
-            textSize = 14f
             backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.colorAccent))
             setTextColor(Color.WHITE)
             stateListAnimator = null
@@ -104,7 +99,7 @@ object DialogUtils {
         btnRename.setOnClickListener {
             val newName = input.text.toString().trim()
             if (newName.isNotEmpty() && newName != currentName) {
-                val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+                val service = TransmissionClient.getService(rpcUrl, user, pass)
                 service.rpc(rpcUrl, null, RpcRequest("torrent-rename-path", mapOf("ids" to listOf(torrentId), "path" to currentName, "name" to newName)))
                     .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                         override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
@@ -147,7 +142,6 @@ object DialogUtils {
 
         val btnSave = com.google.android.material.button.MaterialButton(context, null, com.google.android.material.R.attr.materialButtonStyle).apply {
             text = context.getString(R.string.dialog_save)
-            textSize = 14f
             backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.colorAccent))
             setTextColor(Color.WHITE)
             stateListAnimator = null
@@ -233,7 +227,7 @@ object DialogUtils {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                topMargin = (context.resources.displayMetrics.density * 12f).toInt()
+                topMargin = (context.resources.displayMetrics.density * 24f).toInt()
             }
         }
 
@@ -241,16 +235,13 @@ object DialogUtils {
             text = context.getString(R.string.btn_confirm)
             backgroundTintList = ColorStateList.valueOf(ContextCompat.getColor(context, R.color.state_red))
             setTextColor(Color.WHITE)
-            textSize = 14f
             stateListAnimator = null
             elevation = 0f
             cornerRadius = (context.resources.displayMetrics.density * 16f).toInt()
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
                 (context.resources.displayMetrics.density * 32f).toInt()
-            ).apply {
-                topMargin = (context.resources.displayMetrics.density * 16f).toInt()
-            }
+            )
             insetTop = 0
             insetBottom = 0
             minimumWidth = (context.resources.displayMetrics.density * 80f).toInt()
@@ -265,7 +256,7 @@ object DialogUtils {
             .create()
 
         btnDelete.setOnClickListener {
-            val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+            val service = TransmissionClient.getService(rpcUrl, user, pass)
             val args = mapOf("ids" to torrentIds, "delete-local-data" to cbDeleteData.isChecked)
             service.rpc(rpcUrl, null, RpcRequest("torrent-remove", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                 override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
@@ -331,6 +322,32 @@ object DialogUtils {
         val allDirs = DownloadDirManager.getAllDirs(context, allTorrents)
         DownloadDirManager.setupAdapter(etDir, allDirs)
 
+        fun updateFreeSpace(path: String) {
+            if (path.isEmpty()) {
+                tvFree.visibility = View.GONE
+                return
+            }
+            val service = TransmissionClient.getService(rpcUrl, user, pass)
+            service.rpc(rpcUrl, null, RpcRequest("free-space", mapOf("path" to path))).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+                override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                    if (response.isSuccessful) {
+                        val size = (response.body()?.arguments?.get("size-bytes") as? Double)?.toLong() ?: 0L
+                        tvFree.text = context.getString(R.string.free_space_label, FormatUtils.formatSize(size))
+                        tvFree.visibility = View.VISIBLE
+                    }
+                }
+                override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+            })
+        }
+
+        etDir.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                updateFreeSpace(s.toString().trim())
+            }
+        })
+
         val dialog = AlertDialog.Builder(context, R.style.FabDialogTheme)
             .setView(view)
             .create()
@@ -339,10 +356,9 @@ object DialogUtils {
             val url = etUrl.text.toString().trim()
             val downloadDir = etDir.text.toString().trim()
             val selectedHr = etHr.text.toString().trim()
-            val hrLabel = if (selectedHr.isNotEmpty() && selectedHr != context.getString(R.string.hr_none)) {
-                val days = selectedHr.toDoubleOrNull() ?: 0.0
-                if (days > 0) "HR:${(days * 24).toInt()}" else null
-            } else null
+            // 修复解析逻辑：提取数字部分，处理带单位的情况（如 "3 天"）
+            val days = selectedHr.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: 0.0
+            val hrLabel = if (days > 0) "HR:${days * 24}" else null
 
             btnAdd.animate().scaleX(0.9f).scaleY(0.9f).setDuration(100).withEndAction {
                 btnAdd.animate().scaleX(1.0f).scaleY(1.0f).setDuration(100).start()
@@ -354,7 +370,7 @@ object DialogUtils {
                 DownloadDirManager.saveDirToHistory(context, downloadDir)
             }
 
-            val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+            val service = TransmissionClient.getService(rpcUrl, user, pass)
 
             if (initialFileUri != null) {
                 val inputStream = context.contentResolver.openInputStream(initialFileUri)
@@ -439,7 +455,7 @@ object DialogUtils {
             val torrent = allTorrents?.find { it.id == targetId }
             val currentHr = torrent?.labels?.find { it.startsWith("HR:") }
             if (currentHr != null) {
-                val hrs = currentHr.substringAfter("HR:").toIntOrNull() ?: 0
+                val hrs = currentHr.substringAfter("HR:").toDoubleOrNull() ?: 0.0
                 if (hrs > 0) {
                     val d = hrs / 24.0
                     val initialText = if (d == d.toInt().toDouble()) d.toInt().toString() else d.toString()
@@ -454,23 +470,30 @@ object DialogUtils {
 
         btnAction?.setOnClickListener {
             val selectedHr = etHr.text.toString().trim()
-            val days = if (selectedHr.isNotEmpty() && selectedHr != context.getString(R.string.hr_none)) {
-                selectedHr.toDoubleOrNull() ?: 0.0
-            } else 0.0
+            // 改进解析逻辑：提取数字部分，处理带单位的情况（如 "3 天"）
+            val days = selectedHr.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: 0.0
+            val hours = days * 24
+            
+            val service = TransmissionClient.getService(rpcUrl, user, pass)
+            
+            // 统一使用 Double 字符串格式如 HR:24.0，确保精度和一致性
+            val hrLabel = if (hours > 0) "HR:$hours" else null 
 
-            val hours = (days * 24).toInt()
-            val hrLabel = if (hours > 0) "HR:$hours" else null
-            val labels = if (hrLabel != null) listOf(hrLabel) else emptyList<String>()
+            // 构造请求参数
+            val args = mutableMapOf<String, Any>("ids" to torrentIds)
+            args["labels"] = if (hrLabel != null) listOf(hrLabel) else emptyList()
 
-            val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
-            service.rpc(rpcUrl, null, RpcRequest("torrent-set", mapOf("ids" to torrentIds, "labels" to labels)))
+            service.rpc(rpcUrl, null, RpcRequest("torrent-set", args))
                 .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                     override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
-                        if (response.isSuccessful) {
+                        val body = response.body()
+                        if (response.isSuccessful && body?.result == "success") {
+                            Toast.makeText(context, R.string.msg_hr_set_success, Toast.LENGTH_SHORT).show()
                             onSuccess()
                             dialog.dismiss()
                         } else {
-                            Toast.makeText(context, context.getString(R.string.msg_update_failed, response.code()), Toast.LENGTH_SHORT).show()
+                            val msg = body?.result ?: response.code().toString()
+                            Toast.makeText(context, context.getString(R.string.msg_update_failed_with_msg, msg), Toast.LENGTH_SHORT).show()
                         }
                     }
                     override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
@@ -497,12 +520,16 @@ object DialogUtils {
                             child.isPressed = false
                         }
                     }
-                    if (event.action == MotionEvent.ACTION_DOWN) {
-                        v.performClick()
-                    }
                     true
                 }
-                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                MotionEvent.ACTION_UP -> {
+                    for (i in 0 until container.childCount) {
+                        container.getChildAt(i).isPressed = false
+                    }
+                    v.performClick()
+                    true
+                }
+                MotionEvent.ACTION_CANCEL -> {
                     for (i in 0 until container.childCount) {
                         container.getChildAt(i).isPressed = false
                     }
@@ -513,15 +540,21 @@ object DialogUtils {
         }
 
         container.setOnTouchListener(touchListener)
+        container.setOnClickListener { } // Ensure performClick has a target
+
         for (i in 0 until container.childCount) {
             val child = container.getChildAt(i)
-            child.setOnTouchListener { _, ev ->
+            child.setOnTouchListener { v, ev ->
+                if (ev.action == MotionEvent.ACTION_UP) {
+                    v.performClick()
+                }
                 val offsetEvent = MotionEvent.obtain(ev)
                 offsetEvent.offsetLocation(child.left.toFloat(), child.top.toFloat())
                 val handled = touchListener.onTouch(container, offsetEvent)
                 offsetEvent.recycle()
                 handled
             }
+            child.setOnClickListener { }
         }
     }
 
@@ -552,7 +585,7 @@ object DialogUtils {
                 tvFree.visibility = View.GONE
                 return
             }
-            val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+            val service = TransmissionClient.getService(rpcUrl, user, pass)
             service.rpc(rpcUrl, null, RpcRequest("free-space", mapOf("path" to path))).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                 override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                     if (response.isSuccessful) {
@@ -584,7 +617,7 @@ object DialogUtils {
         btnConfirm.setOnClickListener {
             val newLocation = etDir.text.toString().trim()
             if (newLocation.isNotEmpty()) {
-                val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+                val service = TransmissionClient.getService(rpcUrl, user, pass)
                 val args = mapOf(
                     "ids" to torrentIds,
                     "location" to newLocation,

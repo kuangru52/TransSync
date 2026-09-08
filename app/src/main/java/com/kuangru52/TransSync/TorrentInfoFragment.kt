@@ -1,15 +1,14 @@
-package com.kuangru52.transsync
+﻿package com.kuangru52.transsync
 
-import com.kuangru52.transsync.R
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.core.content.ContextCompat
-import android.content.res.ColorStateList
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.kuangru52.transsync.databinding.FragmentTorrentInfoBinding
@@ -54,11 +53,7 @@ class TorrentInfoFragment : Fragment() {
         }
 
         binding.tvName.setOnClickListener {
-            if (binding.rvFiles.visibility == View.VISIBLE) {
-                binding.rvFiles.visibility = View.GONE
-            } else {
-                binding.rvFiles.visibility = View.VISIBLE
-            }
+            binding.rvFiles.isVisible = !binding.rvFiles.isVisible
         }
 
         binding.tvName.setOnLongClickListener {
@@ -106,7 +101,7 @@ class TorrentInfoFragment : Fragment() {
         val user = intent.getStringExtra("user") ?: ""
         val pass = intent.getStringExtra("pass") ?: ""
 
-        val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+        val service = TransmissionClient.getService(rpcUrl, user, pass)
         val fields = listOf(
             "id", "name", "status", "totalSize", "percentDone", "downloadDir", "trackers", "trackerStats", "downloadedEver",
             "uploadedEver", "uploadRatio", "addedDate", "doneDate", "activityDate", "secondsSeeding", "files",
@@ -142,7 +137,7 @@ class TorrentInfoFragment : Fragment() {
 
         binding.tvName.text = torrent.name
         val progressStr = String.format(Locale.US, "%.1f%%", torrent.percentDone * 100)
-        binding.tvDownloaded.text = FormatUtils.formatSize(torrent.downloadedEver) + " ($progressStr)"
+        binding.tvDownloaded.text = getString(R.string.label_downloaded_with_progress, FormatUtils.formatSize(torrent.downloadedEver), progressStr)
         binding.tvTotalSize.text = FormatUtils.formatSize(torrent.totalSize)
         binding.tvDownloadDir.text = torrent.downloadDir
 
@@ -152,7 +147,7 @@ class TorrentInfoFragment : Fragment() {
         } else if (torrent.percentDone >= 1.0 || (torrent.eta != null && torrent.eta == 0L)) {
             "0"
         } else {
-            "��"
+            "∞"
         }
 
         // Tracker Display (Domain only for privacy)
@@ -160,7 +155,7 @@ class TorrentInfoFragment : Fragment() {
             try {
                 val uri = java.net.URI(tracker.announce)
                 uri.host ?: tracker.announce
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 tracker.announce.substringBefore("/")
             }
         } ?: getString(R.string.state_none)
@@ -201,9 +196,9 @@ class TorrentInfoFragment : Fragment() {
                         binding.tvHrStatus.text = getString(R.string.label_hr_remaining, timeStr)
                         binding.tvHrStatus.setTextColor(ContextCompat.getColor(requireContext(), R.color.state_orange))
                     } else {
-                        // �� 30 ���ӻ�������
+                        // Within 30 minutes buffer
                         val remainingBufferMs = bufferMs + remainingMs
-                        val totalSecs = Math.max(0, remainingBufferMs / 1000L)
+                        val totalSecs = (remainingBufferMs / 1000L).coerceAtLeast(0)
                         val mins = totalSecs / 60
                         val secs = totalSecs % 60
                         binding.tvHrStatus.text = String.format(Locale.US, "%02d:%02d", mins, secs)
@@ -233,9 +228,9 @@ class TorrentInfoFragment : Fragment() {
         // Update Tracker Counts
         val stats = torrent.trackerStats?.firstOrNull()
         if (stats != null) {
-            binding.tvPeers.text = "${stats.seederCount} / ${stats.leecherCount} / ${stats.downloadCount}"
+            binding.tvPeers.text = getString(R.string.label_peers_full, stats.seederCount, stats.leecherCount, stats.downloadCount)
         } else {
-            binding.tvPeers.text = "0 / 0 / 0"
+            binding.tvPeers.text = getString(R.string.label_peers_full, 0, 0, 0)
         }
     }
 
@@ -285,7 +280,7 @@ class TorrentInfoFragment : Fragment() {
         val user = intent.getStringExtra("user") ?: ""
         val pass = intent.getStringExtra("pass") ?: ""
 
-        val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+        val service = TransmissionClient.getService(rpcUrl, user, pass)
         
         // Fetch full tracker list first
         val request = RpcRequest("torrent-get", mapOf("ids" to listOf(torrentId), "fields" to listOf("trackers")))
@@ -300,7 +295,7 @@ class TorrentInfoFragment : Fragment() {
                     val torrents: List<Torrent> = Gson().fromJson(torrentsJson, type)
                     val oldTrackers = torrents.firstOrNull()?.trackers ?: emptyList()
                     
-                    val trackerUrls = oldTrackers.map { it.announce }.joinToString("\n")
+                    val trackerUrls = oldTrackers.joinToString("\n") { it.announce }
                     
                     DialogUtils.showEditTrackersDialog(
                         context = requireContext(),
@@ -328,7 +323,7 @@ class TorrentInfoFragment : Fragment() {
         val user = intent.getStringExtra("user") ?: ""
         val pass = intent.getStringExtra("pass") ?: ""
 
-        val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+        val service = TransmissionClient.getService(rpcUrl, user, pass)
         
         val oldUrls = oldTrackers.map { it.announce }
         val toAdd = newUrls.filter { it !in oldUrls }
@@ -397,4 +392,3 @@ class TorrentInfoFragment : Fragment() {
         }
     }
 }
-

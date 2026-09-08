@@ -1,6 +1,5 @@
 package com.kuangru52.transsync
 
-import com.kuangru52.transsync.R
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -11,8 +10,8 @@ import java.util.Locale
 
 class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>() {
 
-    private var allNodes = mutableListOf<FileNode>() // 所有的原始树节点（逻辑结构�?
-    private var visibleNodes = mutableListOf<FileNode>() // 当前显示的节点（打平后的列表�?
+    private var allNodes = mutableListOf<FileNode>() // 所有的原始树节点（逻辑结构）
+    private var visibleNodes = mutableListOf<FileNode>() // 当前显示的节点（打平后的列表）
 
     data class FileNode(
         val name: String,
@@ -28,16 +27,6 @@ class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>()
         val expandedPaths = getExpandedPaths(allNodes)
         val rootNodes = buildTree(files, expandedPaths)
         allNodes = rootNodes.toMutableList()
-        updateVisibleNodes()
-    }
-
-    fun collapseAll() {
-        allNodes.forEach { node ->
-            if (node.isFolder) {
-                node.isExpanded = false
-                collapseAllChildren(node)
-            }
-        }
         updateVisibleNodes()
     }
 
@@ -76,13 +65,10 @@ class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>()
                         bytesCompleted = if (isLast) file.bytesCompleted else 0
                     )
                     currentNode.children.add(child)
-                } else if (isLast) {
-                    // 如果是重复的文件路径（理论上不应该，但防止万一�?
                 }
                 currentNode = child
             }
         }
-        // 对于只有一个顶层目录的情况，如果想直接显示内容，可以返�?root.children
         return root.children
     }
 
@@ -91,7 +77,7 @@ class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>()
         fun addNode(node: FileNode) {
             visibleNodes.add(node)
             if (node.isFolder && node.isExpanded) {
-                node.children.sortBy { !it.isFolder } // 文件夹排在前�?
+                node.children.sortBy { !it.isFolder }
                 node.children.forEach { addNode(it) }
             }
         }
@@ -138,9 +124,8 @@ class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>()
         private val tvFileProgress: TextView = view.findViewById(R.id.tvFileProgress)
 
         fun bind(node: FileNode) {
-            // 设置缩进
             val params = vIndent.layoutParams
-            params.width = node.level * 32 // 每一层缩�?32px
+            params.width = node.level * 32
             vIndent.layoutParams = params
 
             tvFileName.text = node.name
@@ -161,4 +146,3 @@ class TorrentFileAdapter : RecyclerView.Adapter<TorrentFileAdapter.ViewHolder>()
         }
     }
 }
-

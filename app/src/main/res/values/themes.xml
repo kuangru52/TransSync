@@ -70,7 +70,6 @@
         <item name="android:textColorSecondary">@color/text_secondary</item>
         <item name="buttonBarPositiveButtonStyle">@style/DialogButtonStyle</item>
         <item name="buttonBarNegativeButtonStyle">@style/DialogButtonStyle</item>
-        <item name="android:dialogCornerRadius">12dp</item>
         <item name="shapeAppearance">@style/RoundedRectangleShape</item>
         <item name="shapeAppearanceOverlay">@style/RoundedRectangleShape</item>
     </style>
@@ -108,6 +107,6 @@
 
     <style name="RoundedRectangleShape" parent="">
         <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">12dp</item>
+        <item name="cornerSize">20dp</item>
     </style>
 </resources>

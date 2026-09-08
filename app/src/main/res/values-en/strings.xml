@@ -42,6 +42,7 @@
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="cd_open_file">Open torrent file</string>
     <string name="selected_count">Selected: %d</string>
     <string name="free_space_label">Free space: %s</string>
     <string name="delete_confirm_msg">Are you sure you want to delete the selected %d torrents?</string>
@@ -68,11 +69,13 @@
     <string name="hint_download_dir">Download Directory (Optional)</string>
     <string name="search_results">Search results</string>
     <string name="label_hr">H&amp;R (Days)</string>
-    <string name="hr_none">None</string>
-    <string name="hr_3_days">3 Days</string>
-    <string name="hr_5_days">5 Days</string>
+    <string name="hr_none">0</string>
+    <string name="hr_3_days">3</string>
+    <string name="hr_5_days">5</string>
     <string name="hr_tag">H&amp;R</string>
     <string name="hr_tag_prefix">H&amp;R</string>
     <string name="hr_met">H&amp;R Passed</string>
     <string name="hr_countdown_format">H&amp;R %1$s</string>
+    <string name="notif_download_finished_title">%1$d torrent(s) finished downloading</string>
+    <string name="notif_hr_finished_title">%1$d torrent(s) H&amp;R requirement met</string>
 </resources>

@@ -42,7 +42,7 @@ class FeedbackActivity : AppCompatActivity() {
         val scrollView = findViewById<View>(R.id.scrollView)
         ViewCompat.setOnApplyWindowInsetsListener(scrollView) { v, insets ->
             insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(v.paddingLeft, v.paddingTop, v.paddingRight, 0)
+            v.setPadding(v.paddingStart, v.paddingTop, v.paddingEnd, 0)
             insets
         }
 

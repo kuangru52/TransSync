@@ -6,7 +6,8 @@ import android.widget.AutoCompleteTextView
 import androidx.core.content.edit
 
 /**
- * 统一管理下载目录的获取、更新和 Adapter 绑定
+ * Manages download directories, including history, auto-detection from active torrents,
+ * and AutoCompleteTextView adapter setup.
  */
 object DownloadDirManager {
 
@@ -14,15 +15,18 @@ object DownloadDirManager {
     private const val KEY_HISTORY_DIRS = "history_dirs"
 
     /**
-     * 获取所有已知的下载目录（历史记录 + 当前正在运行的种子目录）
+     * Gets all known download directories (history + currently active torrent directories).
+     * Also synchronizes active directories into history.
      */
     fun getAllDirs(context: Context, currentTorrents: List<Torrent>?): List<String> {
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val historyDirs = prefs.getStringSet(KEY_HISTORY_DIRS, emptySet())?.toMutableSet() ?: mutableSetOf()
         
-        val activeDirs = currentTorrents?.mapNotNull { it.downloadDir }?.filter { it.isNotBlank() }?.toSet() ?: emptySet()
+        val activeDirs = currentTorrents?.mapNotNull { it.downloadDir }
+            ?.filter { it.isNotBlank() }
+            ?.toSet() ?: emptySet()
         
-        // 如果有活跃目录，自动同步到历史记录中，实现“嗅探”功能
+        // Sync active directories to history for "sniffing" functionality
         if (activeDirs.isNotEmpty()) {
             val originalSize = historyDirs.size
             historyDirs.addAll(activeDirs)
@@ -35,7 +39,7 @@ object DownloadDirManager {
     }
 
     /**
-     * 将一个新的目录保存到历史记录中
+     * Saves a new directory to history.
      */
     fun saveDirToHistory(context: Context, dir: String) {
         if (dir.isBlank()) return
@@ -48,16 +52,18 @@ object DownloadDirManager {
     }
 
     /**
-     * 为 AutoCompleteTextView 绑定统一的 Adapter
+     * Binds a standardized adapter to an AutoCompleteTextView.
      */
     fun setupAdapter(etDir: AutoCompleteTextView, allDirs: List<String>) {
         val adapter = ArrayAdapter(etDir.context, R.layout.item_dropdown_compact, allDirs)
         etDir.setAdapter(adapter)
         etDir.threshold = 0
         
-        // 确保点击触发下拉
+        // Ensure dropdown shows on click
         etDir.setOnClickListener {
-            etDir.showDropDown()
+            if (!etDir.isPopupShowing) {
+                etDir.showDropDown()
+            }
         }
     }
 }

@@ -59,33 +59,33 @@
             android:layout_marginBottom="12dp">
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_total_size" android:textColor="@color/text_secondary" android:textSize="11sp" />
-                <TextView android:id="@+id/tvTotalSize" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" tools:text="10 GB" />
+                <TextView android:id="@+id/labelTotalSize" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_total_size" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:id="@+id/tvTotalSize" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" android:labelFor="@id/labelTotalSize" tools:text="10 GB" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_ratio_stat" android:textColor="@color/text_secondary" android:textSize="11sp" />
-                <TextView android:id="@+id/tvRatio" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" tools:text="0.20" />
+                <TextView android:id="@+id/labelRatio" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_ratio_stat" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:id="@+id/tvRatio" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" android:labelFor="@id/labelRatio" tools:text="0.20" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_downloaded" android:textColor="@color/text_secondary" android:textSize="11sp" />
-                <TextView android:id="@+id/tvDownloaded" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/state_blue" android:textSize="14sp" android:textStyle="bold" tools:text="5 GB" />
+                <TextView android:id="@+id/labelDownloaded" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_downloaded" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:id="@+id/tvDownloaded" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/state_blue" android:textSize="14sp" android:textStyle="bold" android:labelFor="@id/labelDownloaded" tools:text="5 GB" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_uploaded" android:textColor="@color/text_secondary" android:textSize="11sp" />
-                <TextView android:id="@+id/tvUploaded" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/state_green" android:textSize="14sp" android:textStyle="bold" tools:text="1 GB" />
+                <TextView android:id="@+id/labelUploaded" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_uploaded" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:id="@+id/tvUploaded" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/state_green" android:textSize="14sp" android:textStyle="bold" android:labelFor="@id/labelUploaded" tools:text="1 GB" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_peers_stats" android:textColor="@color/text_secondary" android:textSize="11sp" />
-                <TextView android:id="@+id/tvPeers" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" tools:text="10 / 5 / 100" />
+                <TextView android:id="@+id/labelPeers" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_peers_stats" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:id="@+id/tvPeers" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" android:labelFor="@id/labelPeers" tools:text="10 / 5 / 100" />
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content" android:layout_columnWeight="1" android:orientation="vertical" android:padding="8dp">
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_seeding_time" android:textColor="@color/text_secondary" android:textSize="11sp" />
-                <TextView android:id="@+id/tvSeedingTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" tools:text="1d 2h 3m" />
+                <TextView android:id="@+id/labelSeedingTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/label_seeding_time" android:textColor="@color/text_secondary" android:textSize="11sp" />
+                <TextView android:id="@+id/tvSeedingTime" android:layout_width="wrap_content" android:layout_height="wrap_content" android:textColor="@color/text_primary" android:textSize="14sp" android:textStyle="bold" android:labelFor="@id/labelSeedingTime" tools:text="1d 2h 3m" />
             </LinearLayout>
         </GridLayout>
 
@@ -107,6 +107,7 @@
                 android:gravity="center_vertical"
                 android:padding="4dp">
                 <TextView
+                    android:id="@+id/labelDownloadDir"
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
                     android:text="@string/label_download_dir"
@@ -119,6 +120,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp"
+                    android:labelFor="@id/labelDownloadDir"
                     tools:text="/downloads/complete/movies" />
                 <ImageView
                     android:id="@+id/ivEditLocation"
@@ -128,7 +130,8 @@
                     android:padding="6dp"
                     android:src="@drawable/ic_file_open"
                     app:tint="@color/text_secondary"
-                    android:contentDescription="@string/menu_set_location" />
+                    android:contentDescription="@string/menu_set_location"
+                    android:importantForAccessibility="yes" />
             </LinearLayout>
 
             <LinearLayout
@@ -138,6 +141,7 @@
                 android:gravity="center_vertical"
                 android:padding="4dp">
                 <TextView
+                    android:id="@+id/labelTracker"
                     android:layout_width="90dp"
                     android:layout_height="wrap_content"
                     android:text="@string/label_tracker"
@@ -150,6 +154,7 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/text_primary"
                     android:textSize="13sp"
+                    android:labelFor="@id/labelTracker"
                     tools:text="M-TEAM" />
                 <ImageView
                     android:id="@+id/ivEditTracker"
@@ -159,7 +164,8 @@
                     android:padding="6dp"
                     android:src="@drawable/ic_edit"
                     app:tint="@color/text_secondary"
-                    android:contentDescription="@string/dialog_edit_tracker_title" />
+                    android:contentDescription="@string/dialog_edit_tracker_title"
+                    android:importantForAccessibility="yes" />
             </LinearLayout>
 
             <!-- Error Info (Hidden by default) -->
@@ -258,7 +264,8 @@
                     android:visibility="gone"
                     tools:visibility="visible"
                     tools:src="@drawable/ic_done"
-                    android:contentDescription="@string/hr_met" />
+                    android:contentDescription="@string/hr_met"
+                    android:importantForAccessibility="yes" />
             </LinearLayout>
 
             <LinearLayout

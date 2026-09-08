@@ -29,6 +29,11 @@
     <color name="bg_tag">#FF212D3B</color>
     <color name="stroke_tag">#FF34495E</color>
 
+    <color name="text_white_70">#B3FFFFFF</color>
+    <color name="text_white_53">#88FFFFFF</color>
+    <color name="state_yellow">#FFF9A825</color>
+    <color name="state_gray_alt">#FF636E72</color>
+
     <color name="state_green">#43A047</color>
     <color name="state_blue">#2196F3</color>
     <color name="state_gray">#737373</color>

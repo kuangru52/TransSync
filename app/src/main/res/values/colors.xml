@@ -26,6 +26,12 @@
     <color name="bg_tag">#F0F2F5</color>
     <color name="stroke_tag">#E0E0E0</color>
 
+    <!-- Hardcoded Colors to be migrated -->
+    <color name="text_white_70">#B3FFFFFF</color>
+    <color name="text_white_53">#88FFFFFF</color>
+    <color name="state_yellow">#FFF9A825</color>
+    <color name="state_gray_alt">#FF636E72</color>
+
     <!-- Torrent States -->
     <color name="state_green">#43A047</color>
     <color name="state_blue">#2196F3</color>

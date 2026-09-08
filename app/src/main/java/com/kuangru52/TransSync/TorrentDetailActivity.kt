@@ -1,18 +1,13 @@
 package com.kuangru52.transsync
 
-import com.kuangru52.transsync.R
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.google.android.material.tabs.TabLayoutMediator
 import com.kuangru52.transsync.databinding.ActivityTorrentDetailBinding
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 
 class TorrentDetailActivity : AppCompatActivity() {
 

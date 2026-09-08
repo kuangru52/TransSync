@@ -13,5 +13,12 @@ interface TransmissionService {
         @Header("X-Transmission-Session-Id") sessionId: String?,
         @Body request: RpcRequest
     ): Call<RpcResponse<Map<String, Any>>>
+
+    @POST
+    fun getTorrents(
+        @Url url: String,
+        @Header("X-Transmission-Session-Id") sessionId: String?,
+        @Body request: RpcRequest
+    ): Call<RpcResponse<TorrentListArguments>>
 }
 

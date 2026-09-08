@@ -8,8 +8,8 @@
     android:fitsSystemWindows="true"
     android:gravity="center"
     android:orientation="vertical"
-    android:paddingLeft="20dp"
-    android:paddingRight="20dp"
+    android:paddingStart="20dp"
+    android:paddingEnd="20dp"
     android:paddingBottom="24dp"
     android:theme="@style/ThemeOverlay.AppCompat.Dark">
 
@@ -25,7 +25,8 @@
         android:src="@drawable/logo"
         android:scaleType="fitCenter"
         android:background="?attr/selectableItemBackgroundBorderless"
-        app:shapeAppearanceOverlay="@style/RoundedRectangleShape" />
+        app:shapeAppearanceOverlay="@style/RoundedRectangleShape"
+        android:contentDescription="@string/app_name" />
 
     <TextView
         android:id="@+id/tvAppName"

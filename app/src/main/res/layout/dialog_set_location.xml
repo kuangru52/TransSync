@@ -14,10 +14,10 @@
         android:hint="@string/hint_download_dir"
         app:hintTextColor="@color/colorAccent"
         android:textColorHint="@color/text_secondary"
-        app:boxCornerRadiusTopStart="12dp"
-        app:boxCornerRadiusTopEnd="12dp"
-        app:boxCornerRadiusBottomStart="12dp"
-        app:boxCornerRadiusBottomEnd="12dp"
+        app:boxCornerRadiusTopStart="28dp"
+        app:boxCornerRadiusTopEnd="28dp"
+        app:boxCornerRadiusBottomStart="28dp"
+        app:boxCornerRadiusBottomEnd="28dp"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
 
         <AutoCompleteTextView
@@ -67,7 +67,7 @@
         android:layout_width="wrap_content"
         android:layout_height="32dp"
         android:layout_gravity="end"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="24dp"
         android:text="@string/btn_confirm"
         app:backgroundTint="@color/colorAccent"
         android:textColor="@color/white"

@@ -13,206 +13,221 @@
     app:strokeWidth="1dp"
     app:strokeColor="@color/divider">
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:padding="12dp">
 
         <FrameLayout
             android:id="@+id/btnStatus"
             android:layout_width="36dp"
             android:layout_height="36dp"
-            android:layout_gravity="center_vertical"
-            android:layout_marginEnd="12dp"
+            android:background="@drawable/bg_status_circle"
             android:clickable="true"
             android:focusable="true"
-            android:background="@drawable/bg_status_circle">
+            android:contentDescription="@string/status_paused"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <ImageView
                 android:id="@+id/ivStatusIcon"
                 android:layout_width="18dp"
                 android:layout_height="18dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_pause"
-                android:contentDescription="@null" />
+                android:contentDescription="@null"
+                android:src="@drawable/ic_pause" />
         </FrameLayout>
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:layout_marginStart="12dp"
+            android:ellipsize="end"
+            android:maxLines="2"
+            android:textColor="@color/text_primary"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/btnStatus"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Jumanji.The.Next.Level.iso" />
+
+        <TextView
+            android:id="@+id/tvSizeInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="18dp"
+            android:gravity="center_vertical"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintEnd_toStartOf="@id/tvTrackerName"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintHorizontal_chainStyle="packed"
+            app:layout_constraintStart_toStartOf="@id/tvName"
+            app:layout_constraintTop_toBottomOf="@id/tvName"
+            tools:text="10 GB / 43.7 GB" />
+
+        <TextView
+            android:id="@+id/tvTrackerName"
+            android:layout_width="wrap_content"
+            android:layout_height="18dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_tag_capsule"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:paddingHorizontal="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintBottom_toBottomOf="@id/tvSizeInfo"
+            app:layout_constraintEnd_toStartOf="@id/tvHrTag"
+            app:layout_constraintStart_toEndOf="@id/tvSizeInfo"
+            app:layout_constraintTop_toTopOf="@id/tvSizeInfo"
+            tools:text="HDSKY" />
+
+        <TextView
+            android:id="@+id/tvHrTag"
+            android:layout_width="wrap_content"
+            android:layout_height="18dp"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_tag_capsule"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:paddingHorizontal="8dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:visibility="gone"
+            app:layout_constrainedWidth="true"
+            app:layout_constraintBottom_toBottomOf="@id/tvSizeInfo"
+            app:layout_constraintEnd_toStartOf="@id/tvDownloadSpeed"
+            app:layout_constraintStart_toEndOf="@id/tvTrackerName"
+            app:layout_constraintTop_toTopOf="@id/tvSizeInfo"
+            tools:text="H&amp;R 2d 12h"
+            tools:visibility="visible" />
+
+        <TextView
+            android:id="@+id/tvDownloadSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="70dp"
+            android:gravity="end"
+            android:maxLines="1"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toBottomOf="@id/tvSizeInfo"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvSizeInfo"
+            tools:text="1.2 MB/s ↓" />
+
+        <TextView
+            android:id="@+id/tvError"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/state_red"
+            android:textSize="12sp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/tvName"
+            app:layout_constraintTop_toBottomOf="@id/tvSizeInfo"
+            tools:text="Error: No space left on device"
+            tools:visibility="visible" />
+
+        <TextView
+            android:id="@+id/tvStatsLeft"
+            android:layout_width="0dp"
+            android:layout_height="18dp"
+            android:layout_marginTop="2dp"
+            android:ellipsize="end"
+            android:gravity="center_vertical"
+            android:maxLines="1"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            app:layout_constraintEnd_toStartOf="@id/tvUploadSpeed"
+            app:layout_constraintStart_toStartOf="@id/tvName"
+            app:layout_constraintTop_toBottomOf="@id/tvError"
+            tools:text="Uploaded: 264.3 GB (Ratio: 6.04)" />
+
+        <TextView
+            android:id="@+id/tvUploadSpeed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:minWidth="70dp"
+            android:gravity="end"
+            android:maxLines="1"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            app:layout_constraintBottom_toBottomOf="@id/tvStatsLeft"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="@id/tvStatsLeft"
+            tools:text="450 KB/s ↑" />
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/layoutProgress"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/tvName"
+            app:layout_constraintTop_toBottomOf="@id/tvStatsLeft">
+
+            <View
+                android:id="@+id/progressBg"
+                android:layout_width="0dp"
+                android:layout_height="2dp"
+                android:background="#1A000000"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <View
+                android:id="@+id/progressFill"
+                android:layout_width="0dp"
+                android:layout_height="2dp"
+                android:background="@color/state_blue"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/tvProgressPercent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
 
             <TextView
-                android:id="@+id/tvName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:ellipsize="end"
-                android:maxLines="2"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                tools:text="Jumanji.The.Next.Level.iso" />
-
-            <!-- 锁定信息行高度，防止速度变化导致微调 -->
-            <LinearLayout
-                android:layout_width="match_parent"
+                android:id="@+id/tvProgressPercent"
+                android:layout_width="wrap_content"
                 android:layout_height="18dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tvSizeInfo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    tools:text="10 GB / 43.7 GB" />
-
-                <TextView
-                    android:id="@+id/tvTrackerName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="18dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_tag_capsule"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:paddingHorizontal="8dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="10sp"
-                    tools:text="HDSKY" />
-
-                <TextView
-                    android:id="@+id/tvHrTag"
-                    android:layout_width="wrap_content"
-                    android:layout_height="18dp"
-                    android:layout_marginStart="8dp"
-                    android:background="@drawable/bg_tag_capsule"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:paddingHorizontal="8dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="10sp"
-                    android:visibility="gone"
-                    tools:text="H&amp;R 2d 12h"
-                    tools:visibility="visible" />
-
-                <View
-                    android:layout_width="0dp"
-                    android:layout_height="0dp"
-                    android:layout_weight="1" />
-
-                <TextView
-                    android:id="@+id/tvDownloadSpeed"
-                    android:layout_width="75dp"
-                    android:layout_height="wrap_content"
-                    android:gravity="end"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    tools:text="1.2 MB/s ↓" />
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tvError"
-                android:layout_width="match_parent"
-                android:layout_height="16dp"
-                android:textColor="@color/state_red"
-                android:textSize="11sp"
-                android:visibility="gone"
-                android:maxLines="1"
-                android:ellipsize="end"
-                tools:text="Error: No space left on device"
-                tools:visibility="visible" />
-
-            <!-- 锁定上传/统计行高度 -->
-            <RelativeLayout
-                android:layout_width="match_parent"
-                android:layout_height="18dp">
-
-                <TextView
-                    android:id="@+id/tvStatsLeft"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentStart="true"
-                    android:layout_toStartOf="@+id/tvUploadSpeed"
-                    android:ellipsize="end"
-                    android:maxLines="1"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="11sp"
-                    tools:text="Uploaded: 264.3 GB (Ratio: 6.04)" />
-
-                <TextView
-                    android:id="@+id/tvUploadSpeed"
-                    android:layout_width="75dp"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:gravity="end"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    tools:text="450 KB/s ↑" />
-            </RelativeLayout>
-
-            <!-- 进度条及百分比气泡容器 -->
-            <androidx.constraintlayout.widget.ConstraintLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp">
-
-                <!-- 全长的灰色底线 -->
-                <View
-                    android:id="@+id/progressBg"
-                    android:layout_width="0dp"
-                    android:layout_height="2dp"
-                    android:background="#1A000000"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <!-- 动态增长的填充线：起点对齐左边，终点跟随数字 -->
-                <View
-                    android:id="@+id/progressFill"
-                    android:layout_width="0dp"
-                    android:layout_height="2dp"
-                    android:background="@color/state_blue"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toStartOf="@+id/tvProgressPercent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-
-                <!-- 数字锚点：它是驱动源 -->
-                <TextView
-                    android:id="@+id/tvProgressPercent"
-                    android:layout_width="wrap_content"
-                    android:layout_height="18dp"
-                    android:background="@drawable/bg_tag_capsule"
-                    android:gravity="center"
-                    android:includeFontPadding="false"
-                    android:paddingHorizontal="8dp"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="9sp"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="0.0"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    tools:text="60.5" />
-
-            </androidx.constraintlayout.widget.ConstraintLayout>
-
-            <TextView
-                android:id="@+id/tvVerificationStatus"
-                android:layout_width="match_parent"
-                android:layout_height="14dp"
+                android:background="@drawable/bg_tag_capsule"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:paddingHorizontal="8dp"
                 android:textColor="@color/text_secondary"
-                android:textSize="10sp"
-                android:visibility="gone"
-                tools:text="Verifying (45.2%)"
-                tools:visibility="visible" />
+                android:textSize="11sp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintHorizontal_bias="0.0"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:text="60.5" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-        </LinearLayout>
-    </LinearLayout>
+        <TextView
+            android:id="@+id/tvVerificationStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/text_secondary"
+            android:textSize="11sp"
+            android:visibility="gone"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="@id/tvName"
+            app:layout_constraintTop_toBottomOf="@id/layoutProgress"
+            tools:text="Verifying (45.2%)"
+            tools:visibility="visible" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
 </com.google.android.material.card.MaterialCardView>

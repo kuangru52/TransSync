@@ -4,7 +4,7 @@ object TrackerUtils {
     fun getTrackerNameFromUrl(url: String): String? {
         if (url.isEmpty()) return null
         
-        // 预定义映射
+        // Predefined mapping
         val mapping = mapOf(
             "pt.btschool.club" to "BTSchool",
             "agsvpt.trackers.work" to "AGSV",
@@ -68,7 +68,7 @@ object TrackerUtils {
             if (url.contains(key, ignoreCase = true)) return value
         }
 
-        // 兜底逻辑：尝试自动提取域名
+        // Fallback logic: extract from host
         return try {
             val uri = java.net.URI(url)
             val host = uri.host ?: url
@@ -78,4 +78,3 @@ object TrackerUtils {
         }
     }
 }
-

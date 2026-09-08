@@ -1,25 +1,26 @@
 package com.kuangru52.transsync
 
-import com.kuangru52.transsync.R
 import android.content.pm.ActivityInfo
 import android.content.Intent
 import android.net.Uri
-import androidx.core.net.toUri
 import android.os.Bundle
 import android.view.View
-import android.widget.Button
+import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.IntentCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import com.google.android.material.textfield.TextInputEditText
+import com.kuangru52.transsync.databinding.ActivityMainBinding
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
 class MainActivity : AppCompatActivity() {
+
+    private lateinit var binding: ActivityMainBinding
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val isTablet = resources.getBoolean(R.bool.isTablet)
@@ -31,12 +32,15 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             val requestPermissionLauncher = registerForActivityResult(
                 ActivityResultContracts.RequestPermission()
             ) { isGranted: Boolean ->
                 if (!isGranted) {
-                    Toast.makeText(this, "Notification permission denied. You won't receive download completion alerts.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this, R.string.msg_notification_denied, Toast.LENGTH_LONG).show()
                 }
             }
             requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -49,50 +53,42 @@ class MainActivity : AppCompatActivity() {
 
         val isEditing = intent.getBooleanExtra("isEditing", false)
         val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
-        val externalUri = intent.data ?: intent.getParcelableExtra(Intent.EXTRA_STREAM)
+        val externalUri = intent.data ?: IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
 
+        // 如果不是编辑模式且有保存的凭据，直接跳转
         if (!isEditing && savedRpcUrl != null && savedUser != null && savedPass != null) {
-            val nextIntent = Intent(this, TorrentListActivity::class.java).apply {
-                putExtra("rpcUrl", savedRpcUrl)
-                putExtra("user", savedUser)
-                putExtra("pass", savedPass)
-                data = externalUri
-                putExtra(Intent.EXTRA_STREAM, intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
-                putExtra(Intent.EXTRA_TEXT, sharedText)
-            }
-            startActivity(nextIntent)
-            finish()
+            startTorrentList(savedRpcUrl, savedUser, savedPass, externalUri, sharedText)
             return
         }
 
-        setContentView(R.layout.activity_main)
-
-        val mainView = findViewById<View>(R.id.main)
-        ViewCompat.setOnApplyWindowInsetsListener(mainView) { v, insets ->
+        ViewCompat.setOnApplyWindowInsetsListener(binding.main) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0)
             insets
         }
 
-        val etHost = findViewById<TextInputEditText>(R.id.etHost)
-        val etUsername = findViewById<TextInputEditText>(R.id.etUsername)
-        val etPassword = findViewById<TextInputEditText>(R.id.etPassword)
-        val btnLogin = findViewById<Button>(R.id.btnLogin)
+        binding.etPassword.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                binding.btnLogin.performClick()
+                true
+            } else {
+                false
+            }
+        }
 
-        // Pre-fill fields if we have saved info
-        val displayUrl = savedRpcUrl?.substringBefore("/transmission/rpc")?.removeSuffix("/") ?: ""
-        etHost.setText(displayUrl)
-        etUsername.setText(savedUser ?: "")
-        etPassword.setText(savedPass ?: "")
+        // 预填充字段
+        val displayUrl = savedRpcUrl?.substringBefore(RPC_PATH)?.removeSuffix("/") ?: ""
+        binding.etHost.setText(displayUrl)
+        binding.etUsername.setText(savedUser ?: "")
+        binding.etPassword.setText(savedPass ?: "")
 
-        btnLogin.setOnClickListener {
-            var host = etHost.text.toString().trim()
-            val user = etUsername.text.toString().trim()
-            val pass = etPassword.text.toString().trim()
+        binding.btnLogin.setOnClickListener {
+            var host = binding.etHost.text.toString().trim()
+            val user = binding.etUsername.text.toString().trim()
+            val pass = binding.etPassword.text.toString().trim()
 
-            // If in editing mode and content hasn't changed, just return
             if (isEditing) {
-                val currentDisplayUrl = (savedRpcUrl ?: "").substringBefore("/transmission/rpc").removeSuffix("/")
+                val currentDisplayUrl = (savedRpcUrl ?: "").substringBefore(RPC_PATH).removeSuffix("/")
                 if (host == currentDisplayUrl && user == savedUser && pass == savedPass) {
                     onBackPressedDispatcher.onBackPressed()
                     return@setOnClickListener
@@ -100,28 +96,39 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (host.isBlank() || user.isBlank() || pass.isBlank()) {
-                Toast.makeText(this, "Please fill all fields", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.msg_fill_all_fields, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            // Enforce HTTPS
             if (host.startsWith("http://")) {
-                Toast.makeText(this, "Insecure HTTP is not allowed. Please use HTTPS.", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, R.string.msg_insecure_http, Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
             if (!host.startsWith("https://")) {
                 host = "https://$host"
             }
 
-            // Standardize Transmission RPC URL
-            val rpcUrl = host.removeSuffix("/") + "/transmission/rpc"
-
+            val rpcUrl = host.removeSuffix("/") + RPC_PATH
             login(rpcUrl, user, pass)
         }
     }
 
+    private fun startTorrentList(rpcUrl: String, user: String, pass: String, uri: Uri?, text: String?) {
+        val nextIntent = Intent(this, TorrentListActivity::class.java).apply {
+            putExtra("rpcUrl", rpcUrl)
+            putExtra("user", user)
+            putExtra("pass", pass)
+            data = uri
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        startActivity(nextIntent)
+        finish()
+    }
+
     private fun login(rpcUrl: String, user: String, pass: String) {
-        val baseUrl = rpcUrl.substringBefore("/transmission/rpc") + "/"
+        binding.loginProgress.visibility = View.VISIBLE
+        val baseUrl = rpcUrl.substringBefore(RPC_PATH) + "/"
         val service = TransmissionClient.getService(baseUrl, user, pass)
         
         val request = RpcRequest("torrent-get", mapOf("fields" to listOf("id", "name")))
@@ -131,34 +138,28 @@ class MainActivity : AppCompatActivity() {
                 call: Call<RpcResponse<Map<String, Any>>>,
                 response: Response<RpcResponse<Map<String, Any>>>
             ) {
+                binding.loginProgress.visibility = View.GONE
                 if (response.isSuccessful || response.code() == 409) {
-                    // Save login state
                     getSharedPreferences("auth", MODE_PRIVATE).edit().apply {
                         putString("rpcUrl", rpcUrl)
                         putString("user", user)
                         putString("pass", pass)
                         apply()
                     }
-
-                    val nextIntent = Intent(this@MainActivity, TorrentListActivity::class.java).apply {
-                        putExtra("rpcUrl", rpcUrl)
-                        putExtra("user", user)
-                        putExtra("pass", pass)
-                        data = intent.data
-                        putExtra(Intent.EXTRA_STREAM, intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
-                        putExtra(Intent.EXTRA_TEXT, intent.getStringExtra(Intent.EXTRA_TEXT))
-                    }
-                    startActivity(nextIntent)
-                    finish()
+                    startTorrentList(rpcUrl, user, pass, intent.data, intent.getStringExtra(Intent.EXTRA_TEXT))
                 } else {
-                    Toast.makeText(this@MainActivity, "Login failed: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@MainActivity, getString(R.string.msg_login_failed, response.code()), Toast.LENGTH_SHORT).show()
                 }
             }
 
             override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
-                Toast.makeText(this@MainActivity, "Error: ${t.message}", Toast.LENGTH_LONG).show()
+                binding.loginProgress.visibility = View.GONE
+                Toast.makeText(this@MainActivity, getString(R.string.msg_error_with_msg, t.message), Toast.LENGTH_LONG).show()
             }
         })
     }
-}
 
+    companion object {
+        const val RPC_PATH = "/transmission/rpc"
+    }
+}

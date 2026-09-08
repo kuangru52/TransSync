@@ -70,7 +70,7 @@ class TorrentPeersFragment : Fragment() {
         val user = intent.getStringExtra("user") ?: ""
         val pass = intent.getStringExtra("pass") ?: ""
 
-        val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+        val service = TransmissionClient.getService(rpcUrl, user, pass)
         val request = RpcRequest("torrent-reannounce", mapOf("ids" to listOf(torrentId)))
 
         service.rpc(rpcUrl, null, request).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
@@ -97,7 +97,7 @@ class TorrentPeersFragment : Fragment() {
         val user = intent.getStringExtra("user") ?: ""
         val pass = intent.getStringExtra("pass") ?: ""
 
-        val service = TransmissionClient.getService(rpcUrl.substringBefore("/transmission/rpc") + "/", user, pass)
+        val service = TransmissionClient.getService(rpcUrl, user, pass)
         val fields = listOf("id", "peers")
         val request = RpcRequest("torrent-get", mapOf("ids" to listOf(torrentId), "fields" to fields))
 

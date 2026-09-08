@@ -1,16 +1,19 @@
 package com.kuangru52.transsync
 
-import com.kuangru52.transsync.R
 import android.content.res.ColorStateList
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.TextView
+import android.graphics.BlurMaskFilter
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.MaskFilterSpan
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.kuangru52.transsync.databinding.ItemTorrentBinding
 import java.util.Locale
 
 class TorrentListAdapter(
@@ -43,6 +46,19 @@ class TorrentListAdapter(
             } else {
                 notifyItemRangeChanged(0, itemCount, "selection")
             }
+        }
+
+    var isTrackerBlurEnabled: Boolean = false
+        set(value) {
+            if (field == value) return
+            field = value
+            notifyItemRangeChanged(0, itemCount, "tracker_blur")
+        }
+
+    var revealedTrackerNames: Set<String> = emptySet()
+        set(value) {
+            field = value
+            notifyItemRangeChanged(0, itemCount, "tracker_blur")
         }
 
     fun getSelectedIds(): List<Int> = selectedIds.toList()
@@ -79,8 +95,8 @@ class TorrentListAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TorrentViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_torrent, parent, false)
-        return TorrentViewHolder(view)
+        val binding = ItemTorrentBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        return TorrentViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: TorrentViewHolder, position: Int) {
@@ -102,6 +118,19 @@ class TorrentListAdapter(
         }
 
         override fun areContentsTheSame(oldItem: Torrent, newItem: Torrent): Boolean {
+            // 如果是 H&R 种子，强制返回 false 以确保每次列表刷新都更新倒计时
+            if (newItem.labels?.any { it.startsWith("HR:") } == true) return false
+
+            val oldLabels = oldItem.labels
+            val newLabels = newItem.labels
+            val labelsEqual = if (oldLabels == null) {
+                newLabels == null
+            } else if (newLabels == null) {
+                false
+            } else {
+                oldLabels.size == newLabels.size && oldLabels.containsAll(newLabels)
+            }
+
             return oldItem.name == newItem.name &&
                     oldItem.status == newItem.status &&
                     oldItem.displayProgress == newItem.displayProgress &&
@@ -112,10 +141,8 @@ class TorrentListAdapter(
                     oldItem.displayStats == newItem.displayStats &&
                     oldItem.error == newItem.error &&
                     oldItem.errorString == newItem.errorString &&
-                    (oldItem.labels ?: emptyList<String>()) == (newItem.labels ?: emptyList<String>()) &&
-                    oldItem.doneDate == newItem.doneDate &&
-                    // ����� H&R ���ӣ�ǿ�Ʒ��� false ��ȷ��ÿ���б�ˢ�¶������¼��㵹��ʱ
-                    newItem.labels?.any { it.startsWith("HR:") } != true
+                    labelsEqual &&
+                    oldItem.doneDate == newItem.doneDate
         }
 
         override fun getChangePayload(oldItem: Torrent, newItem: Torrent): Any? {
@@ -139,9 +166,10 @@ class TorrentListAdapter(
                 payloads.add("stats")
             }
             
-            // ֻҪ���� HR ��ǩ����ǿ�Ƽ���ˢ�¸��أ�ȷ������ʱ����ÿ���б�ˢ�¶�����
+            // 只要包含 HR 标签就强制进行刷新更新，确保倒计时在每次列表刷新都更新
             val hasHr = newItem.labels?.any { it.startsWith("HR:") } == true
-            if (hasHr || (oldItem.labels ?: emptyList<String>()) != (newItem.labels ?: emptyList<String>()) || oldItem.doneDate != newItem.doneDate) {
+            if (hasHr || oldItem.labels != newItem.labels ||
+                oldItem.doneDate != newItem.doneDate || oldItem.addedDate != newItem.addedDate) {
                 payloads.add("hr")
             }
 
@@ -149,54 +177,37 @@ class TorrentListAdapter(
         }
     }
 
-    inner class TorrentViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val tvName: TextView = itemView.findViewById(R.id.tvName)
-        private val tvSizeInfo: TextView = itemView.findViewById(R.id.tvSizeInfo)
-        private val progressFill: View = itemView.findViewById(R.id.progressFill)
-        private val tvDownloadSpeed: TextView = itemView.findViewById(R.id.tvDownloadSpeed)
-        private val tvUploadSpeed: TextView = itemView.findViewById(R.id.tvUploadSpeed)
-        private val ivStatusIcon: ImageView = itemView.findViewById(R.id.ivStatusIcon)
-        private val btnStatus: View = itemView.findViewById(R.id.btnStatus)
-        private val tvTrackerName: TextView = itemView.findViewById(R.id.tvTrackerName)
-        private val tvStatsLeft: TextView = itemView.findViewById(R.id.tvStatsLeft)
-        private val tvVerificationStatus: TextView = itemView.findViewById(R.id.tvVerificationStatus)
-        private val tvError: TextView = itemView.findViewById(R.id.tvError)
-        private val tvProgressPercent: TextView = itemView.findViewById(R.id.tvProgressPercent)
-        private val tvHrTag: TextView = itemView.findViewById(R.id.tvHrTag)
+    inner class TorrentViewHolder(private val binding: ItemTorrentBinding) : RecyclerView.ViewHolder(binding.root) {
 
         fun bind(torrent: Torrent, isSelected: Boolean) {
+            val context = itemView.context
             itemView.isSelected = isSelected
             itemView.isActivated = isSelected
-            tvName.text = torrent.name
+            binding.tvName.text = torrent.name
             
-            progressFill.backgroundTintList = ColorStateList.valueOf(torrent.displayColor)
-            tvSizeInfo.text = torrent.displaySize
+            val color = getDisplayColor(context, torrent)
+            binding.progressFill.backgroundTintList = ColorStateList.valueOf(color)
+            binding.tvSizeInfo.text = torrent.displaySize
 
             updateProgressPercent(torrent)
 
-            val trackerDisplay = torrent.trackers?.firstOrNull()?.let { TrackerUtils.getTrackerNameFromUrl(it.announce) } ?: ""
-            if (trackerDisplay.isNotEmpty()) {
-                tvTrackerName.visibility = View.VISIBLE
-                tvTrackerName.text = trackerDisplay
-            } else {
-                tvTrackerName.visibility = View.GONE
-            }
+            updateTrackerTag(torrent.trackerName)
 
             if (torrent.error != 0 && torrent.errorString.isNotEmpty()) {
-                tvError.visibility = View.VISIBLE
-                tvError.text = torrent.errorString
+                binding.tvError.visibility = View.VISIBLE
+                binding.tvError.text = torrent.errorString
             } else {
-                tvError.visibility = View.GONE
+                binding.tvError.visibility = View.GONE
             }
 
-            tvStatsLeft.text = torrent.displayStats
-            tvDownloadSpeed.text = torrent.displayDownloadSpeed
-            tvUploadSpeed.text = torrent.displayUploadSpeed
+            binding.tvStatsLeft.text = torrent.displayStats
+            binding.tvDownloadSpeed.text = torrent.displayDownloadSpeed
+            binding.tvUploadSpeed.text = torrent.displayUploadSpeed
 
             updateStatusIcon(torrent)
             updateHrTag(torrent)
 
-            btnStatus.setOnClickListener {
+            binding.btnStatus.setOnClickListener {
                 val pos = adapterPosition
                 if (pos != RecyclerView.NO_POSITION) {
                     onStatusClick(getItem(pos))
@@ -219,6 +230,7 @@ class TorrentListAdapter(
         }
 
         fun partialUpdate(torrent: Torrent, payloads: List<Any>) {
+            val context = itemView.context
             val payloadSet = mutableSetOf<String>()
             payloads.forEach {
                 if (it is Set<*>) @Suppress("UNCHECKED_CAST") payloadSet.addAll(it as Set<String>)
@@ -231,24 +243,25 @@ class TorrentListAdapter(
                 itemView.isActivated = isSelected
             }
             if (payloadSet.contains("speed")) {
-                tvDownloadSpeed.text = torrent.displayDownloadSpeed
-                tvUploadSpeed.text = torrent.displayUploadSpeed
+                binding.tvDownloadSpeed.text = torrent.displayDownloadSpeed
+                binding.tvUploadSpeed.text = torrent.displayUploadSpeed
             }
             if (payloadSet.contains("progress")) {
-                progressFill.backgroundTintList = ColorStateList.valueOf(torrent.displayColor)
+                val color = getDisplayColor(context, torrent)
+                binding.progressFill.backgroundTintList = ColorStateList.valueOf(color)
                 updateProgressPercent(torrent)
                 if (torrent.displayStatusText.isNotEmpty()) {
-                    tvVerificationStatus.visibility = View.VISIBLE
-                    tvVerificationStatus.text = torrent.displayStatusText
+                    binding.tvVerificationStatus.visibility = View.VISIBLE
+                    binding.tvVerificationStatus.text = torrent.displayStatusText
                 } else {
-                    tvVerificationStatus.visibility = View.GONE
+                    binding.tvVerificationStatus.visibility = View.GONE
                 }
             }
             if (payloadSet.contains("size")) {
-                tvSizeInfo.text = torrent.displaySize
+                binding.tvSizeInfo.text = torrent.displaySize
             }
             if (payloadSet.contains("stats")) {
-                tvStatsLeft.text = torrent.displayStats
+                binding.tvStatsLeft.text = torrent.displayStats
             }
             if (payloadSet.contains("status")) {
                 updateStatusIcon(torrent)
@@ -258,123 +271,164 @@ class TorrentListAdapter(
             }
             if (payloadSet.contains("error")) {
                 if (torrent.error != 0) {
-                    tvError.visibility = View.VISIBLE
-                    tvError.text = torrent.errorString
+                    binding.tvError.visibility = View.VISIBLE
+                    binding.tvError.text = torrent.errorString
                 } else {
-                    tvError.visibility = View.GONE
+                    binding.tvError.visibility = View.GONE
                 }
+            }
+            if (payloadSet.contains("tracker_blur")) {
+                updateTrackerTag(torrent.trackerName)
+            }
+        }
+
+        private fun updateTrackerTag(trackerName: String) {
+            if (trackerName.isNotEmpty()) {
+                binding.tvTrackerName.visibility = View.VISIBLE
+                val shouldBlur = isTrackerBlurEnabled && !revealedTrackerNames.contains(trackerName)
+                
+                if (shouldBlur) {
+                    binding.tvTrackerName.setLayerType(View.LAYER_TYPE_SOFTWARE, null)
+                    val spannable = SpannableString(trackerName)
+                    spannable.setSpan(
+                        MaskFilterSpan(BlurMaskFilter(10f, BlurMaskFilter.Blur.NORMAL)),
+                        0,
+                        trackerName.length,
+                        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    binding.tvTrackerName.text = spannable
+                } else {
+                    binding.tvTrackerName.setLayerType(View.LAYER_TYPE_NONE, null)
+                    binding.tvTrackerName.text = trackerName
+                }
+            } else {
+                binding.tvTrackerName.visibility = View.GONE
+            }
+        }
+
+        private fun getDisplayColor(context: android.content.Context, torrent: Torrent): Int {
+            return when {
+                torrent.error != 0 || (torrent.errorString.isNotEmpty() && !torrent.errorString.contains("none", ignoreCase = true)) -> 
+                    ContextCompat.getColor(context, R.color.state_red)
+                torrent.status == 1 || torrent.status == 2 -> 
+                    ContextCompat.getColor(context, R.color.state_yellow)
+                torrent.status == 0 -> 
+                    ContextCompat.getColor(context, R.color.state_gray)
+                torrent.percentDone >= 1.0 -> 
+                    ContextCompat.getColor(context, R.color.state_green)
+                else -> 
+                    ContextCompat.getColor(context, R.color.state_blue)
             }
         }
 
         private fun updateStatusIcon(torrent: Torrent) {
             val context = itemView.context
-            ivStatusIcon.setImageResource(if (torrent.status == 0) R.drawable.ic_play else R.drawable.ic_pause)
+            binding.ivStatusIcon.setImageResource(if (torrent.status == 0) R.drawable.ic_play else R.drawable.ic_pause)
             val color = if (torrent.status == 0) ContextCompat.getColor(context, R.color.state_gray) else ContextCompat.getColor(context, R.color.button_color)
             val tint = ColorStateList.valueOf(color)
-            ivStatusIcon.imageTintList = tint
-            btnStatus.backgroundTintList = ColorStateList.valueOf(color).withAlpha(30)
+            binding.ivStatusIcon.imageTintList = tint
+            binding.btnStatus.backgroundTintList = ColorStateList.valueOf(color).withAlpha(30)
         }
 
         private fun updateHrTag(torrent: Torrent) {
             val hrLabel = torrent.labels?.find { it.startsWith("HR:") }
             if (hrLabel == null) {
-                tvHrTag.visibility = View.GONE
+                binding.tvHrTag.visibility = View.GONE
                 return
             }
 
             val hours = hrLabel.substringAfter("HR:").toDoubleOrNull() ?: 0.0
             if (hours <= 0) {
-                tvHrTag.visibility = View.GONE
+                binding.tvHrTag.visibility = View.GONE
                 return
             }
 
-            tvHrTag.visibility = View.VISIBLE
+            binding.tvHrTag.visibility = View.VISIBLE
             
             val context = itemView.context
             val density = context.resources.displayMetrics.density
             val px8 = (8 * density).toInt()
             val px18 = (18 * density).toInt()
             
-            // ����ΪĬ�Ͻ�����ʽ
-            tvHrTag.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
-            tvHrTag.setPadding(px8, 0, px8, 0)
-            tvHrTag.setBackgroundResource(R.drawable.bg_tag_capsule)
-            tvHrTag.backgroundTintList = null
-            val params = tvHrTag.layoutParams
+            // 设置为默认胶囊样式
+            binding.tvHrTag.setCompoundDrawablesWithIntrinsicBounds(0, 0, 0, 0)
+            binding.tvHrTag.setPadding(px8, 0, px8, 0)
+            binding.tvHrTag.setBackgroundResource(R.drawable.bg_tag_capsule)
+            binding.tvHrTag.backgroundTintList = null
+            val params = binding.tvHrTag.layoutParams
             params.width = ViewGroup.LayoutParams.WRAP_CONTENT
-            tvHrTag.layoutParams = params
-            androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(tvHrTag, null)
+            binding.tvHrTag.layoutParams = params
+            androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(binding.tvHrTag, null)
 
-            // �����û�����꣬��ʾ "H&R"
+            // 如果未下载完毕，显示 "H&R"
             if (torrent.percentDone < 1.0) {
-                tvHrTag.text = context.getString(R.string.hr_tag)
-                tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
+                binding.tvHrTag.text = context.getString(R.string.hr_tag)
+                binding.tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.text_secondary))
                 return
             }
 
-            // �������ɣ�����ʣ��ʱ��
-            val doneDate = torrent.doneDate * 1000L // ת��Ϊ����
+            // 下载完成后，计算剩余时间
+            val doneDate = torrent.doneDate * 1000L // 转换为毫秒
             val currentTime = System.currentTimeMillis()
             val totalRequiredMs = (hours * 3600 * 1000L).toLong()
             val elapsedMs = currentTime - doneDate
             val remainingMs = totalRequiredMs - elapsedMs
-            val bufferMs = 30 * 60 * 1000L // 30���ӻ���
+            val bufferMs = 30 * 60 * 1000L // 30分钟缓冲
 
             if (remainingMs <= -bufferMs) {
-                // �Ѵ���ҳ��������� - ֱ����ʾͼ�꣬�������֣���������
-                tvHrTag.text = ""
-                tvHrTag.setPadding(0, 0, 0, 0)
+                // 已达到核销时间上限 - 直接显示图标，隐藏文字，节省空间
+                binding.tvHrTag.text = ""
+                binding.tvHrTag.setPadding(0, 0, 0, 0)
                 params.width = px18
-                tvHrTag.layoutParams = params
+                binding.tvHrTag.layoutParams = params
                 
-                // �����Ƴ��������ң�ֻ��ʾͼ�걾����ɫ
-                tvHrTag.background = null
+                // 彻底移除背景胶囊，只显示图标本身颜色
+                binding.tvHrTag.background = null
                 
                 val doneDrawable = ContextCompat.getDrawable(context, R.drawable.ic_done)
-                val iconSize = px18
-                doneDrawable?.setBounds(0, 0, iconSize, iconSize)
+                doneDrawable?.setBounds(0, 0, px18, px18)
                 
-                tvHrTag.setCompoundDrawables(doneDrawable, null, null, null)
-                // �ٴ�ȷ��û�� Tint Ӱ�죬ʹ��ͼ��ԭʼɫ�ʣ���Բ�װ׶Ժţ�
-                androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(tvHrTag, null)
+                binding.tvHrTag.setCompoundDrawables(doneDrawable, null, null, null)
+                // 再次确认没有 Tint 影响，使用图标原始色调（蓝圆白勾对号）
+                androidx.core.widget.TextViewCompat.setCompoundDrawableTintList(binding.tvHrTag, null)
             } else if (remainingMs > 0) {
-                // �������ֵ���ʱ
-                tvHrTag.backgroundTintList = null 
+                // 正常的数值倒计时
+                binding.tvHrTag.backgroundTintList = null 
                 val totalMins = remainingMs / (60 * 1000L)
                 val hrs = totalMins / 60
                 val mins = totalMins % 60
-                tvHrTag.text = context.getString(R.string.hr_list_countdown_format, hrs, mins)
-                tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.state_blue))
+                binding.tvHrTag.text = context.getString(R.string.hr_list_countdown_format, hrs, mins)
+                binding.tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.state_blue))
             } else {
-                // ��ȴʱ�䣨30���ӻ����ڣ�
-                tvHrTag.backgroundTintList = null 
+                // 等待核销（30分钟缓冲区内）
+                binding.tvHrTag.backgroundTintList = null 
                 val remainingBufferMs = bufferMs + remainingMs
-                val totalSecs = Math.max(0, remainingBufferMs / 1000L)
+                val totalSecs = remainingBufferMs.coerceAtLeast(0L) / 1000L
                 val mins = totalSecs / 60
                 val secs = totalSecs % 60
-                tvHrTag.text = String.format(Locale.US, "%02d:%02d", mins, secs)
-                tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.state_blue))
+                binding.tvHrTag.text = String.format(Locale.US, "%02d:%02d", mins, secs)
+                binding.tvHrTag.setTextColor(ContextCompat.getColor(context, R.color.state_blue))
             }
         }
 
         private fun updateProgressPercent(torrent: Torrent) {
-            val params = tvProgressPercent.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
+            val params = binding.tvProgressPercent.layoutParams as androidx.constraintlayout.widget.ConstraintLayout.LayoutParams
             
             if (torrent.displayProgress >= 1000) {
-                tvProgressPercent.visibility = View.GONE
+                binding.tvProgressPercent.visibility = View.GONE
                 params.horizontalBias = 1.0f
-                tvProgressPercent.layoutParams = params
+                binding.tvProgressPercent.layoutParams = params
                 return
             }
             
-            tvProgressPercent.visibility = View.VISIBLE
+            binding.tvProgressPercent.visibility = View.VISIBLE
             val progress = torrent.displayProgress / 10f
             val percentText = String.format(Locale.US, "%.1f", progress)
-            tvProgressPercent.text = percentText
+            binding.tvProgressPercent.text = percentText
             
-            // �������ֵ�λ�ã��Ӷ�ͨ��Լ������ progressFill
+            // 计算百分比文字的位置，使其通过约束跟随 progressFill
             params.horizontalBias = torrent.displayProgress / 1000f
-            tvProgressPercent.layoutParams = params
+            binding.tvProgressPercent.layoutParams = params
         }
     }
 }
