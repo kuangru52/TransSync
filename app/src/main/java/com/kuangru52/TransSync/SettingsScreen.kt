@@ -31,11 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -45,8 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -592,51 +588,27 @@ fun SettingsScreen(
         )
     }
 
-    // 删除服务器二次确认弹窗
+    // 删除服务器二次确认弹窗 (使用全统一液态玻璃弹窗)
     serverToDeleteTarget?.let { serverToDelete ->
-        AlertDialog(
+        LiquidGlassDialog(
             onDismissRequest = { serverToDeleteTarget = null },
-            shape = RoundedCornerShape(20.dp),
-            containerColor = cardBgColor,
-            title = {
-                Text(
-                    text = stringResource(R.string.dialog_delete_server_title),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = primaryTextColor
-                )
+            title = stringResource(R.string.dialog_delete_server_title),
+            confirmButtonText = stringResource(R.string.btn_delete),
+            confirmButtonColor = Color(0xFFFF5252),
+            onConfirm = {
+                ServerManager.deleteServer(context, serverToDelete.id)
+                serversList = ServerManager.getServers(context)
+                activeServer = ServerManager.getActiveServer(context)
+                serverToDeleteTarget = null
+                Toast.makeText(context, "已删除服务器配置", Toast.LENGTH_SHORT).show()
             },
-            text = {
-                Text(
-                    text = stringResource(R.string.dialog_delete_server_text, serverToDelete.alias.ifEmpty { "Transmission" }),
-                    fontSize = 14.5.sp,
-                    color = secondaryTextColor
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        ServerManager.deleteServer(context, serverToDelete.id)
-                        serversList = ServerManager.getServers(context)
-                        activeServer = ServerManager.getActiveServer(context)
-                        serverToDeleteTarget = null
-                        Toast.makeText(context, "已删除服务器配置", Toast.LENGTH_SHORT).show()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF5252)),
-                    shape = RoundedCornerShape(100.dp)
-                ) {
-                    Text(stringResource(R.string.btn_delete), color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { serverToDeleteTarget = null },
-                    shape = RoundedCornerShape(100.dp)
-                ) {
-                    Text(stringResource(R.string.btn_cancel), color = primaryTextColor)
-                }
-            }
-        )
+        ) {
+            Text(
+                text = stringResource(R.string.dialog_delete_server_text, serverToDelete.alias.ifEmpty { "Transmission" }),
+                fontSize = 15.sp,
+                color = if (isDark) Color.White else Color(0xFF2D3436),
+            )
+        }
     }
 
     // 编辑已有服务器弹窗
@@ -738,38 +710,122 @@ fun ServerEditDialog(
 
     var isTestingConnection by remember { mutableStateOf(false) }
 
-    val cardBgColor = if (isDark) Color(0xFF1F2A38) else Color.White
-    val cardBorderColor = if (isDark) Color(0xFF34495E) else Color(0xFFE0E0E0)
     val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
     val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
 
-    Dialog(
+    val dialogTitle = if (initialServer != null) stringResource(R.string.dialog_edit_server_title) else stringResource(R.string.dialog_add_server_title)
+
+    LiquidGlassDialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .widthIn(max = 400.dp)
-                .fillMaxWidth(0.95f)
-                .wrapContentHeight()
-                .padding(16.dp)
-                .shadow(elevation = 20.dp, shape = RoundedCornerShape(24.dp)),
-            shape = RoundedCornerShape(24.dp),
-            color = cardBgColor,
-            border = BorderStroke(1.dp, cardBorderColor)
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+        title = dialogTitle,
+        confirmButtonText = stringResource(R.string.btn_save),
+        confirmButtonColor = accentColor,
+        onConfirm = {
+            val rawUrl = rpcUrlInput.trim()
+            val alias = aliasInput.trim().ifEmpty { if (clientTypeInput == ServerConfig.CLIENT_QBITTORRENT) "qBittorrent" else "Transmission" }
+            if (rawUrl.isEmpty()) {
+                Toast.makeText(context, "请输入服务器地址", Toast.LENGTH_SHORT).show()
+                return@LiquidGlassDialog
+            }
+            val formattedUrl = formatServerUrl(rawUrl, clientTypeInput)
+
+            val newConfig = ServerConfig(
+                id = initialServer?.id ?: java.util.UUID.randomUUID().toString(),
+                alias = alias,
+                clientType = clientTypeInput,
+                rpcUrl = formattedUrl,
+                user = userInput.trim(),
+                pass = passInput.trim(),
+                isActive = initialServer?.isActive ?: true,
+                avatarUri = avatarUriInput,
+            )
+            onSave(newConfig)
+        },
+        bottomLeftContent = {
+            Button(
+                onClick = {
+                    val rawUrl = rpcUrlInput.trim()
+                    val u = userInput.trim()
+                    val p = passInput.trim()
+                    if (rawUrl.isEmpty()) {
+                        Toast.makeText(context, "请输入服务器地址", Toast.LENGTH_SHORT).show()
+                        return@Button
+                    }
+                    val formattedUrl = formatServerUrl(rawUrl, clientTypeInput)
+                    isTestingConnection = true
+
+                    if (clientTypeInput == ServerConfig.CLIENT_QBITTORRENT) {
+                        val qbitService = QBittorrentClient.getService(formattedUrl)
+                        val performTransferCheck = {
+                            qbitService.getTransferInfo().enqueue(object : Callback<QbitTransferInfo> {
+                                override fun onResponse(call: Call<QbitTransferInfo>, response: Response<QbitTransferInfo>) {
+                                    isTestingConnection = false
+                                    if ((response.isSuccessful) || (response.code() == 200)) {
+                                        Toast.makeText(context, "连接成功！qBittorrent Web API 握手正常", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "连接失败，HTTP 响应码: ${response.code()}", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                override fun onFailure(call: Call<QbitTransferInfo>, t: Throwable) {
+                                    isTestingConnection = false
+                                    Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                }
+                            })
+                        }
+
+                        if (u.isNotEmpty() || p.isNotEmpty()) {
+                            qbitService.login(u, p).enqueue(object : Callback<String> {
+                                override fun onResponse(call: Call<String>, response: Response<String>) {
+                                    if ((response.isSuccessful) || (response.code() == 200)) {
+                                        performTransferCheck()
+                                    } else {
+                                        isTestingConnection = false
+                                        Toast.makeText(context, "qBittorrent 登录失败 (HTTP ${response.code()})，请检查账号密码", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                override fun onFailure(call: Call<String>, t: Throwable) {
+                                    isTestingConnection = false
+                                    Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                }
+                            })
+                        } else {
+                            performTransferCheck()
+                        }
+                    } else {
+                        val service = TransmissionClient.getService(formattedUrl, u, p)
+                        service.rpc(formattedUrl, null, RpcRequest("session-get")).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+                            override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
+                                isTestingConnection = false
+                                if ((response.isSuccessful) || (response.code() == 409)) {
+                                    Toast.makeText(context, "连接成功！Transmission 握手正常", Toast.LENGTH_SHORT).show()
+                                } else if (response.code() == 401) {
+                                    Toast.makeText(context, "连接失败：认证失败 (401)，请检查用户名和密码", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "连接失败，HTTP 响应码: ${response.code()}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
+                                isTestingConnection = false
+                                Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                            }
+                        })
+                    }
+                },
+                shape = RoundedCornerShape(100.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = if (isDark) Color(0xFF131B24) else Color(0xFFF0F2F5)),
+                modifier = Modifier.height(36.dp),
+                enabled = !isTestingConnection,
+            ) {
                 Text(
-                    text = if (initialServer != null) stringResource(R.string.dialog_edit_server_title) else stringResource(R.string.dialog_add_server_title),
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = primaryTextColor
+                    text = if (isTestingConnection) stringResource(R.string.btn_testing) else stringResource(R.string.btn_test_connection),
+                    fontSize = 12.5.sp,
+                    color = primaryTextColor,
                 )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Text(stringResource(R.string.label_client_type), fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = primaryTextColor)
-                Spacer(modifier = Modifier.height(6.dp))
+            }
+        },
+    ) {
+        Text(stringResource(R.string.label_client_type), fontSize = 13.5.sp, fontWeight = FontWeight.Bold, color = primaryTextColor)
+        Spacer(modifier = Modifier.height(6.dp))
 
                 CompactSegmentedGroup(
                     options = listOf(
@@ -971,123 +1027,9 @@ fun ServerEditDialog(
                         focusedLabelColor = accentColor,
                         unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
                         focusedTextColor = primaryTextColor,
-                        unfocusedTextColor = primaryTextColor
+                        unfocusedTextColor = primaryTextColor,
                     )
                 )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            val rawUrl = rpcUrlInput.trim()
-                            if (rawUrl.isEmpty()) {
-                                Toast.makeText(context, "请输入服务器地址", Toast.LENGTH_SHORT).show()
-                                return@OutlinedButton
-                            }
-                            val formattedUrl = formatServerUrl(rawUrl, clientTypeInput)
-                            val u = userInput.trim()
-                            val p = passInput.trim()
-                            isTestingConnection = true
-
-                            if (clientTypeInput == ServerConfig.CLIENT_QBITTORRENT) {
-                                val qbitService = QBittorrentClient.getService(formattedUrl)
-                                val performTransferCheck = {
-                                    qbitService.getTransferInfo().enqueue(object : Callback<QbitTransferInfo> {
-                                        override fun onResponse(call: Call<QbitTransferInfo>, response: Response<QbitTransferInfo>) {
-                                            isTestingConnection = false
-                                            if ((response.isSuccessful) || (response.code() == 200)) {
-                                                Toast.makeText(context, "连接成功！qBittorrent API 通畅", Toast.LENGTH_SHORT).show()
-                                            } else {
-                                                Toast.makeText(context, "连接失败，响应码: ${response.code()}", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                        override fun onFailure(call: Call<QbitTransferInfo>, t: Throwable) {
-                                            isTestingConnection = false
-                                            Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-                                        }
-                                    })
-                                }
-
-                                if (u.isNotEmpty() || p.isNotEmpty()) {
-                                    qbitService.login(u, p).enqueue(object : Callback<String> {
-                                        override fun onResponse(call: Call<String>, response: Response<String>) {
-                                            if ((response.isSuccessful) || (response.code() == 200)) {
-                                                performTransferCheck()
-                                            } else {
-                                                isTestingConnection = false
-                                                Toast.makeText(context, "qBittorrent 登录失败 (HTTP ${response.code()})，请检查账号密码", Toast.LENGTH_SHORT).show()
-                                            }
-                                        }
-                                        override fun onFailure(call: Call<String>, t: Throwable) {
-                                            isTestingConnection = false
-                                            Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-                                        }
-                                    })
-                                } else {
-                                    performTransferCheck()
-                                }
-                            } else {
-                                val service = TransmissionClient.getService(formattedUrl, u, p)
-                                service.rpc(formattedUrl, null, RpcRequest("session-get")).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
-                                    override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
-                                        isTestingConnection = false
-                                        if ((response.isSuccessful) || (response.code() == 409)) {
-                                            Toast.makeText(context, "连接成功！Transmission 握手正常", Toast.LENGTH_SHORT).show()
-                                        } else if (response.code() == 401) {
-                                            Toast.makeText(context, "连接失败：认证失败 (401)，请检查用户名和密码", Toast.LENGTH_SHORT).show()
-                                        } else {
-                                            Toast.makeText(context, "连接失败，HTTP 响应码: ${response.code()}", Toast.LENGTH_SHORT).show()
-                                        }
-                                    }
-                                    override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
-                                        isTestingConnection = false
-                                        Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-                                    }
-                                })
-                            }
-                        },
-                        shape = RoundedCornerShape(100.dp),
-                        modifier = Modifier.weight(1f).height(42.dp),
-                        enabled = !isTestingConnection
-                    ) {
-                        Text(if (isTestingConnection) stringResource(R.string.btn_testing) else stringResource(R.string.btn_test_connection), fontSize = 12.5.sp)
-                    }
-
-                    Button(
-                        onClick = {
-                            val rawUrl = rpcUrlInput.trim()
-                            val alias = aliasInput.trim().ifEmpty { if (clientTypeInput == ServerConfig.CLIENT_QBITTORRENT) "qBittorrent" else "Transmission" }
-                            if (rawUrl.isEmpty()) {
-                                Toast.makeText(context, "请输入服务器地址", Toast.LENGTH_SHORT).show()
-                                return@Button
-                            }
-                            val formattedUrl = formatServerUrl(rawUrl, clientTypeInput)
-
-                            val newConfig = ServerConfig(
-                                id = initialServer?.id ?: java.util.UUID.randomUUID().toString(),
-                                alias = alias,
-                                clientType = clientTypeInput,
-                                rpcUrl = formattedUrl,
-                                user = userInput.trim(),
-                                pass = passInput.trim(),
-                                isActive = initialServer?.isActive ?: true,
-                                avatarUri = avatarUriInput
-                            )
-                            onSave(newConfig)
-                        },
-                        shape = RoundedCornerShape(100.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                        modifier = Modifier.weight(1f).height(42.dp)
-                    ) {
-                        Text(stringResource(R.string.btn_save), fontSize = 14.5.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                    }
-                }
-            }
-        }
     }
 }
 
@@ -1219,127 +1161,84 @@ fun AddCustomTrackerDialog(
         }
     }
 
-    val cardBgColor = if (isDark) Color(0xFF1F2A38) else Color.White
-    val cardBorderColor = if (isDark) Color(0xFF34495E) else Color(0xFFE0E0E0)
     val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
     val secondaryTextColor = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
     val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
 
-    Dialog(
+    LiquidGlassDialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
-    ) {
-        Surface(
-            modifier = Modifier
-                .widthIn(max = 400.dp)
-                .fillMaxWidth(0.92f)
-                .wrapContentHeight()
-                .padding(16.dp)
-                .shadow(elevation = 20.dp, shape = RoundedCornerShape(24.dp)),
-            shape = RoundedCornerShape(24.dp),
-            color = cardBgColor,
-            border = BorderStroke(1.dp, cardBorderColor)
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                Text(
-                    text = "自定义 Tracker 映射",
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center,
-                    color = primaryTextColor,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 180.dp, max = 280.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    singleLine = false,
-                    placeholder = {
-                        Text(
-                            text = stringResource(R.string.tracker_dialog_placeholder),
-                            fontSize = 13.sp,
-                            color = secondaryTextColor.copy(alpha = 0.6f)
-                        )
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = accentColor,
-                        unfocusedBorderColor = if (isDark) Color(0xFF455A64) else Color(0xFFB0BEC5),
-                        focusedLabelColor = accentColor,
-                        unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
-                        focusedTextColor = primaryTextColor,
-                        unfocusedTextColor = primaryTextColor
-                    )
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            val savedPath = backupTrackersToDownloads(context, inputText)
-                            if (savedPath != null) {
-                                Toast.makeText(context, "已备份至: $savedPath", Toast.LENGTH_LONG).show()
-                            } else {
-                                Toast.makeText(context, "备份失败", Toast.LENGTH_SHORT).show()
-                            }
-                        },
-                        shape = RoundedCornerShape(100.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                    ) {
-                        Text("备份", fontSize = 13.5.sp, color = primaryTextColor)
-                    }
-
-                    OutlinedButton(
-                        onClick = {
-                            filePickerLauncher.launch("*/*")
-                        },
-                        shape = RoundedCornerShape(100.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                    ) {
-                        Text("恢复", fontSize = 13.5.sp, color = primaryTextColor)
-                    }
-
-                    Button(
-                        onClick = {
-                            val lines = inputText.split("\n")
-                            val parsedMap = mutableMapOf<String, String>()
-                            for (line in lines) {
-                                val trimmed = line.trim()
-                                if (trimmed.contains("=")) {
-                                    val domain = trimmed.substringBefore("=").trim()
-                                    val label = trimmed.substringAfter("=").trim()
-                                    if (domain.isNotEmpty() && label.isNotEmpty()) {
-                                        parsedMap[domain] = label
-                                    }
-                                }
-                            }
-                            Toast.makeText(context, "Tracker 映射保存成功", Toast.LENGTH_SHORT).show()
-                            onSave(parsedMap)
-                        },
-                        shape = RoundedCornerShape(100.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(40.dp)
-                    ) {
-                        Text("保存", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
+        title = "自定义 Tracker 映射",
+        confirmButtonText = stringResource(R.string.btn_save),
+        confirmButtonColor = accentColor,
+        onConfirm = {
+            val updatedMap = mutableMapOf<String, String>()
+            val lines = inputText.split("\n")
+            for (line in lines) {
+                val trimmed = line.trim()
+                if (trimmed.isEmpty() || trimmed.startsWith("#") || trimmed.startsWith(";")) continue
+                val parts = trimmed.split("=")
+                if (parts.size >= 2) {
+                    val key = parts[0].trim().lowercase()
+                    val value = parts[1].trim()
+                    if (key.isNotEmpty() && value.isNotEmpty()) {
+                        updatedMap[key] = value
                     }
                 }
             }
-        }
+            onSave(updatedMap)
+            Toast.makeText(context, "Tracker 映射保存成功", Toast.LENGTH_SHORT).show()
+        },
+        bottomLeftContent = {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = {
+                        val savedPath = backupTrackersToDownloads(context, inputText)
+                        if (savedPath != null) {
+                            Toast.makeText(context, "已备份至: $savedPath", Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(context, "备份失败", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    shape = RoundedCornerShape(100.dp),
+                    modifier = Modifier.height(36.dp),
+                ) {
+                    Text(stringResource(R.string.btn_backup), fontSize = 12.5.sp, color = primaryTextColor)
+                }
+
+                OutlinedButton(
+                    onClick = { filePickerLauncher.launch("*/*") },
+                    shape = RoundedCornerShape(100.dp),
+                    modifier = Modifier.height(36.dp),
+                ) {
+                    Text(stringResource(R.string.btn_restore), fontSize = 12.5.sp, color = primaryTextColor)
+                }
+            }
+        },
+    ) {
+        OutlinedTextField(
+            value = inputText,
+            onValueChange = { inputText = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 180.dp, max = 280.dp),
+            shape = RoundedCornerShape(12.dp),
+            singleLine = false,
+            placeholder = {
+                Text(
+                    text = stringResource(R.string.tracker_dialog_placeholder),
+                    fontSize = 13.sp,
+                    color = secondaryTextColor.copy(alpha = 0.6f),
+                )
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = accentColor,
+                unfocusedBorderColor = if (isDark) Color(0xFF455A64) else Color(0xFFB0BEC5),
+                focusedLabelColor = accentColor,
+                unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
+                focusedTextColor = primaryTextColor,
+                unfocusedTextColor = primaryTextColor,
+            ),
+        )
     }
 }
 
