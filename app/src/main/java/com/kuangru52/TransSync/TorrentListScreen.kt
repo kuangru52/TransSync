@@ -1048,16 +1048,186 @@ private fun isHrFinished(torrent: Torrent): Boolean {
     return remainingMs <= -bufferMs
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(name = "主列表页 - 浅色模式", showBackground = true)
 @Composable
-fun TorrentListScreenPreview() {
+fun TorrentListScreen_Light_Preview() {
     MaterialTheme {
-        TorrentListScreen(
-            viewModel = TorrentListViewModel(LocalContext.current.applicationContext as android.app.Application),
-            onTorrentClick = {},
-            rpcUrl = "https://192.168.1.100:9091",
-            user = "admin",
-            pass = "password",
-        )
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFFF0F2F5),
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                val sampleTorrents = listOf(
+                    Torrent(
+                        id = 1,
+                        name = "Jumanji.The.Next.Level.2026.2160p.HQ.WEB-DL.mkv",
+                        totalSize = 44238000000L,
+                        percentDone = 0.605,
+                        rateDownload = 1200000L,
+                        rateUpload = 450000L,
+                        status = 4,
+                        displayProgress = 605,
+                        displaySize = "26.7 GB / 44.2 GB",
+                        displayDownloadSpeed = "1.2 MB/s ↓",
+                        displayUploadSpeed = "450 KB/s ↑",
+                        displayStats = "已上传 160.0 GB (分享率 6.04)",
+                        trackerName = "Google",
+                    ),
+                    Torrent(
+                        id = 2,
+                        name = "Inception.2010.1080p.BluRay.x264.mkv",
+                        totalSize = 15400000000L,
+                        percentDone = 1.0,
+                        rateDownload = 0L,
+                        rateUpload = 850000L,
+                        status = 6,
+                        displayProgress = 1000,
+                        displaySize = "14.3 GB",
+                        displayDownloadSpeed = "0 B/s ↓",
+                        displayUploadSpeed = "850 KB/s ↑",
+                        displayStats = "已上传 45.2 GB (分享率 3.16)",
+                        trackerName = "Google",
+                    ),
+                )
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = 60.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(sampleTorrents) { torrent ->
+                        TorrentItemCard(
+                            torrent = torrent,
+                            isSelected = false,
+                            isTrackerBlurEnabled = false,
+                            revealedTrackerNames = emptySet(),
+                            onClick = {},
+                            onLongClick = {},
+                            onToggleStatus = {},
+                        )
+                    }
+                }
+
+                FloatingTopControls(
+                    titleText = "全部任务",
+                    sizeText = "58.5 GB",
+                    altSpeedEnabled = false,
+                    selectedCount = 0,
+                    onMenuClick = {},
+                    onTurtleClick = {},
+                    onCloseSelection = {},
+                    onSelectAll = {},
+                    onDeleteSelected = {},
+                    onStartSelected = {},
+                    onStopSelected = {},
+                    onRenameSelected = {},
+                    onSetLocationSelected = {},
+                    onSetHrSelected = {},
+                    onVerifySelected = {},
+                    onReannounceSelected = {},
+                    isDark = false,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+
+                LiquidBottomBarContent(
+                    dlSpeed = "1.2 MB/s",
+                    ulSpeed = "1.3 MB/s",
+                    onSearchQueryChange = {},
+                    onSearchToggle = {},
+                )
+            }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "主列表页 - 深色模式", showBackground = true)
+@Composable
+fun TorrentListScreen_Dark_Preview() {
+    MaterialTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = Color(0xFF161F29),
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                val sampleTorrents = listOf(
+                    Torrent(
+                        id = 1,
+                        name = "Jumanji.The.Next.Level.2026.2160p.HQ.WEB-DL.mkv",
+                        totalSize = 44238000000L,
+                        percentDone = 0.605,
+                        rateDownload = 1200000L,
+                        rateUpload = 450000L,
+                        status = 4,
+                        displayProgress = 605,
+                        displaySize = "26.7 GB / 44.2 GB",
+                        displayDownloadSpeed = "1.2 MB/s ↓",
+                        displayUploadSpeed = "450 KB/s ↑",
+                        displayStats = "已上传 160.0 GB (分享率 6.04)",
+                        trackerName = "Google",
+                    ),
+                    Torrent(
+                        id = 2,
+                        name = "Inception.2010.1080p.BluRay.x264.mkv",
+                        totalSize = 15400000000L,
+                        percentDone = 1.0,
+                        rateDownload = 0L,
+                        rateUpload = 850000L,
+                        status = 6,
+                        displayProgress = 1000,
+                        displaySize = "14.3 GB",
+                        displayDownloadSpeed = "0 B/s ↓",
+                        displayUploadSpeed = "850 KB/s ↑",
+                        displayStats = "已上传 45.2 GB (分享率 3.16)",
+                        trackerName = "Google",
+                    ),
+                )
+
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = 60.dp, bottom = 80.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    items(sampleTorrents) { torrent ->
+                        TorrentItemCard(
+                            torrent = torrent,
+                            isSelected = false,
+                            isTrackerBlurEnabled = false,
+                            revealedTrackerNames = emptySet(),
+                            onClick = {},
+                            onLongClick = {},
+                            onToggleStatus = {},
+                        )
+                    }
+                }
+
+                FloatingTopControls(
+                    titleText = "正在下载",
+                    sizeText = "44.2 GB",
+                    altSpeedEnabled = true,
+                    selectedCount = 0,
+                    onMenuClick = {},
+                    onTurtleClick = {},
+                    onCloseSelection = {},
+                    onSelectAll = {},
+                    onDeleteSelected = {},
+                    onStartSelected = {},
+                    onStopSelected = {},
+                    onRenameSelected = {},
+                    onSetLocationSelected = {},
+                    onSetHrSelected = {},
+                    onVerifySelected = {},
+                    onReannounceSelected = {},
+                    isDark = true,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+
+                LiquidBottomBarContent(
+                    dlSpeed = "1.2 MB/s",
+                    ulSpeed = "1.3 MB/s",
+                    onSearchQueryChange = {},
+                    onSearchToggle = {},
+                )
+            }
+        }
     }
 }
