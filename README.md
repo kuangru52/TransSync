@@ -39,7 +39,6 @@
 
 #### 🎨 独创液态玻璃 UI 架构
 - **物理折射 Shader 卡片**：搭载 1:1 拟真凸透镜折射 Shader 与 120 FPS 动态高斯模糊卡片。
-- **开发者调参面板**：内置液态玻璃渲染参数调优面板，支持实时滑动调节折射量、高度、模糊度与彩度！
 
 #### ⏳ H&R 自动化生命周期
 - **下载完成自动重汇报**：种子下载完成时自动向 Tracker 发送 Reannounce，即刻起算做种。
@@ -80,7 +79,6 @@
 
 #### 🎨 Liquid Glass UI Architecture
 - **Realistic Refraction Shader**: Built with custom 1:1 lens refraction shaders and real-time 120 FPS Gaussian blur cards.
-- **Developer Shader Inspector**: Tap version number 5 times in Settings to unlock real-time Shader tuning panel!
 
 #### ⏳ Automated H&R Lifecycle
 - **Auto Reannounce on Complete**: Automatically reannounces to trackers as soon as download finishes.
