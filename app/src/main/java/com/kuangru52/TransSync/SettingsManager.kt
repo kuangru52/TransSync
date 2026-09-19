@@ -145,8 +145,9 @@ object SettingsManager {
     }
 
     // --- 全局弹窗独立液态玻璃参数 Getter & Setter ---
+    @Suppress("UNUSED_PARAMETER")
     fun getDialogRefraction(context: Context, isDark: Boolean): Float {
-        val defaultVal = if (isDark) -11f else -27f
+        val defaultVal = 60f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_REFRACTION, defaultVal)
     }
@@ -157,7 +158,7 @@ object SettingsManager {
     }
 
     fun getDialogHeight(context: Context, isDark: Boolean): Float {
-        val defaultVal = if (isDark) 21f else 30f
+        val defaultVal = if (isDark) 50f else 4f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_HEIGHT, defaultVal)
     }
@@ -168,7 +169,7 @@ object SettingsManager {
     }
 
     fun getDialogBlur(context: Context, isDark: Boolean): Float {
-        val defaultVal = if (isDark) 22f else 19f
+        val defaultVal = if (isDark) 120f else 13f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_BLUR, defaultVal)
     }
@@ -178,8 +179,9 @@ object SettingsManager {
             .edit { putFloat(KEY_DIALOG_BLUR, value) }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun getDialogSaturation(context: Context, isDark: Boolean): Float {
-        val defaultVal = if (isDark) 2.1f else 2.5f
+        val defaultVal = 3.0f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_SATURATION, defaultVal)
     }

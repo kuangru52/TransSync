@@ -795,10 +795,10 @@ fun TorrentListScreen(
                                     SettingsManager.setDialogSaturation(context, it)
                                 },
                                 onReset = {
-                                    val defRefraction = if (isDark) -11f else -27f
-                                    val defHeight = if (isDark) 21f else 30f
-                                    val defBlur = if (isDark) 22f else 19f
-                                    val defSaturation = if (isDark) 2.1f else 2.5f
+                                    val defRefraction = 60f
+                                    val defHeight = if (isDark) 50f else 4f
+                                    val defBlur = if (isDark) 120f else 13f
+                                    val defSaturation = 3.0f
 
                                     dialogRefractionDp = defRefraction
                                     dialogRefractionHeightDp = defHeight
