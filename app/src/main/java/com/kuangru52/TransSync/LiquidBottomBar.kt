@@ -682,20 +682,42 @@ fun SpeedSection(
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "网速条 - 默认", showBackground = true)
 @Composable
 fun LiquidBottomBarPreview() {
     MaterialTheme {
         Box(
             modifier = Modifier
                 .wrapContentSize()
-                .padding(16.dp)
+                .padding(16.dp),
         ) {
             LiquidBottomBarContent(
                 dlSpeed = "12.5 MB/s",
                 ulSpeed = "4.2 MB/s",
                 onSearchQueryChange = {},
-                onSearchToggle = {}
+                onSearchToggle = {},
+            )
+        }
+    }
+}
+
+@Preview(name = "调参 Inspector 面板", showBackground = true)
+@Composable
+fun LiquidGlassTuningInspector_Preview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            LiquidGlassTuningInspector(
+                refractionDp = 60f,
+                refractionHeightDp = 50f,
+                blurRadiusDp = 120f,
+                saturationBoost = 3.0f,
+                onRefractionChange = {},
+                onRefractionHeightChange = {},
+                onBlurRadiusChange = {},
+                onSaturationBoostChange = {},
+                onReset = {},
+                onSave = {},
+                onDismiss = {},
             )
         }
     }

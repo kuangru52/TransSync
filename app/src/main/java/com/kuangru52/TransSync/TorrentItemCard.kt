@@ -333,7 +333,7 @@ fun HrTagCapsule(
                     lineHeight = 11.sp,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     color = secondaryTextColor,
-                )
+                ),
             )
         }
         return
@@ -351,7 +351,7 @@ fun HrTagCapsule(
             painter = painterResource(id = R.drawable.ic_done),
             contentDescription = "已核销",
             tint = Color.Unspecified,
-            modifier = Modifier.size(18.dp)
+            modifier = Modifier.size(18.dp),
         )
     } else if (remainingMs > 0) {
         val totalMins = remainingMs / (60 * 1000L)
@@ -371,7 +371,7 @@ fun HrTagCapsule(
                 .background(hrBgColor)
                 .border(1.dp, hrStrokeColor, RoundedCornerShape(100.dp))
                 .padding(horizontal = 8.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = text,
@@ -380,8 +380,8 @@ fun HrTagCapsule(
                     lineHeight = 11.sp,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     color = hrTextColor,
-                    fontWeight = FontWeight.Bold
-                )
+                    fontWeight = FontWeight.Bold,
+                ),
             )
         }
     } else {
@@ -397,7 +397,7 @@ fun HrTagCapsule(
                 .background(hrBgColor)
                 .border(1.dp, hrStrokeColor, RoundedCornerShape(100.dp))
                 .padding(horizontal = 8.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = text,
@@ -406,16 +406,16 @@ fun HrTagCapsule(
                     lineHeight = 11.sp,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     color = hrTextColor,
-                    fontWeight = FontWeight.Bold
-                )
+                    fontWeight = FontWeight.Bold,
+                ),
             )
         }
     }
 }
 
-@Preview(showBackground = true)
+@Preview(name = "下载中 - 浅色模式", showBackground = true)
 @Composable
-fun TorrentItemCardPreview() {
+fun TorrentItemCard_Downloading_Preview() {
     MaterialTheme {
         Box(modifier = Modifier.padding(12.dp)) {
             TorrentItemCard(
@@ -431,7 +431,7 @@ fun TorrentItemCardPreview() {
                     displaySize = "26.7 GB / 44.2 GB",
                     displayDownloadSpeed = "1.2 MB/s ↓",
                     displayUploadSpeed = "450 KB/s ↑",
-                    displayStats = "Uploaded: 160.0 GB (Ratio: 6.04)",
+                    displayStats = "已上传 160.0 GB (分享率 6.04)",
                     trackerName = "Google",
                 ),
                 isSelected = false,
@@ -439,7 +439,73 @@ fun TorrentItemCardPreview() {
                 revealedTrackerNames = emptySet(),
                 onClick = {},
                 onLongClick = {},
-                onToggleStatus = {}
+                onToggleStatus = {},
+            )
+        }
+    }
+}
+
+@Preview(name = "做种中 - 深色模式", showBackground = true)
+@Composable
+fun TorrentItemCard_Seeding_Preview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .background(Color(0xFF161F29))
+                .padding(12.dp),
+        ) {
+            TorrentItemCard(
+                torrent = Torrent(
+                    id = 2,
+                    name = "Inception.2010.1080p.BluRay.x264.mkv",
+                    totalSize = 15400000000L,
+                    percentDone = 1.0,
+                    rateDownload = 0L,
+                    rateUpload = 850000L,
+                    status = 6,
+                    displayProgress = 1000,
+                    displaySize = "14.3 GB",
+                    displayDownloadSpeed = "0 B/s ↓",
+                    displayUploadSpeed = "850 KB/s ↑",
+                    displayStats = "已上传 45.2 GB (分享率 3.16)",
+                    trackerName = "Google",
+                ),
+                isSelected = false,
+                isTrackerBlurEnabled = false,
+                revealedTrackerNames = emptySet(),
+                onClick = {},
+                onLongClick = {},
+                onToggleStatus = {},
+            )
+        }
+    }
+}
+
+@Preview(name = "多选选中状态", showBackground = true)
+@Composable
+fun TorrentItemCard_Selected_Preview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(12.dp)) {
+            TorrentItemCard(
+                torrent = Torrent(
+                    id = 3,
+                    name = "Avatar.The.Way.of.Water.2022.2160p.UHD.mkv",
+                    totalSize = 68000000000L,
+                    percentDone = 0.35,
+                    status = 4,
+                    displayProgress = 350,
+                    displaySize = "23.8 GB / 68.0 GB",
+                    displayDownloadSpeed = "4.5 MB/s ↓",
+                    displayUploadSpeed = "1.2 MB/s ↑",
+                    displayStats = "已上传 12.0 GB (分享率 0.50)",
+                    trackerName = "Google",
+                ),
+                isSelected = true,
+                isTrackerBlurEnabled = false,
+                revealedTrackerNames = emptySet(),
+                onClick = {},
+                onLongClick = {},
+                onToggleStatus = {},
             )
         }
     }

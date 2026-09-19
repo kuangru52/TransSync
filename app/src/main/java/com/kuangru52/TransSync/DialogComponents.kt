@@ -9,6 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -29,6 +30,7 @@ fun RenameTorrentDialog(
     user: String,
     pass: String,
     backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onDismiss: () -> Unit,
     onSuccess: () -> Unit,
 ) {
@@ -39,6 +41,7 @@ fun RenameTorrentDialog(
     LiquidGlassDialog(
         onDismissRequest = onDismiss,
         backdropLayer = backdropLayer,
+        boxPositionInRoot = boxPositionInRoot,
         title = stringResource(R.string.dialog_rename_title),
         confirmButtonText = stringResource(R.string.btn_confirm),
         confirmButtonColor = Color(0xFF1D88E3),
@@ -89,6 +92,7 @@ fun SetLocationDialog(
     user: String,
     pass: String,
     backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onDismiss: () -> Unit,
     onSuccess: () -> Unit,
 ) {
@@ -124,6 +128,7 @@ fun SetLocationDialog(
     LiquidGlassDialog(
         onDismissRequest = onDismiss,
         backdropLayer = backdropLayer,
+        boxPositionInRoot = boxPositionInRoot,
         title = stringResource(R.string.dialog_set_location_title),
         confirmButtonText = stringResource(R.string.btn_confirm),
         confirmButtonColor = Color(0xFF1D88E3),
@@ -200,6 +205,7 @@ fun SetHrDialog(
     user: String,
     pass: String,
     backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onDismiss: () -> Unit,
     onSuccess: () -> Unit,
 ) {
@@ -217,6 +223,7 @@ fun SetHrDialog(
     LiquidGlassDialog(
         onDismissRequest = onDismiss,
         backdropLayer = backdropLayer,
+        boxPositionInRoot = boxPositionInRoot,
         title = stringResource(R.string.menu_set_hr),
         confirmButtonText = stringResource(R.string.btn_confirm),
         confirmButtonColor = Color(0xFF1D88E3),
@@ -270,6 +277,7 @@ fun EditTrackersDialog(
     user: String,
     pass: String,
     backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onDismiss: () -> Unit,
     onSuccess: () -> Unit,
 ) {
@@ -286,6 +294,7 @@ fun EditTrackersDialog(
     LiquidGlassDialog(
         onDismissRequest = onDismiss,
         backdropLayer = backdropLayer,
+        boxPositionInRoot = boxPositionInRoot,
         title = stringResource(R.string.dialog_edit_tracker_title),
         confirmButtonText = stringResource(R.string.btn_save),
         confirmButtonColor = Color(0xFF1D88E3),

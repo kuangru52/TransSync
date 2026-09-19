@@ -14,6 +14,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.platform.LocalContext
@@ -43,6 +44,7 @@ fun TorrentInfoScreen(
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
     backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
@@ -329,6 +331,7 @@ fun TorrentInfoScreen(
                 user = user,
                 pass = pass,
                 backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
                 onDismiss = { showRenameDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -342,6 +345,7 @@ fun TorrentInfoScreen(
                 user = user,
                 pass = pass,
                 backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
                 onDismiss = { showSetLocationDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -355,6 +359,7 @@ fun TorrentInfoScreen(
                 user = user,
                 pass = pass,
                 backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
                 onDismiss = { showEditTrackersDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -368,6 +373,7 @@ fun TorrentInfoScreen(
                 user = user,
                 pass = pass,
                 backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
                 onDismiss = { showSetHrDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -607,7 +613,7 @@ fun HrStatusInfoRow(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(name = "信息页概览", showBackground = true)
 @Composable
 fun TorrentInfoScreenPreview() {
     MaterialTheme {
@@ -623,7 +629,24 @@ fun TorrentInfoScreenPreview() {
             rpcUrl = "",
             user = "",
             pass = "",
-            onRefresh = {}
+            onRefresh = {},
         )
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "种子文件树状节点视图", showBackground = true)
+@Composable
+fun TorrentFileTreeView_Preview() {
+    MaterialTheme {
+        Box(modifier = Modifier.padding(16.dp)) {
+            TorrentFileTreeView(
+                files = listOf(
+                    TorrentFile(name = "Movies/Jumanji.mkv", length = 44000000000L, bytesCompleted = 22000000000L),
+                    TorrentFile(name = "Movies/Subtitles/Chs.srt", length = 100000L, bytesCompleted = 100000L),
+                ),
+                primaryTextColor = Color(0xFF2D3436),
+                secondaryTextColor = Color(0xFF636E72),
+            )
+        }
     }
 }

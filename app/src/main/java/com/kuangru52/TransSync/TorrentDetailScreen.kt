@@ -20,7 +20,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +61,8 @@ fun TorrentDetailScreen(
     var peersState by remember { mutableStateOf<List<Peer>>(emptyList()) }
     var isPeersRefreshing by remember { mutableStateOf(value = false) }
     val backdropLayer = rememberGraphicsLayer()
+    val detailView = LocalView.current
+    var detailViewLocation by remember { mutableStateOf(Offset.Zero) }
 
     // 状态拉取函数
     val fetchDetailData = {
@@ -242,6 +247,11 @@ fun TorrentDetailScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .onGloballyPositioned {
+                val loc = IntArray(2)
+                detailView.getLocationOnScreen(loc)
+                detailViewLocation = Offset(loc[0].toFloat(), loc[1].toFloat())
+            }
             .graphicsLayer {
                 translationX = animatedSwipeOffset
             }
@@ -366,6 +376,7 @@ fun TorrentDetailScreen(
                     user = user,
                     pass = pass,
                     backdropLayer = backdropLayer,
+                    boxPositionInRoot = detailViewLocation,
                     onRefresh = { fetchDetailData() },
                 )
                 1 -> TorrentPeersScreen(

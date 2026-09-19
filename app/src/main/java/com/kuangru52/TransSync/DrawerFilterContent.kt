@@ -435,7 +435,7 @@ fun DrawerFilterContent(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(name = "侧边栏 - 浅色模式", showBackground = true)
 @Composable
 fun DrawerFilterContentPreview() {
     MaterialTheme {
@@ -443,6 +443,25 @@ fun DrawerFilterContentPreview() {
             DrawerFilterContent(
                 viewModel = TorrentListViewModel(LocalContext.current.applicationContext as android.app.Application),
                 currentFilter = "All",
+                rpcUrl = "",
+                onSelectFilter = {},
+            )
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "侧边栏 - 深色模式", showBackground = true)
+@Composable
+fun DrawerFilterContent_Dark_Preview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .width(320.dp)
+                .background(Color(0xFF161F29)),
+        ) {
+            DrawerFilterContent(
+                viewModel = TorrentListViewModel(LocalContext.current.applicationContext as android.app.Application),
+                currentFilter = "Downloading",
                 rpcUrl = "",
                 onSelectFilter = {},
             )

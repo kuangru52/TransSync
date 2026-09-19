@@ -1343,10 +1343,34 @@ private fun CompactSegmentedGroup(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(name = "设置页 - 浅色模式", showBackground = true)
 @Composable
-fun SettingsScreenPreview() {
+fun SettingsScreen_Light_Preview() {
     MaterialTheme {
         SettingsScreen(onBackClick = {})
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "添加/编辑服务器弹窗", showBackground = true)
+@Composable
+fun ServerEditDialog_Preview() {
+    MaterialTheme {
+        ServerEditDialog(
+            initialServer = ServerConfig(alias = "家中 NAS", rpcUrl = "https://192.168.1.100:9091/transmission/rpc", user = "admin", pass = "password"),
+            onSave = {},
+            onDismiss = {},
+        )
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "自定义 Tracker 映射弹窗", showBackground = true)
+@Composable
+fun AddCustomTrackerDialog_Preview() {
+    MaterialTheme {
+        AddCustomTrackerDialog(
+            existingMappings = mapOf("www.google.com" to "Google"),
+            onSave = {},
+            onDismiss = {},
+        )
     }
 }

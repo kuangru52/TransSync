@@ -318,14 +318,15 @@ fun getFilterTitleText(filter: String): String {
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(name = "常规模式 - 浅色", showBackground = true)
 @Composable
-fun FloatingTopControlsPreview() {
+fun FloatingTopControls_Normal_Light_Preview() {
     MaterialTheme {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFF161F29)),
+                .background(Color(0xFFF0F2F5))
+                .padding(12.dp),
         ) {
             FloatingTopControls(
                 titleText = "全部任务",
@@ -344,6 +345,101 @@ fun FloatingTopControlsPreview() {
                 onSetHrSelected = {},
                 onVerifySelected = {},
                 onReannounceSelected = {},
+                isDark = false,
+            )
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "常规模式 - 深色 (龟速高亮)", showBackground = true)
+@Composable
+fun FloatingTopControls_Normal_Dark_Preview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF161F29))
+                .padding(12.dp),
+        ) {
+            FloatingTopControls(
+                titleText = "正在下载",
+                sizeText = "12.4 GB",
+                altSpeedEnabled = true,
+                selectedCount = 0,
+                onMenuClick = {},
+                onTurtleClick = {},
+                onCloseSelection = {},
+                onSelectAll = {},
+                onDeleteSelected = {},
+                onStartSelected = {},
+                onStopSelected = {},
+                onRenameSelected = {},
+                onSetLocationSelected = {},
+                onSetHrSelected = {},
+                onVerifySelected = {},
+                onReannounceSelected = {},
+                isDark = true,
+            )
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "多选模式 - 浅色", showBackground = true)
+@Composable
+fun FloatingTopControls_MultiSelect_Light_Preview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFF0F2F5))
+                .padding(12.dp),
+        ) {
+            FloatingTopControls(
+                titleText = "全部任务",
+                sizeText = "71.1 TB",
+                altSpeedEnabled = false,
+                selectedCount = 3,
+                onMenuClick = {},
+                onTurtleClick = {},
+                onCloseSelection = {},
+                onSelectAll = {},
+                onDeleteSelected = {},
+                onStartSelected = {},
+                onStopSelected = {},
+                onRenameSelected = {},
+                onSetLocationSelected = {},
+                onSetHrSelected = {},
+                onVerifySelected = {},
+                onReannounceSelected = {},
+                isDark = false,
+            )
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "多选模式 - 展开三个点下拉菜单", showBackground = true)
+@Composable
+fun MultiSelectRightCapsule_Expanded_Preview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF161F29))
+                .padding(12.dp),
+            contentAlignment = Alignment.TopEnd,
+        ) {
+            MultiSelectRightCapsule(
+                selectedCount = 1,
+                onSelectAll = {},
+                onDeleteSelected = {},
+                onStartSelected = {},
+                onStopSelected = {},
+                onRenameSelected = {},
+                onSetLocationSelected = {},
+                onSetHrSelected = {},
+                onVerifySelected = {},
+                onReannounceSelected = {},
+                isDark = true,
             )
         }
     }

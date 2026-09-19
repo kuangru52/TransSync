@@ -263,16 +263,30 @@ fun MainScreen(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(name = "登录页 - 浅色模式", showBackground = true)
 @Composable
-fun MainScreenPreview() {
+fun MainScreen_Light_Preview() {
     MaterialTheme {
         MainScreen(
             initialHost = "https://192.168.1.100:9091",
             initialUser = "admin",
             initialPass = "password",
             isLoggingIn = false,
-            onLoginClick = { _, _, _, _ -> }
+            onLoginClick = { _, _, _, _ -> },
+        )
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "登录页 - 登录中状态", showBackground = true)
+@Composable
+fun MainScreen_LoggingIn_Preview() {
+    MaterialTheme {
+        MainScreen(
+            initialHost = "https://192.168.1.100:9091",
+            initialUser = "admin",
+            initialPass = "password",
+            isLoggingIn = true,
+            onLoginClick = { _, _, _, _ -> },
         )
     }
 }
