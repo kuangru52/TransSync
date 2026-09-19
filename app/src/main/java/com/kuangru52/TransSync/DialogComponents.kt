@@ -295,7 +295,7 @@ fun EditTrackersDialog(
             val newUrls = trackerInput.lineSequence().map { it.trim() }.filter { it.isNotEmpty() }.toList()
             val oldUrls = oldTrackers.map { it.announce }
             val toAdd = newUrls.filter { it !in oldUrls }
-            val toRemoveIds = oldTrackers.filter { it.announce !in newUrls }.map { it.id }
+            val toRemoveIds = oldTrackers.asSequence().filter { it.announce !in newUrls }.map { it.id }.toList()
 
             if (toAdd.isNotEmpty() || toRemoveIds.isNotEmpty()) {
                 val (effUrl, effUser, effPass) = DialogUtils.getEffectiveCredentials(context, rpcUrl, user, pass)

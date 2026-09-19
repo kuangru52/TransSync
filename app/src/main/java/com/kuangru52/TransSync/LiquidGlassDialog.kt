@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.drawscope.translate
@@ -72,8 +73,24 @@ fun LiquidGlassDialog(
         val effectiveBlurRadiusDp = blurRadiusDp ?: SettingsManager.getDialogBlur(context, isDark)
         val effectiveSaturationBoost = saturationBoost ?: SettingsManager.getDialogSaturation(context, isDark)
 
-        val cardBgColor = if (isDark) Color(0xFF1F2A38) else Color.White
-        val cardBorderColor = if (isDark) Color(0xFF34495E) else Color(0xFFE0E0E0)
+        val glassBgColor = if (isDark) Color(0xEB1C2836) else Color(0xF2F8FAFC)
+        val glassBorderBrush = Brush.linearGradient(
+            colors = listOf(
+                Color.White.copy(alpha = if (isDark) 0.35f else 0.85f),
+                if (isDark) Color(0x3BFFFFFF) else Color(0x40E0E0E0),
+            ),
+            start = Offset.Zero,
+            end = Offset(400f, 400f),
+        )
+        val glassSpecularGradient = Brush.linearGradient(
+            colors = listOf(
+                Color.White.copy(alpha = if (isDark) 0.15f else 0.40f),
+                Color.White.copy(alpha = if (isDark) 0.02f else 0.08f),
+                Color.Transparent,
+            ),
+            start = Offset.Zero,
+            end = Offset(300f, 300f),
+        )
         val density = LocalDensity.current
 
         var dialogPositionInRoot by remember { mutableStateOf(Offset.Zero) }
@@ -101,8 +118,8 @@ fun LiquidGlassDialog(
                 modifier = Modifier
                     .matchParentSize()
                     .clip(RoundedCornerShape(24.dp))
-                    .background(cardBgColor)
-                    .border(1.dp, cardBorderColor, RoundedCornerShape(24.dp))
+                    .background(glassBgColor)
+                    .border(1.dp, glassBorderBrush, RoundedCornerShape(24.dp))
                     .graphicsLayer {
                         clip = true
                         shape = RoundedCornerShape(24.dp)
@@ -190,7 +207,7 @@ fun LiquidGlassDialog(
                                 drawLayer(backdropLayer)
                             }
                         }
-                        drawRect(color = Color.Transparent)
+                        drawRect(brush = glassSpecularGradient)
                     },
             )
 
