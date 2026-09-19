@@ -38,8 +38,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -95,9 +98,17 @@ fun SettingsScreen(
     val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
     val topBarBgColor = if (isDark) Color(0xFF161F29) else Color(0xFF455A64)
 
+    val settingsView = LocalView.current
+    var settingsViewLocation by remember { mutableStateOf(Offset.Zero) }
+
     Box(
         modifier = modifier
             .fillMaxSize()
+            .onGloballyPositioned {
+                val loc = IntArray(2)
+                settingsView.getLocationOnScreen(loc)
+                settingsViewLocation = Offset(loc[0].toFloat(), loc[1].toFloat())
+            }
             .drawWithContent {
                 backdropLayer.record {
                     this@drawWithContent.drawContent()
@@ -597,6 +608,7 @@ fun SettingsScreen(
         AddCustomTrackerDialog(
             existingMappings = customTrackerMappings,
             backdropLayer = backdropLayer,
+            boxPositionInRoot = settingsViewLocation,
             onSave = { updatedMap ->
                 SettingsManager.saveCustomTrackerMappings(context, updatedMap)
                 customTrackerMappings = SettingsManager.getCustomTrackerMappings(context)
@@ -611,6 +623,7 @@ fun SettingsScreen(
         LiquidGlassDialog(
             onDismissRequest = { serverToDeleteTarget = null },
             backdropLayer = backdropLayer,
+            boxPositionInRoot = settingsViewLocation,
             title = stringResource(R.string.dialog_delete_server_title),
             confirmButtonText = stringResource(R.string.btn_delete),
             confirmButtonColor = Color(0xFFFF5252),
@@ -635,6 +648,7 @@ fun SettingsScreen(
         ServerEditDialog(
             initialServer = server,
             backdropLayer = backdropLayer,
+            boxPositionInRoot = settingsViewLocation,
             onSave = { updated ->
                 val wasActive = server.id == (activeServer?.id ?: "")
                 val typeChanged = server.clientType != updated.clientType
@@ -657,6 +671,7 @@ fun SettingsScreen(
         ServerEditDialog(
             initialServer = null,
             backdropLayer = backdropLayer,
+            boxPositionInRoot = settingsViewLocation,
             onSave = { newServer ->
                 ServerManager.saveServer(context, newServer)
                 serversList = ServerManager.getServers(context)
@@ -693,6 +708,7 @@ private fun formatServerUrl(inputUrl: String, clientType: String): String {
 fun ServerEditDialog(
     initialServer: ServerConfig?,
     backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onSave: (ServerConfig) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -739,6 +755,8 @@ fun ServerEditDialog(
 
     LiquidGlassDialog(
         onDismissRequest = onDismiss,
+        backdropLayer = backdropLayer,
+        boxPositionInRoot = boxPositionInRoot,
         title = dialogTitle,
         confirmButtonText = stringResource(R.string.btn_save),
         confirmButtonColor = accentColor,
@@ -1104,6 +1122,7 @@ private fun backupTrackersToDownloads(context: Context, textContent: String): St
 fun AddCustomTrackerDialog(
     existingMappings: Map<String, String>,
     backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onSave: (Map<String, String>) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1190,6 +1209,8 @@ fun AddCustomTrackerDialog(
 
     LiquidGlassDialog(
         onDismissRequest = onDismiss,
+        backdropLayer = backdropLayer,
+        boxPositionInRoot = boxPositionInRoot,
         title = "自定义 Tracker 映射",
         confirmButtonText = stringResource(R.string.btn_save),
         confirmButtonColor = accentColor,

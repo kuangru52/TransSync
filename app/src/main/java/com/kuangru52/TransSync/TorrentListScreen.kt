@@ -42,9 +42,9 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -264,11 +264,14 @@ fun TorrentListScreen(
                             )
                         }
                     } else {
+                        val mainView = LocalView.current
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .onGloballyPositioned { coordinates ->
-                                    boxPositionInRoot = coordinates.positionInRoot()
+                                .onGloballyPositioned {
+                                    val loc = IntArray(2)
+                                    mainView.getLocationOnScreen(loc)
+                                    boxPositionInRoot = Offset(loc[0].toFloat(), loc[1].toFloat())
                                 }
                                 .drawWithContent {
                                     backdropLayer.record {
