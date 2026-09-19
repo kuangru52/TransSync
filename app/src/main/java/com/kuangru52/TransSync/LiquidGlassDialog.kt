@@ -26,6 +26,7 @@ import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -54,17 +55,23 @@ fun LiquidGlassDialog(
     isConfirmEnabled: Boolean = true,
     onConfirm: () -> Unit,
     bottomLeftContent: (@Composable () -> Unit)? = null,
-    refractionDp: Float = 0f,
-    refractionHeightDp: Float = 3f,
-    blurRadiusDp: Float = 0f,
-    saturationBoost: Float = 1.0f,
+    refractionDp: Float? = null,
+    refractionHeightDp: Float? = null,
+    blurRadiusDp: Float? = null,
+    saturationBoost: Float? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Dialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        val context = LocalContext.current
         val isDark = isSystemInDarkTheme()
+        val effectiveRefractionDp = refractionDp ?: SettingsManager.getDialogRefraction(context, isDark)
+        val effectiveRefractionHeightDp = refractionHeightDp ?: SettingsManager.getDialogHeight(context, isDark)
+        val effectiveBlurRadiusDp = blurRadiusDp ?: SettingsManager.getDialogBlur(context, isDark)
+        val effectiveSaturationBoost = saturationBoost ?: SettingsManager.getDialogSaturation(context, isDark)
+
         val cardBgColor = if (isDark) Color(0xFF1F2A38) else Color.White
         val cardBorderColor = if (isDark) Color(0xFF34495E) else Color(0xFFE0E0E0)
         val density = LocalDensity.current
@@ -80,11 +87,11 @@ fun LiquidGlassDialog(
                     elevation = 16.dp,
                     shape = RoundedCornerShape(24.dp),
                     ambientColor = Color.Black.copy(alpha = if (isDark) 0.4f else 0.15f),
-                    spotColor = Color.Black.copy(alpha = if (isDark) 0.5f else 0.2f)
+                    spotColor = Color.Black.copy(alpha = if (isDark) 0.5f else 0.2f),
                 )
                 .onGloballyPositioned { coordinates ->
                     dialogPositionInRoot = coordinates.positionInRoot()
-                }
+                },
         ) {
             val localOffsetX = (dialogPositionInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
             val localOffsetY = (dialogPositionInRoot.y - boxPositionInRoot.y).coerceAtLeast(0f)
@@ -100,7 +107,7 @@ fun LiquidGlassDialog(
                         clip = true
                         shape = RoundedCornerShape(24.dp)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && refractionDp != 0f) {
+                            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (effectiveRefractionDp != 0f)) {
                                 val agsl = """
                                     uniform shader content;
                                     uniform float2 size;
@@ -154,21 +161,21 @@ fun LiquidGlassDialog(
                                 val shader = android.graphics.RuntimeShader(agsl)
                                 shader.setFloatUniform("size", size.width, size.height)
                                 shader.setFloatUniform("cornerRadius", with(density) { 24.dp.toPx() })
-                                shader.setFloatUniform("refraction", with(density) { refractionDp.dp.toPx() })
-                                shader.setFloatUniform("refractionHeight", with(density) { refractionHeightDp.dp.toPx() })
-                                shader.setFloatUniform("saturationBoost", saturationBoost)
+                                shader.setFloatUniform("refraction", with(density) { effectiveRefractionDp.dp.toPx() })
+                                shader.setFloatUniform("refractionHeight", with(density) { effectiveRefractionHeightDp.dp.toPx() })
+                                shader.setFloatUniform("saturationBoost", effectiveSaturationBoost)
 
                                 val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
 
-                                renderEffect = if (blurRadiusDp > 0f) {
-                                    val blurPx = with(density) { blurRadiusDp.dp.toPx() }
+                                renderEffect = if (effectiveBlurRadiusDp > 0f) {
+                                    val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }
                                     val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
                                     android.graphics.RenderEffect.createChainEffect(runtimeShaderEffect, blur).asComposeRenderEffect()
                                 } else {
                                     runtimeShaderEffect.asComposeRenderEffect()
                                 }
-                            } else if (blurRadiusDp > 0f) {
-                                val blurPx = with(density) { blurRadiusDp.dp.toPx() }
+                            } else if (effectiveBlurRadiusDp > 0f) {
+                                val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }
                                 val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
                                 renderEffect = blur.asComposeRenderEffect()
                             }
@@ -178,25 +185,25 @@ fun LiquidGlassDialog(
                         if (backdropLayer != null) {
                             translate(
                                 left = -localOffsetX,
-                                top = -localOffsetY
+                                top = -localOffsetY,
                             ) {
                                 drawLayer(backdropLayer)
                             }
                         }
                         drawRect(color = Color.Transparent)
-                    }
+                    },
             )
 
             // 2. 最上层 (Top Foreground Layer)：100% 绝对清晰的前景文本、输入框与操作按钮
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp)
+                    .padding(20.dp),
             ) {
                 if (titleContent != null) {
                     Box(
                         modifier = Modifier.fillMaxWidth(),
-                        contentAlignment = Alignment.Center
+                        contentAlignment = Alignment.Center,
                     ) {
                         titleContent()
                     }
@@ -207,9 +214,9 @@ fun LiquidGlassDialog(
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
-                            color = if (isDark) Color.White else Color(0xFF2D3436)
+                            color = if (isDark) Color.White else Color(0xFF2D3436),
                         ),
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
@@ -222,38 +229,36 @@ fun LiquidGlassDialog(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .padding(end = 12.dp),
-                        contentAlignment = Alignment.CenterStart
+                        contentAlignment = Alignment.CenterStart,
                     ) {
-                        if (bottomLeftContent != null) {
-                            bottomLeftContent()
-                        }
+                        bottomLeftContent?.invoke()
                     }
 
                     Surface(
                         onClick = { if (isConfirmEnabled) onConfirm() },
                         shape = RoundedCornerShape(100.dp),
                         color = if (isConfirmEnabled) confirmButtonColor else confirmButtonColor.copy(alpha = 0.4f),
-                        modifier = Modifier.height(36.dp)
+                        modifier = Modifier.height(36.dp),
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxHeight()
                                 .padding(horizontal = 24.dp),
-                            contentAlignment = Alignment.Center
+                            contentAlignment = Alignment.Center,
                         ) {
                             Text(
                                 text = confirmButtonText,
                                 style = TextStyle(
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
-                                )
+                                    color = Color.White,
+                                ),
                             )
                         }
                     }

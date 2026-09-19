@@ -404,53 +404,20 @@ fun TorrentListScreen(
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
 
-                    // 1. 重命名 Compose 液态玻璃 120 FPS 采样弹窗
+                    // 1. 重命名统一弹窗
                     renameTorrentTarget?.let { targetTorrent ->
-                        var newNameInput by remember(targetTorrent) { mutableStateOf(targetTorrent.name) }
-                        val isConfirmEnabled = newNameInput.trim().isNotEmpty() && newNameInput.trim() != targetTorrent.name
-
-                        LiquidGlassDialog(
-                            onDismissRequest = { renameTorrentTarget = null },
+                        RenameTorrentDialog(
+                            targetTorrent = targetTorrent,
+                            rpcUrl = rpcUrl,
+                            user = user,
+                            pass = pass,
                             backdropLayer = backdropLayer,
-                            title = stringResource(R.string.dialog_rename_title),
-                            confirmButtonText = stringResource(R.string.btn_confirm),
-                            confirmButtonColor = Color(0xFF1D88E3),
-                            isConfirmEnabled = isConfirmEnabled,
-                            onConfirm = {
-                                val nameToSave = newNameInput.trim()
-                                renameTorrentTarget = null
-                                DialogUtils.performRename(
-                                    context = context,
-                                    rpcUrl = rpcUrl,
-                                    user = user,
-                                    pass = pass,
-                                    torrentId = targetTorrent.id,
-                                    torrentHash = targetTorrent.hash,
-                                    currentName = targetTorrent.name,
-                                    newName = nameToSave,
-                                    onSuccess = {
-                                        selectedIds = emptySet()
-                                        viewModel.refreshTorrents(rpcUrl, user, pass)
-                                    }
-                                )
-                            }
-                        ) {
-                            OutlinedTextField(
-                                value = newNameInput,
-                                onValueChange = { newNameInput = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                label = { Text(stringResource(R.string.hint_new_name)) },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                                    unfocusedBorderColor = if (isDark) Color(0xFF455A64) else Color(0xFFB0BEC5),
-                                    focusedLabelColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                                    unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
-                                    focusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
-                                    unfocusedTextColor = if (isDark) Color.White else Color(0xFF2D3436)
-                                )
-                            )
-                        }
+                            onDismiss = { renameTorrentTarget = null },
+                            onSuccess = {
+                                selectedIds = emptySet()
+                                viewModel.refreshTorrents(rpcUrl, user, pass)
+                            },
+                        )
                     }
 
                     // 2. 删除 Compose 弹窗
@@ -512,168 +479,38 @@ fun TorrentListScreen(
                         }
                     }
 
-                    // 3. 设置保存位置 Compose 液态玻璃 120 FPS 采样弹窗
+                    // 3. 设置保存位置统一弹窗
                     setLocationTargetIds?.let { targetIds ->
-                        val firstTorrent = torrents.find { it.id == targetIds.firstOrNull() }
-                        var locationInput by remember(targetIds) { mutableStateOf(firstTorrent?.downloadDir ?: "/downloads") }
-                        var moveData by remember { mutableStateOf(true) }
-                        var freeSpaceText by remember { mutableStateOf("") }
-
-                        val allDirs = remember(ServerManager.serversVersion, torrents) { DownloadDirManager.getAllDirs(context, torrents) }
-
-                        LaunchedEffect(locationInput) {
-                            val path = locationInput.trim()
-                            if (path.isNotEmpty() && rpcUrl.isNotEmpty()) {
-                                val (effUrl, effUser, effPass) = DialogUtils.getEffectiveCredentials(context, rpcUrl, user, pass)
-                                val service = TransmissionClient.getService(effUrl, effUser, effPass)
-                                service.rpc(effUrl, null, RpcRequest("free-space", mapOf("path" to path)))
-                                    .enqueue(object : retrofit2.Callback<RpcResponse<Map<String, Any>>> {
-                                        override fun onResponse(call: retrofit2.Call<RpcResponse<Map<String, Any>>>, response: retrofit2.Response<RpcResponse<Map<String, Any>>>) {
-                                            if (response.isSuccessful) {
-                                                val size = (response.body()?.arguments?.get("size-bytes") as? Double)?.toLong() ?: 0L
-                                                freeSpaceText = context.getString(R.string.free_space_label, FormatUtils.formatSize(size))
-                                            }
-                                        }
-                                        override fun onFailure(call: retrofit2.Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
-                                    })
-                            } else {
-                                freeSpaceText = ""
-                            }
-                        }
-
-                        LiquidGlassDialog(
-                            onDismissRequest = { setLocationTargetIds = null },
+                        val selectedTorrents = torrents.filter { targetIds.contains(it.id) }
+                        SetLocationDialog(
+                            torrents = selectedTorrents,
+                            rpcUrl = rpcUrl,
+                            user = user,
+                            pass = pass,
                             backdropLayer = backdropLayer,
-                            title = stringResource(R.string.dialog_set_location_title),
-                            confirmButtonText = stringResource(R.string.btn_confirm),
-                            confirmButtonColor = Color(0xFF1D88E3),
-                            onConfirm = {
-                                val loc = locationInput.trim()
-                                setLocationTargetIds = null
-                                if (loc.isNotEmpty()) {
-                                    val hashesTarget = torrents.filter { targetIds.contains(it.id) }.map { it.hash }
-                                    DialogUtils.performSetLocation(
-                                        context = context,
-                                        rpcUrl = rpcUrl,
-                                        user = user,
-                                        pass = pass,
-                                        torrentIds = targetIds,
-                                        torrentHashes = hashesTarget,
-                                        newLocation = loc,
-                                        moveData = moveData,
-                                        onSuccess = {
-                                            selectedIds = emptySet()
-                                            viewModel.refreshTorrents(rpcUrl, user, pass)
-                                        }
-                                    )
-                                }
-                            }
-                        ) {
-                            DirectoryDropdownTextField(
-                                value = locationInput,
-                                onValueChange = { locationInput = it },
-                                allDirs = allDirs,
-                                label = stringResource(R.string.hint_download_dir),
-                                isDark = isDark
-                            )
-
-                            Spacer(modifier = Modifier.height(8.dp))
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .clickable { moveData = !moveData }
-                                ) {
-                                    Checkbox(
-                                        checked = moveData,
-                                        onCheckedChange = { moveData = it },
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = Color(0xFF1D88E3)
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.cb_move_data),
-                                        fontSize = 14.sp,
-                                        color = if (isDark) Color.White else Color(0xFF2D3436)
-                                    )
-                                }
-
-                                if (freeSpaceText.isNotEmpty()) {
-                                    Text(
-                                        text = freeSpaceText,
-                                        fontSize = 14.sp,
-                                        color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
-                                    )
-                                }
-                            }
-                        }
+                            onDismiss = { setLocationTargetIds = null },
+                            onSuccess = {
+                                selectedIds = emptySet()
+                                viewModel.refreshTorrents(rpcUrl, user, pass)
+                            },
+                        )
                     }
 
-                    // 4. 设置 H&R 考核 Compose 液态玻璃 120 FPS 采样弹窗
+                    // 4. 设置 H&R 考核统一弹窗
                     setHrTargetIds?.let { targetIds ->
-                        val firstTorrent = torrents.find { it.id == targetIds.firstOrNull() }
-                        val currentHrLabel = firstTorrent?.labels?.find { it.startsWith("HR:") }
-                        val initialDaysStr = if (currentHrLabel != null) {
-                            val hrs = currentHrLabel.substringAfter("HR:").toDoubleOrNull() ?: 0.0
-                            if (hrs > 0) (hrs / 24.0).let { if (it == it.toInt().toDouble()) it.toInt().toString() else it.toString() } else "0"
-                        } else "0"
-
-                        var hrDaysInput by remember(targetIds) { mutableStateOf(initialDaysStr) }
-
-                        LiquidGlassDialog(
-                            onDismissRequest = { setHrTargetIds = null },
+                        val selectedTorrents = torrents.filter { targetIds.contains(it.id) }
+                        SetHrDialog(
+                            torrents = selectedTorrents,
+                            rpcUrl = rpcUrl,
+                            user = user,
+                            pass = pass,
                             backdropLayer = backdropLayer,
-                            title = stringResource(R.string.menu_set_hr),
-                            confirmButtonText = stringResource(R.string.btn_confirm),
-                            confirmButtonColor = Color(0xFF1D88E3),
-                            onConfirm = {
-                                val days = hrDaysInput.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: 0.0
-                                setHrTargetIds = null
-                                val hashesTarget = torrents.filter { targetIds.contains(it.id) }.map { it.hash }
-                                DialogUtils.performSetHr(
-                                    context = context,
-                                    rpcUrl = rpcUrl,
-                                    user = user,
-                                    pass = pass,
-                                    torrentIds = targetIds,
-                                    torrentHashes = hashesTarget,
-                                    days = days,
-                                    onSuccess = {
-                                        selectedIds = emptySet()
-                                        viewModel.refreshTorrents(rpcUrl, user, pass)
-                                    }
-                                )
-                            }
-                        ) {
-                            OutlinedTextField(
-                                value = hrDaysInput,
-                                onValueChange = { hrDaysInput = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                singleLine = true,
-                                label = { Text(stringResource(R.string.label_hr)) },
-                                trailingIcon = {
-                                    QuickHrSlidingSelector(
-                                        selectedDay = hrDaysInput,
-                                        onDaySelected = { hrDaysInput = it }
-                                    )
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                                    unfocusedBorderColor = if (isDark) Color(0xFF455A64) else Color(0xFFB0BEC5),
-                                    focusedLabelColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                                    unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
-                                    focusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
-                                    unfocusedTextColor = if (isDark) Color.White else Color(0xFF2D3436)
-                                )
-                            )
-                        }
+                            onDismiss = { setHrTargetIds = null },
+                            onSuccess = {
+                                selectedIds = emptySet()
+                                viewModel.refreshTorrents(rpcUrl, user, pass)
+                            },
+                        )
                     }
 
                     // 5. 添加种子 Compose 液态玻璃 采样弹窗

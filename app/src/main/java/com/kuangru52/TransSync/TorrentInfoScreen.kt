@@ -23,9 +23,6 @@ import androidx.compose.ui.text.style.LineBreak
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import retrofit2.Call
-import retrofit2.Callback
-import retrofit2.Response
 import java.util.Locale
 
 /**
@@ -51,8 +48,10 @@ fun TorrentInfoScreen(
     var isFileTreeExpanded by remember { mutableStateOf(false) }
 
     // 弹窗状态管理
+    var showRenameDialogState by remember { mutableStateOf(false) }
     var showSetLocationDialogState by remember { mutableStateOf(false) }
     var showEditTrackersDialogState by remember { mutableStateOf(false) }
+    var showSetHrDialogState by remember { mutableStateOf(false) }
 
     val cardBgColor = if (isDark) Color(0xFF1A232E) else Color.White
     val cardBorderColor = if (isDark) Color(0x26FFFFFF) else Color(0xFFE0E0E0)
@@ -255,8 +254,14 @@ fun TorrentInfoScreen(
                             }
                         }
 
-                        // H&R 考核行
-                        HrStatusInfoRow(torrent = torrent, secondaryTextColor = secondaryTextColor, primaryTextColor = primaryTextColor)
+                        // H&R 考核行 (点击调起 H&R 考核修改弹窗)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showSetHrDialogState = true },
+                        ) {
+                            HrStatusInfoRow(torrent = torrent, secondaryTextColor = secondaryTextColor, primaryTextColor = primaryTextColor)
+                        }
 
                         // 错误信息行 (如果有错误)
                         if (torrent.error != 0 && torrent.errorString.isNotEmpty()) {
@@ -314,194 +319,52 @@ fun TorrentInfoScreen(
             }
         }
 
-        // 1. 设置保存位置 Compose 液态玻璃 100% 实心毛玻璃弹窗
-        if (showSetLocationDialogState && torrent != null) {
-            var locationInput by remember(torrent) { mutableStateOf(torrent.downloadDir ?: "") }
-            var moveData by remember { mutableStateOf(true) }
-            var freeSpaceText by remember { mutableStateOf("") }
-
-            val allDirs = remember(ServerManager.serversVersion, torrent) { DownloadDirManager.getAllDirs(context, listOf(torrent)) }
-
-            LaunchedEffect(locationInput) {
-                val path = locationInput.trim()
-                if (path.isNotEmpty() && rpcUrl.isNotEmpty()) {
-                    val (effUrl, effUser, effPass) = DialogUtils.getEffectiveCredentials(context, rpcUrl, user, pass)
-                    val service = TransmissionClient.getService(effUrl, effUser, effPass)
-                    service.rpc(effUrl, null, RpcRequest("free-space", mapOf("path" to path)))
-                        .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
-                            override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
-                                if (response.isSuccessful) {
-                                    val size = (response.body()?.arguments?.get("size-bytes") as? Double)?.toLong() ?: 0L
-                                    freeSpaceText = context.getString(R.string.free_space_label, FormatUtils.formatSize(size))
-                                }
-                            }
-                            override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
-                        })
-                } else {
-                    freeSpaceText = ""
-                }
-            }
-
-            LiquidGlassDialog(
-                onDismissRequest = { showSetLocationDialogState = false },
-                backdropLayer = null,
-                title = "设置保存位置",
-                confirmButtonText = "确定",
-                confirmButtonColor = Color(0xFF1D88E3),
-                onConfirm = {
-                    val loc = locationInput.trim()
-                    showSetLocationDialogState = false
-                    if (loc.isNotEmpty()) {
-                        DialogUtils.performSetLocation(
-                            context = context,
-                            rpcUrl = rpcUrl,
-                            user = user,
-                            pass = pass,
-                            torrentIds = listOf(torrent.id),
-                            torrentHashes = listOf(torrent.hash),
-                            newLocation = loc,
-                            moveData = moveData
-                        ) {
-                            onRefresh()
-                        }
-                    }
-                }
-            ) {
-                DirectoryDropdownTextField(
-                    value = locationInput,
-                    onValueChange = { locationInput = it },
-                    allDirs = allDirs,
-                    isDark = isDark
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable { moveData = !moveData }
-                    ) {
-                        Checkbox(
-                            checked = moveData,
-                            onCheckedChange = { moveData = it },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = Color(0xFF1D88E3)
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "移动数据",
-                            fontSize = 14.sp,
-                            color = if (isDark) Color.White else Color(0xFF2D3436)
-                        )
-                    }
-
-                    if (freeSpaceText.isNotEmpty()) {
-                        Text(
-                            text = freeSpaceText,
-                            fontSize = 14.sp,
-                            color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
-                        )
-                    }
-                }
-            }
+        // 1. 重命名统一弹窗
+        if (showRenameDialogState && torrent != null) {
+            RenameTorrentDialog(
+                targetTorrent = torrent,
+                rpcUrl = rpcUrl,
+                user = user,
+                pass = pass,
+                onDismiss = { showRenameDialogState = false },
+                onSuccess = onRefresh,
+            )
         }
 
-        // 2. 编辑 Tracker Compose 液态玻璃 100% 实心毛玻璃弹窗
+        // 2. 设置保存位置统一弹窗
+        if (showSetLocationDialogState && torrent != null) {
+            SetLocationDialog(
+                torrents = listOf(torrent),
+                rpcUrl = rpcUrl,
+                user = user,
+                pass = pass,
+                onDismiss = { showSetLocationDialogState = false },
+                onSuccess = onRefresh,
+            )
+        }
+
+        // 3. 编辑 Tracker 统一弹窗
         if (showEditTrackersDialogState && torrent != null) {
-            val oldTrackers = (torrent.trackers ?: emptyList()).filter {
-                it.announce.isNotBlank() && !it.announce.startsWith("**") && !it.announce.contains("[DHT]") && !it.announce.contains("[PeX]") && !it.announce.contains("[LSD]")
-            }
-            val initialTrackerUrls = oldTrackers.joinToString("\n") { it.announce }
-            var trackerInput by remember(initialTrackerUrls) { mutableStateOf(initialTrackerUrls) }
-            val isSaveEnabled = trackerInput.isNotBlank() && trackerInput != initialTrackerUrls
+            EditTrackersDialog(
+                torrent = torrent,
+                rpcUrl = rpcUrl,
+                user = user,
+                pass = pass,
+                onDismiss = { showEditTrackersDialogState = false },
+                onSuccess = onRefresh,
+            )
+        }
 
-            LiquidGlassDialog(
-                onDismissRequest = { showEditTrackersDialogState = false },
-                backdropLayer = null,
-                title = "编辑 Tracker",
-                confirmButtonText = "保存",
-                confirmButtonColor = Color(0xFF1D88E3),
-                isConfirmEnabled = isSaveEnabled,
-                onConfirm = {
-                    showEditTrackersDialogState = false
-                    val newUrls = trackerInput.split("\n").map { it.trim() }.filter { it.isNotEmpty() }
-                    val oldUrls = oldTrackers.map { it.announce }
-                    val toAdd = newUrls.filter { it !in oldUrls }
-                    val toRemoveIds = oldTrackers.filter { it.announce !in newUrls }.map { it.id }
-
-                    if (toAdd.isNotEmpty() || toRemoveIds.isNotEmpty()) {
-                        val (effUrl, effUser, effPass) = DialogUtils.getEffectiveCredentials(context, rpcUrl, user, pass)
-                        val activeServer = ServerManager.getActiveServer(context)
-
-                        if (activeServer?.clientType == ServerConfig.CLIENT_QBITTORRENT) {
-                            val qbitService = QBittorrentClient.getService(effUrl)
-                            val doQbitUpdate = {
-                                if (toAdd.isNotEmpty()) {
-                                    val urlsStr = toAdd.joinToString("\n")
-                                    qbitService.addTrackers(torrent.hash, urlsStr).enqueue(object : Callback<String> {
-                                        override fun onResponse(call: Call<String>, response: Response<String>) {
-                                            if (response.isSuccessful || response.code() == 200) {
-                                                Toast.makeText(context, R.string.msg_tracker_updated, Toast.LENGTH_SHORT).show()
-                                                onRefresh()
-                                            }
-                                        }
-                                        override fun onFailure(call: Call<String>, t: Throwable) {}
-                                    })
-                                }
-                            }
-
-                            if (effUser.isNotEmpty() || effPass.isNotEmpty()) {
-                                qbitService.login(effUser, effPass).enqueue(object : Callback<String> {
-                                    override fun onResponse(call: Call<String>, response: Response<String>) { doQbitUpdate() }
-                                    override fun onFailure(call: Call<String>, t: Throwable) { doQbitUpdate() }
-                                })
-                            } else {
-                                doQbitUpdate()
-                            }
-                        } else {
-                            val service = TransmissionClient.getService(effUrl, effUser, effPass)
-                            val args = mutableMapOf<String, Any>("ids" to listOf(torrent.id))
-                            if (toAdd.isNotEmpty()) args["trackerAdd"] = toAdd
-                            if (toRemoveIds.isNotEmpty()) args["trackerRemove"] = toRemoveIds
-
-                            service.rpc(effUrl, null, RpcRequest("torrent-set", args))
-                                .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
-                                    override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
-                                        if (response.isSuccessful) {
-                                            Toast.makeText(context, R.string.msg_tracker_updated, Toast.LENGTH_SHORT).show()
-                                            onRefresh()
-                                        }
-                                    }
-                                    override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
-                                })
-                        }
-                    }
-                }
-            ) {
-                OutlinedTextField(
-                    value = trackerInput,
-                    onValueChange = { trackerInput = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = 120.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    label = { Text("Tracker") },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                        unfocusedBorderColor = if (isDark) Color(0xFF455A64) else Color(0xFFB0BEC5),
-                        focusedLabelColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                        unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
-                        focusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
-                        unfocusedTextColor = if (isDark) Color.White else Color(0xFF2D3436)
-                    )
-                )
-            }
+        // 4. 设置 H&R 考核统一弹窗
+        if (showSetHrDialogState && torrent != null) {
+            SetHrDialog(
+                torrents = listOf(torrent),
+                rpcUrl = rpcUrl,
+                user = user,
+                pass = pass,
+                onDismiss = { showSetHrDialogState = false },
+                onSuccess = onRefresh,
+            )
         }
     }
 }
