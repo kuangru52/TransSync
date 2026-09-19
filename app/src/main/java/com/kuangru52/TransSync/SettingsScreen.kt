@@ -41,6 +41,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -104,10 +105,14 @@ fun SettingsScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .onGloballyPositioned {
+            .onGloballyPositioned { coordinates ->
                 val loc = IntArray(2)
                 settingsView.getLocationOnScreen(loc)
-                settingsViewLocation = Offset(loc[0].toFloat(), loc[1].toFloat())
+                val offsetInWindow = coordinates.positionInWindow()
+                settingsViewLocation = Offset(
+                    x = loc[0].toFloat() + offsetInWindow.x,
+                    y = loc[1].toFloat() + offsetInWindow.y,
+                )
             }
             .drawWithContent {
                 backdropLayer.record {

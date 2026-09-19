@@ -22,6 +22,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
@@ -247,10 +248,14 @@ fun TorrentDetailScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .onGloballyPositioned {
+            .onGloballyPositioned { coordinates ->
                 val loc = IntArray(2)
                 detailView.getLocationOnScreen(loc)
-                detailViewLocation = Offset(loc[0].toFloat(), loc[1].toFloat())
+                val offsetInWindow = coordinates.positionInWindow()
+                detailViewLocation = Offset(
+                    x = loc[0].toFloat() + offsetInWindow.x,
+                    y = loc[1].toFloat() + offsetInWindow.y,
+                )
             }
             .graphicsLayer {
                 translationX = animatedSwipeOffset

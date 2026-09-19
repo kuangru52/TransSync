@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
@@ -95,7 +95,7 @@ fun LiquidGlassDialog(
         val density = LocalDensity.current
         val dialogView = LocalView.current
 
-        var cardOffsetInDialogView by remember { mutableStateOf(Offset.Zero) }
+        var cardAbsoluteScreenPosition by remember { mutableStateOf(Offset.Zero) }
 
         Box(
             modifier = Modifier
@@ -109,17 +109,17 @@ fun LiquidGlassDialog(
                     spotColor = Color.Black.copy(alpha = if (isDark) 0.5f else 0.2f),
                 )
                 .onGloballyPositioned { coordinates ->
-                    cardOffsetInDialogView = coordinates.positionInRoot()
+                    val loc = IntArray(2)
+                    dialogView.getLocationOnScreen(loc)
+                    val offsetInWindow = coordinates.positionInWindow()
+                    cardAbsoluteScreenPosition = Offset(
+                        x = loc[0].toFloat() + offsetInWindow.x,
+                        y = loc[1].toFloat() + offsetInWindow.y,
+                    )
                 },
         ) {
-            val dialogViewLocation = remember { IntArray(2) }
-            dialogView.getLocationOnScreen(dialogViewLocation)
-
-            val cardScreenX = dialogViewLocation[0].toFloat() + cardOffsetInDialogView.x
-            val cardScreenY = dialogViewLocation[1].toFloat() + cardOffsetInDialogView.y
-
-            val localOffsetX = (cardScreenX - boxPositionInRoot.x).coerceAtLeast(0f)
-            val localOffsetY = (cardScreenY - boxPositionInRoot.y).coerceAtLeast(0f)
+            val localOffsetX = (cardAbsoluteScreenPosition.x - boxPositionInRoot.x).coerceAtLeast(0f)
+            val localOffsetY = (cardAbsoluteScreenPosition.y - boxPositionInRoot.y).coerceAtLeast(0f)
 
             // 1. 中间层 (Middle Glass Layer)：独立折射与模糊卡片底框，不包含任何文字与按钮
             Box(
