@@ -162,7 +162,9 @@ fun SettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 【置于最顶端】1. 服务器连接配置卡片 (直接在卡片内呈现全量服务器管理与一键切换)
+                // 【置于最顶端】1. 服务器连接配置卡片 (直接在卡片内呈现全量服务器管理与一键切换，默认展开，点击标题可折叠/展开)
+                var isServerListExpanded by remember { mutableStateOf(true) }
+
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -175,19 +177,22 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_settings_outlined),
-                                    contentDescription = "服务器",
-                                    tint = accentColor,
-                                    modifier = Modifier.size(22.dp)
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clickable { isServerListExpanded = !isServerListExpanded }
+                            ) {
                                 Text(
                                     text = stringResource(R.string.settings_title_server),
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = primaryTextColor
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(
+                                    painter = painterResource(id = if (isServerListExpanded) R.drawable.ic_arrow_down else R.drawable.ic_arrow_right),
+                                    contentDescription = if (isServerListExpanded) "折叠列表" else "展开列表",
+                                    tint = secondaryTextColor,
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
 
@@ -201,12 +206,13 @@ fun SettingsScreen(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        if (isServerListExpanded) {
+                            Spacer(modifier = Modifier.height(10.dp))
 
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
                             serversList.forEach { server ->
                                 val isActive = server.id == (activeServer?.id ?: "")
 
@@ -363,6 +369,7 @@ fun SettingsScreen(
                             }
                         }
                     }
+                }
                 }
 
                 // 2. 外观主题模式卡片 (横排 3 按键)
