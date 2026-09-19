@@ -29,6 +29,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -62,10 +63,9 @@ fun LiquidGlassDialog(
     saturationBoost: Float? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Dialog(
-        onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
+    val isInspection = LocalInspectionMode.current
+
+    val dialogCard = @Composable {
         val context = LocalContext.current
         val isDark = isSystemInDarkTheme()
         val effectiveRefractionDp = refractionDp ?: SettingsManager.getDialogRefraction(context, isDark)
@@ -296,6 +296,22 @@ fun LiquidGlassDialog(
                     }
                 }
             }
+        }
+    }
+
+    if (isInspection) {
+        Box(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            dialogCard()
+        }
+    } else {
+        Dialog(
+            onDismissRequest = onDismissRequest,
+            properties = DialogProperties(usePlatformDefaultWidth = false),
+        ) {
+            dialogCard()
         }
     }
 }
