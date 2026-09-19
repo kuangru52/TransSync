@@ -1134,6 +1134,7 @@ fun TorrentListScreen_Light_Preview() {
                     ulSpeed = "1.3 MB/s",
                     onSearchQueryChange = {},
                     onSearchToggle = {},
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }
@@ -1226,6 +1227,7 @@ fun TorrentListScreen_Dark_Preview() {
                     ulSpeed = "1.3 MB/s",
                     onSearchQueryChange = {},
                     onSearchToggle = {},
+                    modifier = Modifier.align(Alignment.BottomCenter),
                 )
             }
         }

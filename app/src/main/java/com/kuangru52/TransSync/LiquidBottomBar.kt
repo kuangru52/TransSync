@@ -106,11 +106,12 @@ fun LiquidBottomBar(
 fun LiquidBottomBarContent(
     dlSpeed: String,
     ulSpeed: String,
+    modifier: Modifier = Modifier,
     backdropLayer: GraphicsLayer? = null,
     boxPositionInRoot: Offset = Offset.Zero,
-    onSearchQueryChange: (String) -> Unit,
-    onSearchToggle: (Boolean) -> Unit,
-    onScrollToTop: () -> Unit = {}
+    onSearchQueryChange: (String) -> Unit = {},
+    onSearchToggle: (Boolean) -> Unit = {},
+    onScrollToTop: () -> Unit = {},
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val isDark = isSystemInDarkTheme()
@@ -160,7 +161,13 @@ fun LiquidBottomBarContent(
         onSearchToggle(false)
     }
 
-    Surface(
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
         modifier = Modifier
             .height(40.dp)
             .then(if (isSearchExpanded) Modifier.width(310.dp) else Modifier.widthIn(min = 180.dp, max = 260.dp))
@@ -375,6 +382,7 @@ fun LiquidBottomBarContent(
                 }
             }
         }
+    }
     }
 
     // 上滑调起的实时参数调节调优面板 (仅开发者模式可用)
