@@ -1039,3 +1039,17 @@ private fun isHrFinished(torrent: Torrent): Boolean {
 
     return remainingMs <= -bufferMs
 }
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun TorrentListScreenPreview() {
+    MaterialTheme {
+        TorrentListScreen(
+            viewModel = TorrentListViewModel(LocalContext.current.applicationContext as android.app.Application),
+            onTorrentClick = {},
+            rpcUrl = "https://192.168.1.100:9091",
+            user = "admin",
+            pass = "password",
+        )
+    }
+}

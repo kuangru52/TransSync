@@ -367,3 +367,65 @@ fun EditTrackersDialog(
         )
     }
 }
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun RenameTorrentDialogPreview() {
+    MaterialTheme {
+        RenameTorrentDialog(
+            targetTorrent = Torrent(name = "Jumanji.The.Next.Level.2026.2160p.HQ.WEB-DL.mkv"),
+            rpcUrl = "",
+            user = "",
+            pass = "",
+            onDismiss = {},
+            onSuccess = {},
+        )
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun SetLocationDialogPreview() {
+    MaterialTheme {
+        SetLocationDialog(
+            torrents = listOf(Torrent(downloadDir = "/downloads/movies")),
+            rpcUrl = "",
+            user = "",
+            pass = "",
+            onDismiss = {},
+            onSuccess = {},
+        )
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun SetHrDialogPreview() {
+    MaterialTheme {
+        SetHrDialog(
+            torrents = listOf(Torrent()),
+            rpcUrl = "",
+            user = "",
+            pass = "",
+            onDismiss = {},
+            onSuccess = {},
+        )
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun EditTrackersDialogPreview() {
+    MaterialTheme {
+        EditTrackersDialog(
+            torrent = Torrent(
+                trackers = listOf(Tracker(announce = "https://www.google.com/announce")),
+            ),
+            rpcUrl = "",
+            user = "",
+            pass = "",
+            onDismiss = {},
+            onSuccess = {},
+        )
+    }
+}

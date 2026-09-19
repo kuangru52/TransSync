@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -430,6 +431,21 @@ fun DrawerFilterContent(
                     tint = if (isDark) Color.White else Color(0xFF2D3436)
                 )
             }
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(showBackground = true)
+@Composable
+fun DrawerFilterContentPreview() {
+    MaterialTheme {
+        Box(modifier = Modifier.width(320.dp)) {
+            DrawerFilterContent(
+                viewModel = TorrentListViewModel(LocalContext.current.applicationContext as android.app.Application),
+                currentFilter = "All",
+                rpcUrl = "",
+                onSelectFilter = {},
+            )
         }
     }
 }
