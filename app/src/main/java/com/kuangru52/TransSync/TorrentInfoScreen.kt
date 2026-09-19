@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -40,7 +41,8 @@ fun TorrentInfoScreen(
     user: String,
     pass: String,
     onRefresh: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    backdropLayer: GraphicsLayer? = null,
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
@@ -326,6 +328,7 @@ fun TorrentInfoScreen(
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
+                backdropLayer = backdropLayer,
                 onDismiss = { showRenameDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -338,6 +341,7 @@ fun TorrentInfoScreen(
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
+                backdropLayer = backdropLayer,
                 onDismiss = { showSetLocationDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -350,6 +354,7 @@ fun TorrentInfoScreen(
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
+                backdropLayer = backdropLayer,
                 onDismiss = { showEditTrackersDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -362,6 +367,7 @@ fun TorrentInfoScreen(
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
+                backdropLayer = backdropLayer,
                 onDismiss = { showSetHrDialogState = false },
                 onSuccess = onRefresh,
             )

@@ -206,6 +206,21 @@ fun LiquidGlassDialog(
                             ) {
                                 drawLayer(backdropLayer)
                             }
+                        } else {
+                            val glassMeshBrush = Brush.radialGradient(
+                                colors = if (isDark) listOf(
+                                    Color(0xFF2A3B4E),
+                                    Color(0xFF1E2C3D),
+                                    Color(0xFF131E2C),
+                                ) else listOf(
+                                    Color(0xFFFFFFFF),
+                                    Color(0xFFE4EFF5),
+                                    Color(0xFFCCE0EC),
+                                ),
+                                center = Offset(size.width * 0.3f, size.height * 0.2f),
+                                radius = maxOf(size.width, size.height) * 1.2f,
+                            )
+                            drawRect(brush = glassMeshBrush)
                         }
                         drawRect(brush = glassSpecularGradient)
                     },

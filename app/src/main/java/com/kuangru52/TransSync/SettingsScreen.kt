@@ -31,6 +31,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.rememberGraphicsLayer
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -62,6 +65,7 @@ fun SettingsScreen(
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
 
+    val backdropLayer = rememberGraphicsLayer()
     var serversList by remember { mutableStateOf(ServerManager.getServers(context)) }
     var activeServer by remember { mutableStateOf(ServerManager.getActiveServer(context)) }
 
@@ -94,6 +98,12 @@ fun SettingsScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .drawWithContent {
+                backdropLayer.record {
+                    this@drawWithContent.drawContent()
+                }
+                drawContent()
+            }
             .graphicsLayer {
                 translationX = animatedSwipeOffset
             }
@@ -586,6 +596,7 @@ fun SettingsScreen(
     if (showAddTrackerDialog) {
         AddCustomTrackerDialog(
             existingMappings = customTrackerMappings,
+            backdropLayer = backdropLayer,
             onSave = { updatedMap ->
                 SettingsManager.saveCustomTrackerMappings(context, updatedMap)
                 customTrackerMappings = SettingsManager.getCustomTrackerMappings(context)
@@ -599,6 +610,7 @@ fun SettingsScreen(
     serverToDeleteTarget?.let { serverToDelete ->
         LiquidGlassDialog(
             onDismissRequest = { serverToDeleteTarget = null },
+            backdropLayer = backdropLayer,
             title = stringResource(R.string.dialog_delete_server_title),
             confirmButtonText = stringResource(R.string.btn_delete),
             confirmButtonColor = Color(0xFFFF5252),
@@ -622,6 +634,7 @@ fun SettingsScreen(
     editingServerTarget?.let { server ->
         ServerEditDialog(
             initialServer = server,
+            backdropLayer = backdropLayer,
             onSave = { updated ->
                 val wasActive = server.id == (activeServer?.id ?: "")
                 val typeChanged = server.clientType != updated.clientType
@@ -643,6 +656,7 @@ fun SettingsScreen(
     if (showCreateServerDialog) {
         ServerEditDialog(
             initialServer = null,
+            backdropLayer = backdropLayer,
             onSave = { newServer ->
                 ServerManager.saveServer(context, newServer)
                 serversList = ServerManager.getServers(context)
@@ -678,8 +692,9 @@ private fun formatServerUrl(inputUrl: String, clientType: String): String {
 @Composable
 fun ServerEditDialog(
     initialServer: ServerConfig?,
+    backdropLayer: GraphicsLayer? = null,
     onSave: (ServerConfig) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
@@ -1088,8 +1103,9 @@ private fun backupTrackersToDownloads(context: Context, textContent: String): St
 @Composable
 fun AddCustomTrackerDialog(
     existingMappings: Map<String, String>,
+    backdropLayer: GraphicsLayer? = null,
     onSave: (Map<String, String>) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()

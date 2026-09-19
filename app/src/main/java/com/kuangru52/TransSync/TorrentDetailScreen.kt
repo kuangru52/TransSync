@@ -17,6 +17,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -55,7 +57,8 @@ fun TorrentDetailScreen(
 
     var torrentInfoState by remember { mutableStateOf<Torrent?>(null) }
     var peersState by remember { mutableStateOf<List<Peer>>(emptyList()) }
-    var isPeersRefreshing by remember { mutableStateOf(false) }
+    var isPeersRefreshing by remember { mutableStateOf(value = false) }
+    val backdropLayer = rememberGraphicsLayer()
 
     // 状态拉取函数
     val fetchDetailData = {
@@ -363,7 +366,8 @@ fun TorrentDetailScreen(
                     rpcUrl = rpcUrl,
                     user = user,
                     pass = pass,
-                    onRefresh = { fetchDetailData() }
+                    backdropLayer = backdropLayer,
+                    onRefresh = { fetchDetailData() },
                 )
                 1 -> TorrentPeersScreen(
                     peers = peersState,
