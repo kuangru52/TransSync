@@ -548,9 +548,9 @@ fun SettingsScreen(
                 // 6. 底部居中版本号 (彩蛋：连点 5 次切换开发者模式，支持 GitHub Releases 在线更新提醒)
                 val versionName = remember {
                     try {
-                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "3.08"
+                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "3.09"
                     } catch (_: Exception) {
-                        "3.08"
+                        "3.09"
                     }
                 }
 

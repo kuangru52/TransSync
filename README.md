@@ -57,7 +57,7 @@
 
 ### 🛠️ 安装与使用
 
-1. 从 [GitHub Releases](https://github.com/kuangru52/TransSync/releases/latest) 页面下载最新的 `TransSync-v3.08.apk` 文件。
+1. 从 [GitHub Releases](https://github.com/kuangru52/TransSync/releases/latest) 页面下载最新的 `TransSync-v3.09.apk` 文件。
 2. 在 Android 手机（Android 8.0+）上安装并打开应用。
 3. 输入你的 Transmission 或 qBittorrent 服务器地址、端口及凭据，点击【测试连接】与【保存】即可开始使用！
 
@@ -97,7 +97,7 @@
 
 ### 🛠️ Installation
 
-1. Download the latest `TransSync-v3.08.apk` from [GitHub Releases](https://github.com/kuangru52/TransSync/releases/latest).
+1. Download the latest `TransSync-v3.09.apk` from [GitHub Releases](https://github.com/kuangru52/TransSync/releases/latest).
 2. Install and launch the application on your Android device (Android 8.0+).
 3. Enter your Transmission or qBittorrent server URL and credentials, test connection, and save!
 
