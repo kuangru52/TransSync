@@ -25,6 +25,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -62,7 +63,17 @@ fun TorrentDetailScreen(
     var torrentInfoState by remember { mutableStateOf<Torrent?>(null) }
     var peersState by remember { mutableStateOf<List<Peer>>(emptyList()) }
     var isPeersRefreshing by remember { mutableStateOf(value = false) }
-    val backdropLayer = rememberGraphicsLayer()
+
+    val graphicsContext = LocalGraphicsContext.current
+    val backdropLayer = remember(torrentId, pagerState.currentPage) {
+        graphicsContext.createGraphicsLayer()
+    }
+    DisposableEffect(torrentId, pagerState.currentPage) {
+        onDispose {
+            graphicsContext.releaseGraphicsLayer(backdropLayer)
+        }
+    }
+
     val detailView = LocalView.current
     var detailViewLocation by remember { mutableStateOf(Offset.Zero) }
 
@@ -387,8 +398,6 @@ fun TorrentDetailScreen(
                     rpcUrl = rpcUrl,
                     user = user,
                     pass = pass,
-                    backdropLayer = backdropLayer,
-                    boxPositionInRoot = detailViewLocation,
                     onRefresh = { fetchDetailData() },
                 )
                 1 -> TorrentPeersScreen(

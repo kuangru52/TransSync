@@ -17,7 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalGraphicsContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -43,8 +48,6 @@ fun TorrentInfoScreen(
     pass: String,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
-    backdropLayer: GraphicsLayer? = null,
-    boxPositionInRoot: Offset = Offset.Zero,
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
@@ -56,6 +59,28 @@ fun TorrentInfoScreen(
     var showSetLocationDialogState by remember { mutableStateOf(false) }
     var showEditTrackersDialogState by remember { mutableStateOf(false) }
     var showSetHrDialogState by remember { mutableStateOf(false) }
+
+    val infoDialogSessionKey = remember(
+        showRenameDialogState,
+        showSetLocationDialogState,
+        showEditTrackersDialogState,
+        showSetHrDialogState,
+    ) {
+        java.util.UUID.randomUUID().toString()
+    }
+
+    val graphicsContext = LocalGraphicsContext.current
+    val infoBackdropLayer = remember(infoDialogSessionKey) {
+        graphicsContext.createGraphicsLayer()
+    }
+    DisposableEffect(infoDialogSessionKey) {
+        onDispose {
+            graphicsContext.releaseGraphicsLayer(infoBackdropLayer)
+        }
+    }
+
+    val infoView = LocalView.current
+    var infoViewLocation by remember { mutableStateOf(Offset.Zero) }
 
     val cardBgColor = if (isDark) Color(0xFF1A232E) else Color.White
     val cardBorderColor = if (isDark) Color(0x26FFFFFF) else Color(0xFFE0E0E0)
@@ -75,8 +100,23 @@ fun TorrentInfoScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
+            .onGloballyPositioned { coordinates ->
+                val loc = IntArray(2)
+                infoView.getLocationOnScreen(loc)
+                val offsetInWindow = coordinates.positionInWindow()
+                infoViewLocation = Offset(
+                    x = loc[0].toFloat() + offsetInWindow.x,
+                    y = loc[1].toFloat() + offsetInWindow.y,
+                )
+            }
+            .drawWithContent {
+                infoBackdropLayer.record {
+                    this@drawWithContent.drawContent()
+                }
+                drawContent()
+            }
             .verticalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
         if (torrent == null) {
             Box(
@@ -330,8 +370,8 @@ fun TorrentInfoScreen(
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
+                backdropLayer = infoBackdropLayer,
+                boxPositionInRoot = infoViewLocation,
                 onDismiss = { showRenameDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -344,8 +384,8 @@ fun TorrentInfoScreen(
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
+                backdropLayer = infoBackdropLayer,
+                boxPositionInRoot = infoViewLocation,
                 onDismiss = { showSetLocationDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -358,8 +398,8 @@ fun TorrentInfoScreen(
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
+                backdropLayer = infoBackdropLayer,
+                boxPositionInRoot = infoViewLocation,
                 onDismiss = { showEditTrackersDialogState = false },
                 onSuccess = onRefresh,
             )
@@ -372,8 +412,8 @@ fun TorrentInfoScreen(
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
+                backdropLayer = infoBackdropLayer,
+                boxPositionInRoot = infoViewLocation,
                 onDismiss = { showSetHrDialogState = false },
                 onSuccess = onRefresh,
             )

@@ -45,6 +45,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -250,7 +251,26 @@ fun TorrentListScreen(
                         .statusBarsPadding()
                         .padding(innerPadding)
                 ) {
-                    val backdropLayer = rememberGraphicsLayer()
+                    val dialogSessionKey = remember(
+                        showAddTorrentDialogState,
+                        renameTorrentTarget,
+                        deleteIdsTarget,
+                        setLocationTargetIds,
+                        setHrTargetIds,
+                        showUpdateDialogState,
+                    ) {
+                        java.util.UUID.randomUUID().toString()
+                    }
+
+                    val graphicsContext = LocalGraphicsContext.current
+                    val backdropLayer = remember(dialogSessionKey) {
+                        graphicsContext.createGraphicsLayer()
+                    }
+                    DisposableEffect(dialogSessionKey) {
+                        onDispose {
+                            graphicsContext.releaseGraphicsLayer(backdropLayer)
+                        }
+                    }
                     var boxPositionInRoot by remember { mutableStateOf(Offset.Zero) }
 
                     if (torrents.isEmpty() && !isLoading) {

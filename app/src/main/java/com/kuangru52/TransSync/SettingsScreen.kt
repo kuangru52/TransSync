@@ -43,6 +43,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -69,7 +70,6 @@ fun SettingsScreen(
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
 
-    val backdropLayer = rememberGraphicsLayer()
     var serversList by remember { mutableStateOf(ServerManager.getServers(context)) }
     var activeServer by remember { mutableStateOf(ServerManager.getActiveServer(context)) }
 
@@ -83,6 +83,25 @@ fun SettingsScreen(
     var serverToDeleteTarget by remember { mutableStateOf<ServerConfig?>(null) }
     var showCreateServerDialog by remember { mutableStateOf(value = false) }
     var showAddTrackerDialog by remember { mutableStateOf(value = false) }
+
+    val dialogSessionKey = remember(
+        showAddTrackerDialog,
+        serverToDeleteTarget,
+        editingServerTarget,
+        showCreateServerDialog,
+    ) {
+        java.util.UUID.randomUUID().toString()
+    }
+
+    val graphicsContext = LocalGraphicsContext.current
+    val backdropLayer = remember(dialogSessionKey) {
+        graphicsContext.createGraphicsLayer()
+    }
+    DisposableEffect(dialogSessionKey) {
+        onDispose {
+            graphicsContext.releaseGraphicsLayer(backdropLayer)
+        }
+    }
 
     // 从左往右滑动返回/退出手势偏移量
     var swipeOffsetX by remember { mutableFloatStateOf(0f) }
