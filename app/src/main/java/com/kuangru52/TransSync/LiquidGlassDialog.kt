@@ -3,7 +3,6 @@ package com.kuangru52.transsync
 import android.graphics.Shader
 import android.os.Build
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -78,7 +77,6 @@ fun LiquidGlassDialog(
         val effectiveContrast = contrast ?: SettingsManager.getDialogContrast(context, isDark)
         val effectiveWhitePoint = whitePoint ?: SettingsManager.getDialogWhitePoint(context, isDark)
 
-        val glassBgColor = if (isDark) Color(0xEB1C2836) else Color(0xF2F8FAFC)
         val glassBorderBrush = Brush.linearGradient(
             colors = listOf(
                 Color.White.copy(alpha = if (isDark) 0.35f else 0.85f),
@@ -126,11 +124,12 @@ fun LiquidGlassDialog(
             val localOffsetY = (cardAbsoluteScreenPosition.y - boxPositionInRoot.y).coerceAtLeast(0f)
 
             // 1. 中间层 (Middle Glass Layer)：独立折射与模糊卡片底框，不包含任何文字与按钮
+            val glassTint = if (isDark) Color(0x331F2A38) else Color(0x33FFFFFF)
+
             Box(
                 modifier = Modifier
                     .matchParentSize()
                     .clip(RoundedCornerShape(24.dp))
-                    .background(glassBgColor)
                     .border(1.dp, glassBorderBrush, RoundedCornerShape(24.dp))
                     .graphicsLayer {
                         clip = true
@@ -220,6 +219,7 @@ fun LiquidGlassDialog(
                             ) {
                                 drawLayer(backdropLayer)
                             }
+                            drawRect(color = glassTint)
                         } else {
                             val glassMeshBrush = Brush.radialGradient(
                                 colors = if (isDark) listOf(

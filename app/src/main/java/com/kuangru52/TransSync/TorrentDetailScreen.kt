@@ -15,6 +15,7 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
@@ -256,6 +257,12 @@ fun TorrentDetailScreen(
                     x = loc[0].toFloat() + offsetInWindow.x,
                     y = loc[1].toFloat() + offsetInWindow.y,
                 )
+            }
+            .drawWithContent {
+                backdropLayer.record {
+                    this@drawWithContent.drawContent()
+                }
+                drawContent()
             }
             .graphicsLayer {
                 translationX = animatedSwipeOffset
