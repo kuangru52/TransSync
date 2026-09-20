@@ -98,10 +98,13 @@ fun LiquidGlassDialog(
         val density = LocalDensity.current
         val dialogView = LocalView.current
 
+        val dialogInstanceId = remember { java.util.UUID.randomUUID().toString() }
         var backdropBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
 
-        LaunchedEffect(backdropLayer) {
+        LaunchedEffect(dialogInstanceId, backdropLayer) {
             if (backdropLayer != null) {
+                // 等待 16ms (1 帧)，确保主界面先完成对最新背景视效的图形录制
+                kotlinx.coroutines.delay(16L)
                 try {
                     backdropBitmap = backdropLayer.toImageBitmap()
                 } catch (e: Exception) {
