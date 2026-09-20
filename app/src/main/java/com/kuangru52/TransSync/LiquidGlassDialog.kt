@@ -19,6 +19,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
@@ -96,6 +97,18 @@ fun LiquidGlassDialog(
         )
         val density = LocalDensity.current
         val dialogView = LocalView.current
+
+        var backdropBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+
+        LaunchedEffect(backdropLayer) {
+            if (backdropLayer != null) {
+                try {
+                    backdropBitmap = backdropLayer.toImageBitmap()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        }
 
         var cardAbsoluteScreenPosition by remember { mutableStateOf(Offset.Zero) }
 
@@ -226,7 +239,16 @@ fun LiquidGlassDialog(
                         }
                     }
                     .drawWithContent {
-                        if (backdropLayer != null) {
+                        val capturedBitmap = backdropBitmap
+                        if (capturedBitmap != null) {
+                            translate(
+                                left = -localOffsetX,
+                                top = -localOffsetY,
+                            ) {
+                                drawImage(capturedBitmap)
+                            }
+                            drawRect(color = glassTint)
+                        } else if (backdropLayer != null) {
                             translate(
                                 left = -localOffsetX,
                                 top = -localOffsetY,
