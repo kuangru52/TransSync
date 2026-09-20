@@ -534,6 +534,8 @@ fun TorrentListScreen(
                         var dialogRefractionHeightDp by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogHeight(context, isDark)) }
                         var dialogBlurRadiusDp by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogBlur(context, isDark)) }
                         var dialogSaturationBoost by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogSaturation(context, isDark)) }
+                        var dialogContrast by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogContrast(context, isDark)) }
+                        var dialogWhitePoint by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogWhitePoint(context, isDark)) }
                         var showDialogTuningInspector by remember { mutableStateOf(false) }
 
                         val allDirs = remember(ServerManager.serversVersion, torrents) { DownloadDirManager.getAllDirs(context, torrents) }
@@ -571,6 +573,8 @@ fun TorrentListScreen(
                             refractionHeightDp = dialogRefractionHeightDp,
                             blurRadiusDp = dialogBlurRadiusDp,
                             saturationBoost = dialogSaturationBoost,
+                            contrast = dialogContrast,
+                            whitePoint = dialogWhitePoint,
                             bottomLeftContent = {
                                 if (freeSpaceText.isNotEmpty()) {
                                     Text(
@@ -786,6 +790,8 @@ fun TorrentListScreen(
                                 refractionHeightDp = dialogRefractionHeightDp,
                                 blurRadiusDp = dialogBlurRadiusDp,
                                 saturationBoost = dialogSaturationBoost,
+                                contrast = dialogContrast,
+                                whitePoint = dialogWhitePoint,
                                 onRefractionChange = {
                                     dialogRefractionDp = it
                                     SettingsManager.setDialogRefraction(context, it)
@@ -802,31 +808,47 @@ fun TorrentListScreen(
                                     dialogSaturationBoost = it
                                     SettingsManager.setDialogSaturation(context, it)
                                 },
+                                onContrastChange = {
+                                    dialogContrast = it
+                                    SettingsManager.setDialogContrast(context, it)
+                                },
+                                onWhitePointChange = {
+                                    dialogWhitePoint = it
+                                    SettingsManager.setDialogWhitePoint(context, it)
+                                },
                                 onReset = {
                                     val defRefraction = 60f
                                     val defHeight = if (isDark) 50f else 4f
                                     val defBlur = if (isDark) 120f else 13f
                                     val defSaturation = 3.0f
+                                    val defContrast = 1.0f
+                                    val defWhitePoint = if (isDark) 0.10f else 0.20f
 
                                     dialogRefractionDp = defRefraction
                                     dialogRefractionHeightDp = defHeight
                                     dialogBlurRadiusDp = defBlur
                                     dialogSaturationBoost = defSaturation
+                                    dialogContrast = defContrast
+                                    dialogWhitePoint = defWhitePoint
 
                                     SettingsManager.setDialogRefraction(context, defRefraction)
                                     SettingsManager.setDialogHeight(context, defHeight)
                                     SettingsManager.setDialogBlur(context, defBlur)
                                     SettingsManager.setDialogSaturation(context, defSaturation)
+                                    SettingsManager.setDialogContrast(context, defContrast)
+                                    SettingsManager.setDialogWhitePoint(context, defWhitePoint)
                                 },
                                 onSave = {
                                     SettingsManager.setDialogRefraction(context, dialogRefractionDp)
                                     SettingsManager.setDialogHeight(context, dialogRefractionHeightDp)
                                     SettingsManager.setDialogBlur(context, dialogBlurRadiusDp)
                                     SettingsManager.setDialogSaturation(context, dialogSaturationBoost)
+                                    SettingsManager.setDialogContrast(context, dialogContrast)
+                                    SettingsManager.setDialogWhitePoint(context, dialogWhitePoint)
                                     Toast.makeText(context, "弹窗玻璃参数保存成功", Toast.LENGTH_SHORT).show()
                                     showDialogTuningInspector = false
                                 },
-                                onDismiss = { showDialogTuningInspector = false }
+                                onDismiss = { showDialogTuningInspector = false },
                             )
                         }
                     }

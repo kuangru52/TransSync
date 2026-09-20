@@ -22,12 +22,16 @@ object SettingsManager {
     private const val KEY_SPEEDBAR_HEIGHT = "speedbar_height"
     private const val KEY_SPEEDBAR_BLUR = "speedbar_blur"
     private const val KEY_SPEEDBAR_SATURATION = "speedbar_saturation"
+    private const val KEY_SPEEDBAR_CONTRAST = "speedbar_contrast"
+    private const val KEY_SPEEDBAR_WHITE_POINT = "speedbar_white_point"
 
     // 2. 所有通用弹窗独立液态玻璃 Shader 参数 Key
     private const val KEY_DIALOG_REFRACTION = "dialog_refraction"
     private const val KEY_DIALOG_HEIGHT = "dialog_height"
     private const val KEY_DIALOG_BLUR = "dialog_blur"
     private const val KEY_DIALOG_SATURATION = "dialog_saturation"
+    private const val KEY_DIALOG_CONTRAST = "dialog_contrast"
+    private const val KEY_DIALOG_WHITE_POINT = "dialog_white_point"
 
     fun getCustomTrackerMappings(context: Context): Map<String, String> {
         val jsonStr = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -144,6 +148,30 @@ object SettingsManager {
             .edit { putFloat(KEY_SPEEDBAR_SATURATION, value) }
     }
 
+    @Suppress("UNUSED_PARAMETER")
+    fun getSpeedbarContrast(context: Context, isDark: Boolean): Float {
+        val defaultVal = 1.0f
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getFloat(KEY_SPEEDBAR_CONTRAST, defaultVal)
+    }
+
+    fun setSpeedbarContrast(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit { putFloat(KEY_SPEEDBAR_CONTRAST, value) }
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun getSpeedbarWhitePoint(context: Context, isDark: Boolean): Float {
+        val defaultVal = if (isDark) 0.10f else 0.20f
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getFloat(KEY_SPEEDBAR_WHITE_POINT, defaultVal)
+    }
+
+    fun setSpeedbarWhitePoint(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit { putFloat(KEY_SPEEDBAR_WHITE_POINT, value) }
+    }
+
     // --- 全局弹窗独立液态玻璃参数 Getter & Setter ---
     @Suppress("UNUSED_PARAMETER")
     fun getDialogRefraction(context: Context, isDark: Boolean): Float {
@@ -189,6 +217,30 @@ object SettingsManager {
     fun setDialogSaturation(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_DIALOG_SATURATION, value) }
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun getDialogContrast(context: Context, isDark: Boolean): Float {
+        val defaultVal = 1.0f
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getFloat(KEY_DIALOG_CONTRAST, defaultVal)
+    }
+
+    fun setDialogContrast(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit { putFloat(KEY_DIALOG_CONTRAST, value) }
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    fun getDialogWhitePoint(context: Context, isDark: Boolean): Float {
+        val defaultVal = if (isDark) 0.10f else 0.20f
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getFloat(KEY_DIALOG_WHITE_POINT, defaultVal)
+    }
+
+    fun setDialogWhitePoint(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit { putFloat(KEY_DIALOG_WHITE_POINT, value) }
     }
 
     fun getThemeMode(context: Context): String {

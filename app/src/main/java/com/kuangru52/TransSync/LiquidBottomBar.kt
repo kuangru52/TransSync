@@ -127,6 +127,8 @@ fun LiquidBottomBarContent(
     var liveRefractionHeightDp by remember(isDark) { mutableFloatStateOf(SettingsManager.getSpeedbarHeight(context, isDark)) }
     var liveBlurRadiusDp by remember(isDark) { mutableFloatStateOf(SettingsManager.getSpeedbarBlur(context, isDark)) }
     var liveSaturationBoost by remember(isDark) { mutableFloatStateOf(SettingsManager.getSpeedbarSaturation(context, isDark)) }
+    var liveContrast by remember(isDark) { mutableFloatStateOf(SettingsManager.getSpeedbarContrast(context, isDark)) }
+    var liveWhitePoint by remember(isDark) { mutableFloatStateOf(SettingsManager.getSpeedbarWhitePoint(context, isDark)) }
     var showTuningInspector by remember { mutableStateOf(value = false) }
 
     val isImeVisible = WindowInsets.isImeVisible
@@ -393,6 +395,8 @@ fun LiquidBottomBarContent(
             refractionHeightDp = liveRefractionHeightDp,
             blurRadiusDp = liveBlurRadiusDp,
             saturationBoost = liveSaturationBoost,
+            contrast = liveContrast,
+            whitePoint = liveWhitePoint,
             onRefractionChange = {
                 liveRefractionDp = it
                 SettingsManager.setSpeedbarRefraction(context, it)
@@ -409,31 +413,47 @@ fun LiquidBottomBarContent(
                 liveSaturationBoost = it
                 SettingsManager.setSpeedbarSaturation(context, it)
             },
+            onContrastChange = {
+                liveContrast = it
+                SettingsManager.setSpeedbarContrast(context, it)
+            },
+            onWhitePointChange = {
+                liveWhitePoint = it
+                SettingsManager.setSpeedbarWhitePoint(context, it)
+            },
             onReset = {
                 val defRefraction = if (isDark) 51f else 14f
                 val defHeight = 3f
                 val defBlur = 14f
                 val defSaturation = 1.60f
+                val defContrast = 1.0f
+                val defWhitePoint = if (isDark) 0.10f else 0.20f
 
                 liveRefractionDp = defRefraction
                 liveRefractionHeightDp = defHeight
                 liveBlurRadiusDp = defBlur
                 liveSaturationBoost = defSaturation
+                liveContrast = defContrast
+                liveWhitePoint = defWhitePoint
 
                 SettingsManager.setSpeedbarRefraction(context, defRefraction)
                 SettingsManager.setSpeedbarHeight(context, defHeight)
                 SettingsManager.setSpeedbarBlur(context, defBlur)
                 SettingsManager.setSpeedbarSaturation(context, defSaturation)
+                SettingsManager.setSpeedbarContrast(context, defContrast)
+                SettingsManager.setSpeedbarWhitePoint(context, defWhitePoint)
             },
             onSave = {
                 SettingsManager.setSpeedbarRefraction(context, liveRefractionDp)
                 SettingsManager.setSpeedbarHeight(context, liveRefractionHeightDp)
                 SettingsManager.setSpeedbarBlur(context, liveBlurRadiusDp)
                 SettingsManager.setSpeedbarSaturation(context, liveSaturationBoost)
+                SettingsManager.setSpeedbarContrast(context, liveContrast)
+                SettingsManager.setSpeedbarWhitePoint(context, liveWhitePoint)
                 android.widget.Toast.makeText(context, "网速条参数保存成功", android.widget.Toast.LENGTH_SHORT).show()
                 showTuningInspector = false
             },
-            onDismiss = { showTuningInspector = false }
+            onDismiss = { showTuningInspector = false },
         )
     }
 }
@@ -447,13 +467,17 @@ fun LiquidGlassTuningInspector(
     refractionHeightDp: Float,
     blurRadiusDp: Float,
     saturationBoost: Float,
+    contrast: Float = 1.0f,
+    whitePoint: Float = 0.15f,
     onRefractionChange: (Float) -> Unit,
     onRefractionHeightChange: (Float) -> Unit,
     onBlurRadiusChange: (Float) -> Unit,
     onSaturationBoostChange: (Float) -> Unit,
+    onContrastChange: (Float) -> Unit = {},
+    onWhitePointChange: (Float) -> Unit = {},
     onSave: () -> Unit,
     onReset: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
     val cardBgColor = if (isDark) Color(0xFF1F2A38) else Color.White
@@ -532,6 +556,12 @@ fun LiquidGlassTuningInspector(
 
                     // 4. 彩度增强 (Saturation Boost)
                     CompactTuningRow("彩度", String.format(java.util.Locale.US, "%.1f", saturationBoost), saturationBoost, 0.8f..3.0f, onSaturationBoostChange)
+
+                    // 5. 对比度 (Contrast)
+                    CompactTuningRow("对比", String.format(java.util.Locale.US, "%.1f", contrast), contrast, 0.5f..2.0f, onContrastChange)
+
+                    // 6. 白点 (White Point)
+                    CompactTuningRow("白点", String.format(java.util.Locale.US, "%.2f", whitePoint), whitePoint, 0.0f..1.0f, onWhitePointChange)
                 }
             }
         }

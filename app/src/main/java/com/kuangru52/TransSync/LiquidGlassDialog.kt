@@ -62,6 +62,8 @@ fun LiquidGlassDialog(
     refractionHeightDp: Float? = null,
     blurRadiusDp: Float? = null,
     saturationBoost: Float? = null,
+    contrast: Float? = null,
+    whitePoint: Float? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val isInspection = LocalInspectionMode.current
@@ -73,6 +75,8 @@ fun LiquidGlassDialog(
         val effectiveRefractionHeightDp = refractionHeightDp ?: SettingsManager.getDialogHeight(context, isDark)
         val effectiveBlurRadiusDp = blurRadiusDp ?: SettingsManager.getDialogBlur(context, isDark)
         val effectiveSaturationBoost = saturationBoost ?: SettingsManager.getDialogSaturation(context, isDark)
+        val effectiveContrast = contrast ?: SettingsManager.getDialogContrast(context, isDark)
+        val effectiveWhitePoint = whitePoint ?: SettingsManager.getDialogWhitePoint(context, isDark)
 
         val glassBgColor = if (isDark) Color(0xEB1C2836) else Color(0xF2F8FAFC)
         val glassBorderBrush = Brush.linearGradient(
@@ -189,6 +193,8 @@ fun LiquidGlassDialog(
                                 shader.setFloatUniform("refraction", with(density) { effectiveRefractionDp.dp.toPx() })
                                 shader.setFloatUniform("refractionHeight", with(density) { effectiveRefractionHeightDp.dp.toPx() })
                                 shader.setFloatUniform("saturationBoost", effectiveSaturationBoost)
+                                shader.setFloatUniform("contrast", effectiveContrast)
+                                shader.setFloatUniform("whitePoint", effectiveWhitePoint)
 
                                 val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
 
