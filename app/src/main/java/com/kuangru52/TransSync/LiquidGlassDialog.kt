@@ -136,73 +136,87 @@ fun LiquidGlassDialog(
                         shape = RoundedCornerShape(24.dp)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (effectiveRefractionDp != 0f)) {
-                                val agsl = """
-                                    uniform shader content;
-                                    uniform float2 size;
-                                    uniform float cornerRadius;
-                                    uniform float refraction;
-                                    uniform float refractionHeight;
-                                    uniform float saturationBoost;
+                                try {
+                                    val agsl = """
+                                        uniform shader content;
+                                        uniform float2 size;
+                                        uniform float cornerRadius;
+                                        uniform float refraction;
+                                        uniform float refractionHeight;
+                                        uniform float saturationBoost;
+                                        uniform float contrast;
+                                        uniform float whitePoint;
 
-                                    float sdRoundedBox(float2 p, float2 b, float r) {
-                                        float2 q = abs(p) - b + float2(r);
-                                        return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
-                                    }
-
-                                    float2 getNormal(float2 p, float2 b, float r) {
-                                        float e = 1.0;
-                                        float d = sdRoundedBox(p, b, r);
-                                        float dx = sdRoundedBox(p + float2(e, 0.0), b, r) - d;
-                                        float dy = sdRoundedBox(p + float2(0.0, e), b, r) - d;
-                                        float len = length(float2(dx, dy));
-                                        return len > 0.0001 ? float2(dx, dy) / len : float2(0.0);
-                                    }
-
-                                    vec4 main(float2 coord) {
-                                        float2 halfSize = size * 0.5;
-                                        float2 p = coord - halfSize;
-                                        float r = min(cornerRadius, min(halfSize.x, halfSize.y));
-                                        
-                                        float dist = sdRoundedBox(p, halfSize, r);
-                                        if (dist > 0.0) {
-                                            return vec4(0.0);
+                                        float sdRoundedBox(float2 p, float2 b, float r) {
+                                            float2 q = abs(p) - b + float2(r);
+                                            return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
                                         }
-                                        
-                                        float2 norm = getNormal(p, halfSize, r);
-                                        float edgeFactor = clamp(-dist / max(refractionHeight, 1.0), 0.0, 1.0);
-                                        float lensFactor = sin((1.0 - edgeFactor) * 1.5707963);
-                                        float2 disp = -norm * (lensFactor * abs(refraction));
-                                        
-                                        float4 colR = content.eval(coord + disp * 1.08);
-                                        float4 colG = content.eval(coord + disp);
-                                        float4 colB = content.eval(coord + disp * 0.92);
-                                        
-                                        vec3 baseRgb = vec3(colR.r, colG.g, colB.b);
-                                        float luma = dot(baseRgb, vec3(0.2126, 0.7152, 0.0722));
-                                        vec3 satRgb = mix(vec3(luma), baseRgb, saturationBoost);
-                                        
-                                        float alpha = max(colG.a, max(colR.a, colB.a));
-                                        return vec4(satRgb, alpha);
+
+                                        float2 getNormal(float2 p, float2 b, float r) {
+                                            float e = 1.0;
+                                            float d = sdRoundedBox(p, b, r);
+                                            float dx = sdRoundedBox(p + float2(e, 0.0), b, r) - d;
+                                            float dy = sdRoundedBox(p + float2(0.0, e), b, r) - d;
+                                            float len = length(float2(dx, dy));
+                                            return len > 0.0001 ? float2(dx, dy) / len : float2(0.0);
+                                        }
+
+                                        vec4 main(float2 coord) {
+                                            float2 halfSize = size * 0.5;
+                                            float2 p = coord - halfSize;
+                                            float r = min(cornerRadius, min(halfSize.x, halfSize.y));
+                                            
+                                            float dist = sdRoundedBox(p, halfSize, r);
+                                            if (dist > 0.0) {
+                                                return vec4(0.0);
+                                            }
+                                            
+                                            float2 norm = getNormal(p, halfSize, r);
+                                            float edgeFactor = clamp(-dist / max(refractionHeight, 1.0), 0.0, 1.0);
+                                            float lensFactor = sin((1.0 - edgeFactor) * 1.5707963);
+                                            float2 disp = -norm * (lensFactor * abs(refraction));
+                                            
+                                            float4 colR = content.eval(coord + disp * 1.08);
+                                            float4 colG = content.eval(coord + disp);
+                                            float4 colB = content.eval(coord + disp * 0.92);
+                                            
+                                            vec3 baseRgb = vec3(colR.r, colG.g, colB.b);
+                                            float luma = dot(baseRgb, vec3(0.2126, 0.7152, 0.0722));
+                                            vec3 satRgb = mix(vec3(luma), baseRgb, saturationBoost);
+                                            
+                                            vec3 contrastRgb = (satRgb - vec3(0.5)) * contrast + vec3(0.5);
+                                            vec3 finalRgb = clamp(contrastRgb + vec3(whitePoint * (1.0 - edgeFactor)), vec3(0.0), vec3(1.0));
+                                            
+                                            float alpha = max(colG.a, max(colR.a, colB.a));
+                                            return vec4(finalRgb, alpha);
+                                        }
+                                    """.trimIndent()
+
+                                    val shader = android.graphics.RuntimeShader(agsl)
+                                    shader.setFloatUniform("size", size.width, size.height)
+                                    shader.setFloatUniform("cornerRadius", with(density) { 24.dp.toPx() })
+                                    shader.setFloatUniform("refraction", with(density) { effectiveRefractionDp.dp.toPx() })
+                                    shader.setFloatUniform("refractionHeight", with(density) { effectiveRefractionHeightDp.dp.toPx() })
+                                    shader.setFloatUniform("saturationBoost", effectiveSaturationBoost)
+                                    shader.setFloatUniform("contrast", effectiveContrast)
+                                    shader.setFloatUniform("whitePoint", effectiveWhitePoint)
+
+                                    val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+
+                                    renderEffect = if (effectiveBlurRadiusDp > 0f) {
+                                        val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }
+                                        val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
+                                        android.graphics.RenderEffect.createChainEffect(runtimeShaderEffect, blur).asComposeRenderEffect()
+                                    } else {
+                                        runtimeShaderEffect.asComposeRenderEffect()
                                     }
-                                """.trimIndent()
-
-                                val shader = android.graphics.RuntimeShader(agsl)
-                                shader.setFloatUniform("size", size.width, size.height)
-                                shader.setFloatUniform("cornerRadius", with(density) { 24.dp.toPx() })
-                                shader.setFloatUniform("refraction", with(density) { effectiveRefractionDp.dp.toPx() })
-                                shader.setFloatUniform("refractionHeight", with(density) { effectiveRefractionHeightDp.dp.toPx() })
-                                shader.setFloatUniform("saturationBoost", effectiveSaturationBoost)
-                                shader.setFloatUniform("contrast", effectiveContrast)
-                                shader.setFloatUniform("whitePoint", effectiveWhitePoint)
-
-                                val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
-
-                                renderEffect = if (effectiveBlurRadiusDp > 0f) {
-                                    val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }
-                                    val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
-                                    android.graphics.RenderEffect.createChainEffect(runtimeShaderEffect, blur).asComposeRenderEffect()
-                                } else {
-                                    runtimeShaderEffect.asComposeRenderEffect()
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    if (effectiveBlurRadiusDp > 0f) {
+                                        val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }
+                                        val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
+                                        renderEffect = blur.asComposeRenderEffect()
+                                    }
                                 }
                             } else if (effectiveBlurRadiusDp > 0f) {
                                 val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }
