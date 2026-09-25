@@ -16,6 +16,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -40,7 +41,9 @@ import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
@@ -54,8 +57,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlin.math.roundToInt
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -1564,7 +1569,9 @@ private fun CompactSegmentedGroup(
 }
 
 /**
- * Kyant0 AGSL 凸透镜 3D 液态玻璃 Slider 拖动条组件
+ * 1:1 复刻 Kyant0 AndroidLiquidGlass 的 3D 液态玻璃 Slider 拖动条组件：
+ * - 采用 3 层离屏录制架构：trackLayer 离屏录制蓝灰轨道，液态玻璃 Thumb 直接抓取并透射正下方的轨道图形，
+ *   并实时叠加 Kyant0 AGSL 凸透镜折射 Shader 与高斯模糊 Filter，实现极其逼真的 3D 水晶玻璃透射折射变焦！
  */
 @android.annotation.SuppressLint("NewApi")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -1577,6 +1584,12 @@ fun LiquidGlassSlider(
 ) {
     val density = LocalDensity.current
     val isDark = isSystemInDarkTheme()
+    val graphicsContext = LocalGraphicsContext.current
+
+    val trackLayer = remember { graphicsContext.createGraphicsLayer() }
+    DisposableEffect(Unit) {
+        onDispose { graphicsContext.releaseGraphicsLayer(trackLayer) }
+    }
 
     val cachedShader = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -1586,70 +1599,133 @@ fun LiquidGlassSlider(
         } else null
     }
 
-    Slider(
-        value = value,
-        onValueChange = onValueChange,
-        valueRange = valueRange,
-        thumb = {
-            Surface(
-                shape = RoundedCornerShape(14.dp),
-                color = Color.Transparent,
-                border = BorderStroke(1.dp, if (isDark) Color(0x99FFFFFF) else Color(0xCC00B0FF)),
-                shadowElevation = 6.dp,
-                modifier = Modifier.size(width = 30.dp, height = 24.dp)
-            ) {
+    var sliderWidthPx by remember { mutableFloatStateOf(0f) }
+    val normalizedValue = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
+
+    val activeTrackColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF0090FF)
+    val inactiveTrackColor = if (isDark) Color(0x55FFFFFF) else Color(0xFFD8D8D8)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(36.dp)
+            .onGloballyPositioned { coordinates ->
+                sliderWidthPx = coordinates.size.width.toFloat()
+            }
+            .pointerInput(valueRange) {
+                detectTapGestures { offset ->
+                    if (sliderWidthPx > 0f) {
+                        val newNorm = (offset.x / sliderWidthPx).coerceIn(0f, 1f)
+                        val newValue = valueRange.start + newNorm * (valueRange.endInclusive - valueRange.start)
+                        onValueChange(newValue)
+                    }
+                }
+            }
+            .pointerInput(valueRange) {
+                detectHorizontalDragGestures { change, _ ->
+                    change.consume()
+                    if (sliderWidthPx > 0f) {
+                        val newNorm = (change.position.x / sliderWidthPx).coerceIn(0f, 1f)
+                        val newValue = valueRange.start + newNorm * (valueRange.endInclusive - valueRange.start)
+                        onValueChange(newValue)
+                    }
+                }
+            },
+        contentAlignment = Alignment.CenterStart
+    ) {
+        // 1. 底层：轨道的图形记录层 (被 trackLayer 离屏录制，供液态玻璃 Thumb 抓取并进行凸透镜折射)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(6.dp)
+                .clip(RoundedCornerShape(100.dp))
+                .drawWithContent {
+                    trackLayer.record {
+                        this@drawWithContent.drawContent()
+                    }
+                    drawContent()
+                }
+        ) {
+            Row(modifier = Modifier.fillMaxSize()) {
+                // 左侧激活蓝条
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(14.dp))
-                        .graphicsLayer {
-                            clip = true
-                            shape = RoundedCornerShape(14.dp)
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
-                                    try {
-                                        val shader = cachedShader
-                                        shader.setFloatUniform("size", size.width, size.height)
-                                        shader.setFloatUniform("cornerRadius", with(density) { 14.dp.toPx() })
-                                        shader.setFloatUniform("refraction", with(density) { 24.dp.toPx() })
-                                        shader.setFloatUniform("refractionHeight", with(density) { 18.dp.toPx() })
-                                        shader.setFloatUniform("saturationBoost", 1.5f)
-                                        shader.setFloatUniform("contrast", 0.15f)
-                                        shader.setFloatUniform("whitePoint", 0.10f)
-
-                                        val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
-                                        val blurPx = with(density) { 6.dp.toPx() }
-                                        val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
-                                        renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
-                                    } catch (_: Exception) {
-                                        val blurPx = with(density) { 6.dp.toPx() }
-                                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
-                                    }
-                                } else {
-                                    val blurPx = with(density) { 6.dp.toPx() }
-                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
-                                }
-                            }
-                        }
-                        .drawWithContent {
-                            drawContent()
-                            drawRect(color = if (isDark) Color(0x331060B3) else Color(0x2200B0FF))
-                        }
+                        .fillMaxHeight()
+                        .weight(normalizedValue.coerceAtLeast(0.001f))
+                        .background(activeTrackColor, RoundedCornerShape(100.dp))
+                )
+                // 右侧未激活灰条
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight((1f - normalizedValue).coerceAtLeast(0.001f))
+                        .background(inactiveTrackColor, RoundedCornerShape(100.dp))
                 )
             }
-        },
-        track = { sliderState ->
-            SliderDefaults.Track(
-                sliderState = sliderState,
-                modifier = Modifier.height(6.dp),
-                colors = SliderDefaults.colors(
-                    activeTrackColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF0090FF),
-                    inactiveTrackColor = if (isDark) Color(0x55FFFFFF) else Color(0xFFD8D8D8)
-                )
+        }
+
+        // 2. 顶层：Kyant0 凸透镜 3D 液态玻璃 Thumb (精准折射 trackLayer 底下的蓝灰轨道！)
+        val thumbWidthDp = 32.dp
+        val thumbHeightDp = 24.dp
+        val thumbWidthPx = with(density) { thumbWidthDp.toPx() }
+        val thumbHeightPx = with(density) { thumbHeightDp.toPx() }
+
+        val thumbLeftPx = ((sliderWidthPx - thumbWidthPx) * normalizedValue).coerceAtLeast(0f)
+        val thumbTopPx = with(density) { (36.dp.toPx() - thumbHeightPx) / 2f }
+
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Color.Transparent,
+            border = BorderStroke(1.dp, if (isDark) Color(0x99FFFFFF) else Color(0xCC00B0FF)),
+            shadowElevation = 8.dp,
+            modifier = Modifier
+                .offset { IntOffset(thumbLeftPx.roundToInt(), 0) }
+                .size(thumbWidthDp, thumbHeightDp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(12.dp))
+                    .graphicsLayer {
+                        clip = true
+                        shape = RoundedCornerShape(12.dp)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                try {
+                                    val shader = cachedShader
+                                    shader.setFloatUniform("size", size.width, size.height)
+                                    shader.setFloatUniform("cornerRadius", with(density) { 12.dp.toPx() })
+                                    shader.setFloatUniform("refraction", with(density) { 24.dp.toPx() })
+                                    shader.setFloatUniform("refractionHeight", with(density) { 18.dp.toPx() })
+                                    shader.setFloatUniform("saturationBoost", 1.6f)
+                                    shader.setFloatUniform("contrast", 0.15f)
+                                    shader.setFloatUniform("whitePoint", 0.10f)
+
+                                    val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                    val blurPx = with(density) { 4.dp.toPx() }
+                                    val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                    renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                                } catch (_: Exception) {
+                                    val blurPx = with(density) { 4.dp.toPx() }
+                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                }
+                            } else {
+                                val blurPx = with(density) { 4.dp.toPx() }
+                                renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                            }
+                        }
+                    }
+                    .drawWithContent {
+                        // 精准偏移并绘制 trackLayer，使 Shader 折射并弯曲正下方的蓝灰轨道！
+                        translate(left = -thumbLeftPx, top = -thumbTopPx) {
+                            drawLayer(trackLayer)
+                        }
+                        // 水晶玻璃透亮反射光罩
+                        drawRect(color = if (isDark) Color(0x331060B3) else Color(0x2200B0FF))
+                    }
             )
-        },
-        modifier = modifier.fillMaxWidth()
-    )
+        }
+    }
 }
 
 @androidx.compose.ui.tooling.preview.Preview(name = "设置页 - 浅色模式", showBackground = true)
