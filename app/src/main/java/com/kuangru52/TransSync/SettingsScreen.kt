@@ -277,20 +277,12 @@ fun SettingsScreen(
                                 Surface(
                                     onClick = {
                                         if (!isActive) {
-                                            val oldActiveServer = activeServer
                                             ServerManager.setActiveServer(context, server.id)
                                             serversList = ServerManager.getServers(context)
                                             activeServer = ServerManager.getActiveServer(context)
 
-                                            val isCrossClientSwitch = (oldActiveServer?.clientType != server.clientType) ||
-                                                    (server.clientType == ServerConfig.CLIENT_QBITTORRENT)
-
-                                            if (isCrossClientSwitch) {
-                                                Toast.makeText(context, "正在无缝重启应用以生效 ${server.alias}...", Toast.LENGTH_SHORT).show()
-                                                AppRestartUtils.restartApp(context)
-                                            } else {
-                                                Toast.makeText(context, "已切换至: ${server.alias}", Toast.LENGTH_SHORT).show()
-                                            }
+                                            Toast.makeText(context, "正在重启应用以生效 ${server.alias}...", Toast.LENGTH_SHORT).show()
+                                            AppRestartUtils.restartApp(context)
                                         }
                                     },
                                     shape = RoundedCornerShape(12.dp),
@@ -821,13 +813,12 @@ fun SettingsScreen(
             boxPositionInRoot = settingsViewLocation,
             onSave = { updated ->
                 val wasActive = server.id == (activeServer?.id ?: "")
-                val typeChanged = server.clientType != updated.clientType
                 ServerManager.saveServer(context, updated)
                 serversList = ServerManager.getServers(context)
                 activeServer = ServerManager.getActiveServer(context)
                 editingServerTarget = null
 
-                if (wasActive && (typeChanged || (updated.clientType == ServerConfig.CLIENT_QBITTORRENT))) {
+                if (wasActive) {
                     Toast.makeText(context, "服务器配置已更变，正在重启应用...", Toast.LENGTH_SHORT).show()
                     AppRestartUtils.restartApp(context)
                 }

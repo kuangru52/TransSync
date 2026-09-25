@@ -247,846 +247,889 @@ fun TorrentListScreen(
         }
     }
 
-    @Composable
-    fun MainScaffoldContent() {
-        val currentWallpaperMode = remember(SettingsManager.wallpaperStateVersion) { SettingsManager.getWallpaperMode(context) }
-        val mainView = LocalView.current
-
-        Box(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // 1. 被录制的底层内容 (壁纸 + 种子列表)
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .onGloballyPositioned { coordinates ->
-                        val loc = IntArray(2)
-                        mainView.getLocationOnScreen(loc)
-                        val offsetInWindow = coordinates.positionInWindow()
-                        boxPositionInRoot = Offset(
-                            x = loc[0].toFloat() + offsetInWindow.x,
-                            y = loc[1].toFloat() + offsetInWindow.y,
-                        )
-                    }
-                    .drawWithContent {
-                        backdropLayer.record {
-                            this@drawWithContent.drawContent()
-                        }
-                        drawContent()
-                    }
-            ) {
-                WallpaperBackground()
-
-                if (torrents.isEmpty() && !isLoading) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .statusBarsPadding(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "暂无种子任务",
-                            color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72),
-                            fontSize = 16.sp
-                        )
-                    }
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .statusBarsPadding()
-                            .graphicsLayer(),
-                        contentPadding = PaddingValues(
-                            start = 0.dp,
-                            end = 0.dp,
-                            top = 60.dp,
-                            bottom = 90.dp
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(0.dp)
-                    ) {
-                        items(
-                            items = torrents,
-                            key = { it.id }
-                        ) { torrent ->
-                            val isSelected = selectedIds.contains(torrent.id)
-                            TorrentItemCard(
-                                torrent = torrent,
-                                isSelected = isSelected,
-                                isTrackerBlurEnabled = isTrackerBlurEnabled,
-                                revealedTrackerNames = revealedTrackerNames,
-                                onClick = {
-                                    if (selectedIds.isNotEmpty()) {
-                                        selectedIds = if (isSelected) selectedIds - torrent.id else selectedIds + torrent.id
-                                    } else {
-                                        if (isLandscape) {
-                                            rightPaneTarget = RightPaneTarget.Detail(torrent.id, torrent.name)
-                                        } else {
-                                            onTorrentClick(torrent)
-                                        }
-                                    }
-                                },
-                                onLongClick = {
-                                    selectedIds = if (isSelected) selectedIds - torrent.id else selectedIds + torrent.id
-                                },
-                                onToggleStatus = {
-                                    viewModel.toggleTorrentStatus(rpcUrl, user, pass, torrent)
+    // --- 单页面超宽画布 (Single Unified Canvas Architecture) ---
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .then(
+                if (!isLandscape) {
+                    Modifier.pointerInput(Unit) {
+                        detectHorizontalDragGestures(
+                            onDragStart = {},
+                            onHorizontalDrag = { change, dragAmount ->
+                                change.consume()
+                                val newOffset = (drawerOffsetAnim.value + dragAmount).coerceIn(0f, drawerWidthPx)
+                                scope.launch {
+                                    drawerOffsetAnim.snapTo(newOffset)
                                 }
-                            )
-                        }
+                            },
+                            onDragEnd = {
+                                val shouldOpen = drawerOffsetAnim.value > drawerWidthPx * 0.4f
+                                isDrawerOpen = shouldOpen
+                                scope.launch {
+                                    drawerOffsetAnim.animateTo(
+                                        targetValue = if (shouldOpen) drawerWidthPx else 0f,
+                                        animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)
+                                    )
+                                }
+                            },
+                            onDragCancel = {
+                                val shouldOpen = drawerOffsetAnim.value > drawerWidthPx * 0.4f
+                                isDrawerOpen = shouldOpen
+                                scope.launch {
+                                    drawerOffsetAnim.animateTo(
+                                        targetValue = if (shouldOpen) drawerWidthPx else 0f,
+                                        animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)
+                                    )
+                                }
+                            }
+                        )
                     }
-                }
-            }
-
-            val drawerSlideRatio = (currentOffset / drawerWidthPx).coerceIn(0f, 1f)
-
-            // 2. 顶层悬浮控制条 (不在 backdropLayer 内部录制，彻底防止 RenderNode 递归绘制崩溃)
-            FloatingTopControls(
-                titleText = getFilterTitleText(currentFilter),
-                sizeText = FormatUtils.formatSize(totalSize),
-                altSpeedEnabled = altSpeedEnabled,
-                selectedCount = selectedIds.size,
-                drawerSlideRatio = drawerSlideRatio,
-                onMenuClick = {
-                    if (!isLandscape) {
-                        isDrawerOpen = !isDrawerOpen
-                    }
-                },
-                onTurtleClick = { viewModel.toggleAltSpeedLimits(rpcUrl, user, pass) },
-                onCloseSelection = { selectedIds = emptySet() },
-                onSelectAll = { selectedIds = torrents.map { it.id }.toSet() },
-                onDeleteSelected = {
-                    val ids = selectedIds.toList()
-                    if (ids.isNotEmpty()) {
-                        deleteIdsTarget = ids
-                    }
-                },
-                onStartSelected = {
-                    val ids = selectedIds.toList()
-                    selectedIds = emptySet()
-                    viewModel.startTorrents(rpcUrl, user, pass, ids)
-                },
-                onStopSelected = {
-                    val ids = selectedIds.toList()
-                    selectedIds = emptySet()
-                    viewModel.stopTorrents(rpcUrl, user, pass, ids)
-                },
-                onRenameSelected = {
-                    val ids = selectedIds.toList()
-                    if (ids.size == 1) {
-                        val id = ids.first()
-                        torrents.find { it.id == id }?.let { torrent ->
-                            renameTorrentTarget = torrent
-                        }
-                    }
-                },
-                onSetLocationSelected = {
-                    val ids = selectedIds.toList()
-                    if (ids.isNotEmpty()) {
-                        setLocationTargetIds = ids
-                    }
-                },
-                onSetHrSelected = {
-                    val ids = selectedIds.toList()
-                    if (ids.isNotEmpty()) {
-                        setHrTargetIds = ids
-                    }
-                },
-                onVerifySelected = {
-                    val ids = selectedIds.toList()
-                    selectedIds = emptySet()
-                    viewModel.verifyTorrents(rpcUrl, user, pass, ids)
-                },
-                onReannounceSelected = {
-                    val ids = selectedIds.toList()
-                    selectedIds = emptySet()
-                    viewModel.reannounceTorrents(rpcUrl, user, pass, ids) {
-                        Toast.makeText(context, R.string.msg_reannounce_success, Toast.LENGTH_SHORT).show()
-                    }
-                },
-                isDark = isDark,
-                modifier = Modifier
-                    .statusBarsPadding()
-                    .align(Alignment.TopCenter)
+                } else Modifier
             )
+    ) {
+        // 1. 全局唯一一张壁纸 (铺满全屏与侧边栏底层)
+        WallpaperBackground()
 
-            // 3. 右下角 FAB 按钮
-            AnimatedVisibility(
-                visible = isFabVisible && selectedIds.isEmpty(),
-                enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeIn(),
-                exit = scaleOut(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .navigationBarsPadding()
-                    .padding(end = 24.dp, bottom = 24.dp)
-            ) {
-                val fabRotation by animateFloatAsState(
-                    targetValue = if (showAddTorrentDialogState) 135f else 0f,
-                    animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
-                    label = "fabRotation"
-                )
-
-                val fabBgColor = if (isDark) Color(0xCC1D88E3) else Color(0xCC00B0FF)
-                val fabBorderColor = if (isDark) Color(0x80FFFFFF) else Color(0x8000B0FF)
-
-                Surface(
-                    onClick = {
-                        onAddClick()
-                        showAddTorrentDialogState = !showAddTorrentDialogState
-                    },
-                    shape = CircleShape,
-                    color = fabBgColor,
-                    border = BorderStroke(1.5.dp, fabBorderColor),
-                    shadowElevation = 12.dp,
-                    modifier = Modifier.size(56.dp)
+        // 2. 被backdropLayer录制的统一单画布区域 (包含侧边栏 + 主种子列表)
+        val mainView = LocalView.current
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { coordinates ->
+                    val loc = IntArray(2)
+                    mainView.getLocationOnScreen(loc)
+                    val offsetInWindow = coordinates.positionInWindow()
+                    boxPositionInRoot = Offset(
+                        x = loc[0].toFloat() + offsetInWindow.x,
+                        y = loc[1].toFloat() + offsetInWindow.y,
+                    )
+                }
+                .drawWithContent {
+                    backdropLayer.record {
+                        this@drawWithContent.drawContent()
+                    }
+                    drawContent()
+                }
+        ) {
+            if (isLandscape) {
+                Row(
+                    modifier = Modifier.fillMaxSize()
                 ) {
                     Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
+                        modifier = Modifier
+                            .width(280.dp)
+                            .fillMaxHeight()
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "添加种子",
-                            tint = Color.White,
-                            modifier = Modifier
-                                .size(26.dp)
-                                .graphicsLayer {
-                                    rotationZ = fabRotation
-                                }
+                        DrawerFilterContent(
+                            viewModel = viewModel,
+                            currentFilter = currentFilter,
+                            rpcUrl = rpcUrl,
+                            onSelectFilter = { selectedFilter ->
+                                currentFilter = selectedFilter
+                                viewModel.setFilter(selectedFilter)
+                                rightPaneTarget = RightPaneTarget.List
+                            },
+                            onServerSwitched = {
+                                rightPaneTarget = RightPaneTarget.List
+                            },
+                            onOpenSettings = {
+                                rightPaneTarget = RightPaneTarget.Settings
+                            }
+                        )
+                    }
+
+                    VerticalDivider(
+                        color = if (isDark) Color(0xFF34495E) else Color(0xFFE0E0E0),
+                        thickness = 1.dp
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                    ) {
+                        TorrentListContent(
+                            torrents = torrents,
+                            isLoading = isLoading,
+                            listState = listState,
+                            selectedIds = selectedIds,
+                            isTrackerBlurEnabled = isTrackerBlurEnabled,
+                            revealedTrackerNames = revealedTrackerNames,
+                            isDark = isDark,
+                            viewModel = viewModel,
+                            rpcUrl = rpcUrl,
+                            user = user,
+                            pass = pass,
+                            onTorrentClick = { torrent ->
+                                rightPaneTarget = RightPaneTarget.Detail(torrent.id, torrent.name)
+                            },
+                            onToggleSelection = { id ->
+                                selectedIds = if (selectedIds.contains(id)) selectedIds - id else selectedIds + id
+                            }
                         )
                     }
                 }
-            }
-
-            // 4. 底部居中悬浮网速条
-            LiquidBottomBar(
-                viewModel = viewModel,
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
-                onSearchToggle = { isExpanded ->
-                    isSearchActive = isExpanded
-                },
-                onScrollToTop = {
-                    scope.launch {
-                        listState.animateScrollToItem(0)
-                    }
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 16.dp)
-            )
-
-                    // 1. 重命名统一弹窗
-                    renameTorrentTarget?.let { targetTorrent ->
-                        RenameTorrentDialog(
-                            targetTorrent = targetTorrent,
+            } else {
+                // 手机端：超宽无缝平移 Row，包含 Drawer(300dp) 与 主列表 (100% 屏宽)
+                Row(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .wrapContentWidth(align = Alignment.Start, unbounded = true)
+                        .graphicsLayer {
+                            translationX = currentOffset - drawerWidthPx
+                        }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(drawerWidthDp)
+                            .fillMaxHeight()
+                    ) {
+                        DrawerFilterContent(
+                            viewModel = viewModel,
+                            currentFilter = currentFilter,
                             rpcUrl = rpcUrl,
-                            user = user,
-                            pass = pass,
-                            backdropLayer = backdropLayer,
-                            onDismiss = { renameTorrentTarget = null },
-                            onSuccess = {
-                                selectedIds = emptySet()
-                                viewModel.refreshTorrents(rpcUrl, user, pass)
+                            onSelectFilter = { selectedFilter ->
+                                currentFilter = selectedFilter
+                                viewModel.setFilter(selectedFilter)
+                                isDrawerOpen = false
                             },
+                            onServerSwitched = {
+                                isDrawerOpen = false
+                            },
+                            onOpenSettings = {
+                                isDrawerOpen = false
+                                val intent = Intent(context, SettingsActivity::class.java)
+                                context.startActivity(intent)
+                            }
                         )
                     }
 
-                    // 2. 删除 Compose 弹窗
-                    deleteIdsTarget?.let { idsToDelete ->
-                        val selectedTorrents = torrents.filter { idsToDelete.contains(it.id) }
-                        val hasUnfinishedHr = selectedTorrents.any { !isHrFinished(it) }
-                        var deleteLocalData by remember(idsToDelete) { mutableStateOf(!hasUnfinishedHr) }
-
-                        LiquidGlassDialog(
-                            onDismissRequest = { deleteIdsTarget = null },
-                            backdropLayer = backdropLayer,
-                            title = stringResource(R.string.dialog_delete_title),
-                            confirmButtonText = stringResource(R.string.btn_confirm),
-                            confirmButtonColor = Color(0xFFFF5252),
-                            onConfirm = {
-                                deleteIdsTarget = null
-                                val hashesToDelete = torrents.filter { idsToDelete.contains(it.id) }.map { it.hash }
-                                DialogUtils.performDelete(
-                                    context = context,
-                                    rpcUrl = rpcUrl,
-                                    user = user,
-                                    pass = pass,
-                                    torrentIds = idsToDelete,
-                                    torrentHashes = hashesToDelete,
-                                    deleteData = deleteLocalData,
-                                    onSuccess = {
-                                        selectedIds = emptySet()
-                                        viewModel.refreshTorrents(rpcUrl, user, pass)
-                                    }
-                                )
-                            },
-                            bottomLeftContent = {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.clickable { deleteLocalData = !deleteLocalData }
-                                ) {
-                                    Checkbox(
-                                        checked = deleteLocalData,
-                                        onCheckedChange = { deleteLocalData = it },
-                                        colors = CheckboxDefaults.colors(
-                                            checkedColor = Color(0xFFFF5252)
-                                        )
-                                    )
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.cb_delete_data),
-                                        fontSize = 13.sp,
-                                        color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
-                                    )
-                                }
-                            }
-                        ) {
-                            Text(
-                                text = stringResource(R.string.delete_confirm_msg, idsToDelete.size),
-                                fontSize = 15.5.sp,
-                                color = if (isDark) Color.White else Color(0xFF2D3436)
-                            )
-                        }
-                    }
-
-                    // 3. 设置保存位置统一弹窗
-                    setLocationTargetIds?.let { targetIds ->
-                        val selectedTorrents = torrents.filter { targetIds.contains(it.id) }
-                        SetLocationDialog(
-                            torrents = selectedTorrents,
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .requiredWidth(configuration.screenWidthDp.dp)
+                    ) {
+                        TorrentListContent(
+                            torrents = torrents,
+                            isLoading = isLoading,
+                            listState = listState,
+                            selectedIds = selectedIds,
+                            isTrackerBlurEnabled = isTrackerBlurEnabled,
+                            revealedTrackerNames = revealedTrackerNames,
+                            isDark = isDark,
+                            viewModel = viewModel,
                             rpcUrl = rpcUrl,
                             user = user,
                             pass = pass,
-                            backdropLayer = backdropLayer,
-                            onDismiss = { setLocationTargetIds = null },
-                            onSuccess = {
-                                selectedIds = emptySet()
-                                viewModel.refreshTorrents(rpcUrl, user, pass)
+                            onTorrentClick = { torrent ->
+                                onTorrentClick(torrent)
                             },
-                        )
-                    }
-
-                    // 4. 设置 H&R 考核统一弹窗
-                    setHrTargetIds?.let { targetIds ->
-                        val selectedTorrents = torrents.filter { targetIds.contains(it.id) }
-                        SetHrDialog(
-                            torrents = selectedTorrents,
-                            rpcUrl = rpcUrl,
-                            user = user,
-                            pass = pass,
-                            backdropLayer = backdropLayer,
-                            onDismiss = { setHrTargetIds = null },
-                            onSuccess = {
-                                selectedIds = emptySet()
-                                viewModel.refreshTorrents(rpcUrl, user, pass)
-                            },
-                        )
-                    }
-
-                    // 5. 添加种子 Compose 液态玻璃 采样弹窗
-                    if (showAddTorrentDialogState) {
-                        var torrentUrlInput by remember { mutableStateOf(initialUrlForAdd ?: "") }
-                        var downloadDirInput by remember { mutableStateOf(torrents.firstOrNull()?.downloadDir ?: "/downloads") }
-                        var hrDaysInput by remember { mutableStateOf("") }
-                        var freeSpaceText by remember { mutableStateOf("") }
-
-                        val haptic = LocalHapticFeedback.current
-                        val isDeveloperMode = remember(showAddTorrentDialogState) { SettingsManager.isDeveloperMode(context) }
-                        var dialogRefractionDp by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogRefraction(context, isDark)) }
-                        var dialogRefractionHeightDp by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogHeight(context, isDark)) }
-                        var dialogBlurRadiusDp by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogBlur(context, isDark)) }
-                        var dialogSaturationBoost by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogSaturation(context, isDark)) }
-                        var dialogContrast by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogContrast(context, isDark)) }
-                        var dialogWhitePoint by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogWhitePoint(context, isDark)) }
-                        var showDialogTuningInspector by remember { mutableStateOf(false) }
-
-                        val allDirs = remember(ServerManager.serversVersion, torrents) { DownloadDirManager.getAllDirs(context, torrents) }
-
-                        LaunchedEffect(downloadDirInput) {
-                            val path = downloadDirInput.trim()
-                            if (path.isNotEmpty() && rpcUrl.isNotEmpty()) {
-                                val (effUrl, effUser, effPass) = DialogUtils.getEffectiveCredentials(context, rpcUrl, user, pass)
-                                val service = TransmissionClient.getService(effUrl, effUser, effPass)
-                                service.rpc(effUrl, null, RpcRequest("free-space", mapOf("path" to path)))
-                                    .enqueue(object : retrofit2.Callback<RpcResponse<Map<String, Any>>> {
-                                        override fun onResponse(call: retrofit2.Call<RpcResponse<Map<String, Any>>>, response: retrofit2.Response<RpcResponse<Map<String, Any>>>) {
-                                            if (response.isSuccessful) {
-                                                val size = (response.body()?.arguments?.get("size-bytes") as? Double)?.toLong() ?: 0L
-                                                freeSpaceText = context.getString(R.string.free_space_label, FormatUtils.formatSize(size))
-                                            }
-                                        }
-                                        override fun onFailure(call: retrofit2.Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
-                                    })
-                            } else {
-                                freeSpaceText = ""
+                            onToggleSelection = { id ->
+                                selectedIds = if (selectedIds.contains(id)) selectedIds - id else selectedIds + id
                             }
-                        }
-
-                        LiquidGlassDialog(
-                            onDismissRequest = { 
-                                showAddTorrentDialogState = false
-                                initialUrlForAdd = null
-                                initialFileUriForAdd = null
-                                onCloseExternalAddTorrentDialog?.invoke()
-                            },
-                            backdropLayer = backdropLayer,
-                            boxPositionInRoot = boxPositionInRoot,
-                            refractionDp = dialogRefractionDp,
-                            refractionHeightDp = dialogRefractionHeightDp,
-                            blurRadiusDp = dialogBlurRadiusDp,
-                            saturationBoost = dialogSaturationBoost,
-                            contrast = dialogContrast,
-                            whitePoint = dialogWhitePoint,
-                            bottomLeftContent = {
-                                if (freeSpaceText.isNotEmpty()) {
-                                    Text(
-                                        text = freeSpaceText,
-                                        fontSize = 13.5.sp,
-                                        color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
-                                    )
-                                }
-                            },
-                            titleContent = {
-                                val activeServer = remember(ServerManager.serversVersion) { ServerManager.getActiveServer(context) }
-                                val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
-                                val avatarUri = activeServer?.avatarUri ?: ""
-                                val alias = activeServer?.alias ?: "Transmission"
-                                val initialChar = alias.trim().take(1).ifEmpty { "S" }
-                                val serverUrlLower = activeServer?.rpcUrl?.trim()?.lowercase() ?: ""
-
-                                var isSelfSigned by remember(serverUrlLower) { mutableStateOf(false) }
-
-                                LaunchedEffect(serverUrlLower) {
-                                    if (serverUrlLower.startsWith("https://")) {
-                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                                            isSelfSigned = SslCheckUtils.isSelfSignedSsl(serverUrlLower)
-                                        }
-                                    }
-                                }
-
-                                val badgeColor = when {
-                                    serverUrlLower.startsWith("http://") -> Color(0xFFFF5252)
-                                    serverUrlLower.startsWith("https://") && isSelfSigned -> Color(0xFFFFC107)
-                                    else -> null
-                                }
-
-                                val avatarBitmap = remember(avatarUri) {
-                                    if (avatarUri.isNotBlank()) {
-                                        try {
-                                            val file = java.io.File(avatarUri)
-                                            if (file.exists()) {
-                                                android.graphics.BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
-                                            } else null
-                                        } catch (_: Exception) { null }
-                                    } else null
-                                }
-
-                                Box(
-                                    modifier = Modifier
-                                        .size(42.dp)
-                                        .then(
-                                            if (isDeveloperMode) {
-                                                Modifier.pointerInput(Unit) {
-                                                    detectVerticalDragGestures { change, dragAmount ->
-                                                        if (dragAmount < -12f) { // 开发者模式上滑调起调参
-                                                            change.consume()
-                                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                                            showDialogTuningInspector = true
-                                                        }
-                                                    }
-                                                }
-                                            } else Modifier
-                                        ),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Surface(
-                                        shape = CircleShape,
-                                        color = accentColor,
-                                        border = BorderStroke(1.5.dp, Color.White),
-                                        shadowElevation = 4.dp,
-                                        modifier = Modifier.fillMaxSize()
-                                    ) {
-                                        Box(
-                                            modifier = Modifier.fillMaxSize(),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            if (avatarBitmap != null) {
-                                                Image(
-                                                    bitmap = avatarBitmap,
-                                                    contentDescription = alias,
-                                                    contentScale = ContentScale.Crop,
-                                                    modifier = Modifier
-                                                        .fillMaxSize()
-                                                        .clip(CircleShape)
-                                                )
-                                            } else {
-                                                Text(
-                                                    text = initialChar,
-                                                    fontSize = 18.sp,
-                                                    fontWeight = FontWeight.ExtraBold,
-                                                    color = Color.White
-                                                )
-                                            }
-                                        }
-                                    }
-
-                                    if (badgeColor != null) {
-                                        Box(
-                                            modifier = Modifier
-                                                .align(Alignment.TopEnd)
-                                                .offset(x = 2.dp, y = (-2).dp)
-                                                .size(16.dp)
-                                                .clip(CircleShape)
-                                                .background(if (isDark) Color(0xFF1F2A38) else Color.White)
-                                                .padding(1.dp),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                painter = painterResource(id = R.drawable.ic_exclamation_circle),
-                                                contentDescription = "连接安全提示",
-                                                tint = badgeColor,
-                                                modifier = Modifier.size(14.dp)
-                                            )
-                                        }
-                                    }
-                                }
-                            },
-                            confirmButtonText = stringResource(R.string.btn_confirm),
-                            confirmButtonColor = Color(0xFF1D88E3),
-                            onConfirm = {
-                                val url = torrentUrlInput.trim()
-                                val dir = downloadDirInput.trim()
-                                val days = hrDaysInput.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: 0.0
-                                val uri = initialFileUriForAdd
-
-                                showAddTorrentDialogState = false
-                                initialUrlForAdd = null
-                                initialFileUriForAdd = null
-
-                                DialogUtils.performAddTorrent(
-                                    context = context,
-                                    rpcUrl = rpcUrl,
-                                    user = user,
-                                    pass = pass,
-                                    url = url,
-                                    downloadDir = dir,
-                                    hrDays = days,
-                                    fileUri = uri,
-                                    onSuccess = {
-                                        viewModel.refreshTorrents(rpcUrl, user, pass)
-                                    }
-                                )
-                            }
-                        ) {
-                            OutlinedTextField(
-                                value = if (initialFileUriForAdd != null) (initialFileUriForAdd?.lastPathSegment ?: stringResource(R.string.msg_local_file_selected)) else torrentUrlInput,
-                                onValueChange = { torrentUrlInput = it },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        if (initialFileUriForAdd != null || torrentUrlInput.isEmpty()) {
-                                            handlePickFile()
-                                        }
-                                    },
-                                shape = RoundedCornerShape(12.dp),
-                                singleLine = true,
-                                label = { Text(stringResource(R.string.hint_torrent_url)) },
-                                trailingIcon = {
-                                    IconButton(onClick = { handlePickFile() }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.ic_file_open),
-                                            contentDescription = "打开本地种子文件",
-                                            tint = Color(0xFF1D88E3)
-                                        )
-                                    }
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                                    unfocusedBorderColor = if (isDark) Color(0xFF455A64) else Color(0xFFB0BEC5),
-                                    focusedLabelColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                                    unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
-                                    focusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
-                                    unfocusedTextColor = if (isDark) Color.White else Color(0xFF2D3436)
-                                )
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            DirectoryDropdownTextField(
-                                value = downloadDirInput,
-                                onValueChange = { downloadDirInput = it },
-                                allDirs = allDirs,
-                                label = stringResource(R.string.hint_download_dir),
-                                isDark = isDark
-                            )
-
-                            Spacer(modifier = Modifier.height(16.dp))
-
-                            OutlinedTextField(
-                                value = hrDaysInput,
-                                onValueChange = { hrDaysInput = it },
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(12.dp),
-                                singleLine = true,
-                                label = { Text(stringResource(R.string.label_hr)) },
-                                trailingIcon = {
-                                    QuickHrSlidingSelector(
-                                        selectedDay = hrDaysInput,
-                                        onDaySelected = { hrDaysInput = it }
-                                    )
-                                },
-                                colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                                    unfocusedBorderColor = if (isDark) Color(0xFF455A64) else Color(0xFFB0BEC5),
-                                    focusedLabelColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
-                                    unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
-                                    focusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
-                                    unfocusedTextColor = if (isDark) Color.White else Color(0xFF2D3436)
-                                )
-                            )
-                        }
-
-                        if (showDialogTuningInspector && isDeveloperMode) {
-                            LiquidGlassTuningInspector(
-                                refractionDp = dialogRefractionDp,
-                                refractionHeightDp = dialogRefractionHeightDp,
-                                blurRadiusDp = dialogBlurRadiusDp,
-                                saturationBoost = dialogSaturationBoost,
-                                contrast = dialogContrast,
-                                whitePoint = dialogWhitePoint,
-                                onRefractionChange = { dialogRefractionDp = it },
-                                onRefractionHeightChange = { dialogRefractionHeightDp = it },
-                                onBlurRadiusChange = { dialogBlurRadiusDp = it },
-                                onSaturationBoostChange = { dialogSaturationBoost = it },
-                                onContrastChange = { dialogContrast = it },
-                                onWhitePointChange = { dialogWhitePoint = it },
-                                onReset = {
-                                    val defRefraction = -60f
-                                    val defHeight = if (isDark) 12f else 4f
-                                    val defBlur = 32f
-                                    val defSaturation = 1.50f
-                                    val defContrast = 0.0f
-                                    val defWhitePoint = if (isDark) 0.10f else 0.15f
-
-                                    dialogRefractionDp = defRefraction
-                                    dialogRefractionHeightDp = defHeight
-                                    dialogBlurRadiusDp = defBlur
-                                    dialogSaturationBoost = defSaturation
-                                    dialogContrast = defContrast
-                                    dialogWhitePoint = defWhitePoint
-
-                                    SettingsManager.setDialogRefraction(context, defRefraction)
-                                    SettingsManager.setDialogHeight(context, defHeight)
-                                    SettingsManager.setDialogBlur(context, defBlur)
-                                    SettingsManager.setDialogSaturation(context, defSaturation)
-                                    SettingsManager.setDialogContrast(context, defContrast)
-                                    SettingsManager.setDialogWhitePoint(context, defWhitePoint)
-                                },
-                                onSave = {
-                                    SettingsManager.setDialogRefraction(context, dialogRefractionDp)
-                                    SettingsManager.setDialogHeight(context, dialogRefractionHeightDp)
-                                    SettingsManager.setDialogBlur(context, dialogBlurRadiusDp)
-                                    SettingsManager.setDialogSaturation(context, dialogSaturationBoost)
-                                    SettingsManager.setDialogContrast(context, dialogContrast)
-                                    SettingsManager.setDialogWhitePoint(context, dialogWhitePoint)
-                                    Toast.makeText(context, "弹窗玻璃参数保存成功", Toast.LENGTH_SHORT).show()
-                                    showDialogTuningInspector = false
-                                },
-                                onDismiss = { showDialogTuningInspector = false },
-                            )
-                        }
-
-                        // 6. 在线更新弹窗 (检测到 GitHub Releases 新版本时弹窗推送)
-                        if (showUpdateDialogState && updateInfoState != null) {
-                            val info = updateInfoState!!
-                            LiquidGlassDialog(
-                                onDismissRequest = { showUpdateDialogState = false },
-                                title = "发现新版本 ${info.latestVersion}",
-                                confirmButtonText = "前往下载",
-                                confirmButtonColor = Color(0xFF1D88E3),
-                                onConfirm = {
-                                    showUpdateDialogState = false
-                                    UpdateCheckUtils.openReleasesPage(context, info.releaseUrl)
-                                },
-                                bottomLeftContent = {
-                                    TextButton(onClick = { showUpdateDialogState = false }) {
-                                        Text("稍后再说", fontSize = 13.5.sp, color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72))
-                                    }
-                                }
-                            ) {
-                                Text(
-                                    text = "发现 TransSync 新版本，点击【前往下载】可直接前往 GitHub Releases 页面下载最新 APK。",
-                                    fontSize = 14.5.sp,
-                                    color = if (isDark) Color.White else Color(0xFF2D3436)
-                                )
-                                if (info.releaseNotes.isNotBlank()) {
-                                    Spacer(modifier = Modifier.height(10.dp))
-                                    Text(
-                                        text = "更新日志：\n${info.releaseNotes}",
-                                        fontSize = 12.5.sp,
-                                        color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-    if (isLandscape) {
-        Row(
-            modifier = modifier.fillMaxSize()
-        ) {
-            Box(
-                modifier = Modifier
-                    .width(280.dp)
-                    .fillMaxHeight()
-            ) {
-                DrawerFilterContent(
-                    viewModel = viewModel,
-                    currentFilter = currentFilter,
-                    rpcUrl = rpcUrl,
-                    onSelectFilter = { selectedFilter ->
-                        currentFilter = selectedFilter
-                        viewModel.setFilter(selectedFilter)
-                        rightPaneTarget = RightPaneTarget.List
-                    },
-                    onServerSwitched = {
-                        rightPaneTarget = RightPaneTarget.List
-                    },
-                    onOpenSettings = {
-                        rightPaneTarget = RightPaneTarget.Settings
-                    }
-                )
-            }
-
-            VerticalDivider(
-                color = if (isDark) Color(0xFF34495E) else Color(0xFFE0E0E0),
-                thickness = 1.dp
-            )
-
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-            ) {
-                // 1. 种子列表处于最底层静候
-                MainScaffoldContent()
-
-                // 2. 处于详情或设置模式时叠加在顶层，右滑手势返回时完美露出底部的种子列表
-                when (val target = rightPaneTarget) {
-                    is RightPaneTarget.List -> {
-                        // 处于列表模式，不加额外覆盖
-                    }
-                    is RightPaneTarget.Detail -> {
-                        TorrentDetailScreen(
-                            torrentId = target.torrentId,
-                            rpcUrl = rpcUrl,
-                            user = user,
-                            pass = pass,
-                            onBackClick = { rightPaneTarget = RightPaneTarget.List }
-                        )
-                    }
-                    is RightPaneTarget.Settings -> {
-                        SettingsScreen(
-                            onBackClick = { rightPaneTarget = RightPaneTarget.List }
                         )
                     }
                 }
             }
         }
-    } else {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures(
-                        onDragStart = {},
-                        onHorizontalDrag = { change, dragAmount ->
-                            change.consume()
-                            val newOffset = (drawerOffsetAnim.value + dragAmount).coerceIn(0f, drawerWidthPx)
-                            scope.launch {
-                                drawerOffsetAnim.snapTo(newOffset)
-                            }
-                        },
-                        onDragEnd = {
-                            val shouldOpen = drawerOffsetAnim.value > drawerWidthPx * 0.4f
-                            isDrawerOpen = shouldOpen
-                            scope.launch {
-                                drawerOffsetAnim.animateTo(
-                                    targetValue = if (shouldOpen) drawerWidthPx else 0f,
-                                    animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)
-                                )
-                            }
-                        },
-                        onDragCancel = {
-                            val shouldOpen = drawerOffsetAnim.value > drawerWidthPx * 0.4f
-                            isDrawerOpen = shouldOpen
-                            scope.launch {
-                                drawerOffsetAnim.animateTo(
-                                    targetValue = if (shouldOpen) drawerWidthPx else 0f,
-                                    animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)
-                                )
-                            }
-                        }
-                    )
-                }
-        ) {
-            // 1. 左侧侧边栏 (宽 300dp，独立拥有自身的壁纸背景)
-            Box(
-                modifier = Modifier
-                    .width(drawerWidthDp)
-                    .fillMaxHeight()
-                    .graphicsLayer {
-                        translationX = currentOffset - drawerWidthPx
-                    }
-            ) {
-                WallpaperBackground()
 
-                DrawerFilterContent(
-                    viewModel = viewModel,
-                    currentFilter = currentFilter,
-                    rpcUrl = rpcUrl,
-                    onSelectFilter = { selectedFilter ->
-                        currentFilter = selectedFilter
-                        viewModel.setFilter(selectedFilter)
-                        isDrawerOpen = false
-                    },
-                    onServerSwitched = {
-                        isDrawerOpen = false
-                    },
-                    onOpenSettings = {
-                        isDrawerOpen = false
-                        val intent = Intent(context, SettingsActivity::class.java)
-                        context.startActivity(intent)
-                    }
-                )
-            }
-
-            // 3. 右侧主页面 (被侧边栏向右推开平移)
+        // 3. 手机端侧边栏滑出时的透明拦截层 (点击平滑收起侧边栏)
+        if (!isLandscape && currentOffset > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer {
-                        translationX = currentOffset
-                    }
-            ) {
-                MainScaffoldContent()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { isDrawerOpen = false }
+                    )
+            )
+        }
 
-                // 当侧边栏平移打开时，点击主页面区域平滑收起侧边栏
-                if (currentOffset > 0f) {
-                    Box(
+        // 4. 顶层悬浮控制条 (FloatingTopControls)
+        val drawerSlideRatio = (currentOffset / drawerWidthPx).coerceIn(0f, 1f)
+        FloatingTopControls(
+            titleText = getFilterTitleText(currentFilter),
+            sizeText = FormatUtils.formatSize(totalSize),
+            altSpeedEnabled = altSpeedEnabled,
+            selectedCount = selectedIds.size,
+            drawerSlideRatio = drawerSlideRatio,
+            onMenuClick = {
+                if (!isLandscape) {
+                    isDrawerOpen = !isDrawerOpen
+                }
+            },
+            onTurtleClick = { viewModel.toggleAltSpeedLimits(rpcUrl, user, pass) },
+            onCloseSelection = { selectedIds = emptySet() },
+            onSelectAll = { selectedIds = torrents.map { it.id }.toSet() },
+            onDeleteSelected = {
+                val ids = selectedIds.toList()
+                if (ids.isNotEmpty()) {
+                    deleteIdsTarget = ids
+                }
+            },
+            onStartSelected = {
+                val ids = selectedIds.toList()
+                selectedIds = emptySet()
+                viewModel.startTorrents(rpcUrl, user, pass, ids)
+            },
+            onStopSelected = {
+                val ids = selectedIds.toList()
+                selectedIds = emptySet()
+                viewModel.stopTorrents(rpcUrl, user, pass, ids)
+            },
+            onRenameSelected = {
+                val ids = selectedIds.toList()
+                if (ids.size == 1) {
+                    val id = ids.first()
+                    torrents.find { it.id == id }?.let { torrent ->
+                        renameTorrentTarget = torrent
+                    }
+                }
+            },
+            onSetLocationSelected = {
+                val ids = selectedIds.toList()
+                if (ids.isNotEmpty()) {
+                    setLocationTargetIds = ids
+                }
+            },
+            onSetHrSelected = {
+                val ids = selectedIds.toList()
+                if (ids.isNotEmpty()) {
+                    setHrTargetIds = ids
+                }
+            },
+            onVerifySelected = {
+                val ids = selectedIds.toList()
+                selectedIds = emptySet()
+                viewModel.verifyTorrents(rpcUrl, user, pass, ids)
+            },
+            onReannounceSelected = {
+                val ids = selectedIds.toList()
+                selectedIds = emptySet()
+                viewModel.reannounceTorrents(rpcUrl, user, pass, ids) {
+                    Toast.makeText(context, R.string.msg_reannounce_success, Toast.LENGTH_SHORT).show()
+                }
+            },
+            isDark = isDark,
+            modifier = Modifier
+                .statusBarsPadding()
+                .align(Alignment.TopCenter)
+        )
+
+        // 5. 右下角 FAB 按钮
+        AnimatedVisibility(
+            visible = isFabVisible && selectedIds.isEmpty(),
+            enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeIn(),
+            exit = scaleOut(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeOut(),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .navigationBarsPadding()
+                .padding(end = 24.dp, bottom = 24.dp)
+        ) {
+            val fabRotation by animateFloatAsState(
+                targetValue = if (showAddTorrentDialogState) 135f else 0f,
+                animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
+                label = "fabRotation"
+            )
+
+            val fabBgColor = if (isDark) Color(0xCC1D88E3) else Color(0xCC00B0FF)
+            val fabBorderColor = if (isDark) Color(0x80FFFFFF) else Color(0x8000B0FF)
+
+            Surface(
+                onClick = {
+                    onAddClick()
+                    showAddTorrentDialogState = !showAddTorrentDialogState
+                },
+                shape = CircleShape,
+                color = fabBgColor,
+                border = BorderStroke(1.5.dp, fabBorderColor),
+                shadowElevation = 12.dp,
+                modifier = Modifier.size(56.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "添加种子",
+                        tint = Color.White,
                         modifier = Modifier
-                            .fillMaxSize()
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
-                                onClick = { isDrawerOpen = false }
-                            )
+                            .size(26.dp)
+                            .graphicsLayer {
+                                rotationZ = fabRotation
+                            }
                     )
                 }
+            }
+        }
+
+        // 6. 底部居中悬浮网速条 (与单画布 100% 真实同步模糊)
+        LiquidBottomBar(
+            viewModel = viewModel,
+            backdropLayer = backdropLayer,
+            boxPositionInRoot = boxPositionInRoot,
+            onSearchToggle = { isExpanded ->
+                isSearchActive = isExpanded
+            },
+            onScrollToTop = {
+                scope.launch {
+                    listState.animateScrollToItem(0)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .navigationBarsPadding()
+                .padding(bottom = 16.dp)
+        )
+
+        // 7. 横屏右侧详情/设置层覆盖
+        if (isLandscape) {
+            when (val target = rightPaneTarget) {
+                is RightPaneTarget.List -> {}
+                is RightPaneTarget.Detail -> {
+                    TorrentDetailScreen(
+                        torrentId = target.torrentId,
+                        rpcUrl = rpcUrl,
+                        user = user,
+                        pass = pass,
+                        onBackClick = { rightPaneTarget = RightPaneTarget.List }
+                    )
+                }
+                is RightPaneTarget.Settings -> {
+                    SettingsScreen(
+                        onBackClick = { rightPaneTarget = RightPaneTarget.List }
+                    )
+                }
+            }
+        }
+
+        // 8. 各类统一弹窗逻辑
+        renameTorrentTarget?.let { targetTorrent ->
+            RenameTorrentDialog(
+                targetTorrent = targetTorrent,
+                rpcUrl = rpcUrl,
+                user = user,
+                pass = pass,
+                backdropLayer = backdropLayer,
+                onDismiss = { renameTorrentTarget = null },
+                onSuccess = {
+                    selectedIds = emptySet()
+                    viewModel.refreshTorrents(rpcUrl, user, pass)
+                },
+            )
+        }
+
+        deleteIdsTarget?.let { idsToDelete ->
+            val selectedTorrents = torrents.filter { idsToDelete.contains(it.id) }
+            val hasUnfinishedHr = selectedTorrents.any { !isHrFinished(it) }
+            var deleteLocalData by remember(idsToDelete) { mutableStateOf(!hasUnfinishedHr) }
+
+            LiquidGlassDialog(
+                onDismissRequest = { deleteIdsTarget = null },
+                backdropLayer = backdropLayer,
+                title = stringResource(R.string.dialog_delete_title),
+                confirmButtonText = stringResource(R.string.btn_confirm),
+                confirmButtonColor = Color(0xFFFF5252),
+                onConfirm = {
+                    deleteIdsTarget = null
+                    val hashesToDelete = torrents.filter { idsToDelete.contains(it.id) }.map { it.hash }
+                    DialogUtils.performDelete(
+                        context = context,
+                        rpcUrl = rpcUrl,
+                        user = user,
+                        pass = pass,
+                        torrentIds = idsToDelete,
+                        torrentHashes = hashesToDelete,
+                        deleteData = deleteLocalData,
+                        onSuccess = {
+                            selectedIds = emptySet()
+                            viewModel.refreshTorrents(rpcUrl, user, pass)
+                        }
+                    )
+                },
+                bottomLeftContent = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable { deleteLocalData = !deleteLocalData }
+                    ) {
+                        Checkbox(
+                            checked = deleteLocalData,
+                            onCheckedChange = { deleteLocalData = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFFFF5252)
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = stringResource(R.string.cb_delete_data),
+                            fontSize = 13.sp,
+                            color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
+                        )
+                    }
+                }
+            ) {
+                Text(
+                    text = stringResource(R.string.delete_confirm_msg, idsToDelete.size),
+                    fontSize = 15.5.sp,
+                    color = if (isDark) Color.White else Color(0xFF2D3436)
+                )
+            }
+        }
+
+        setLocationTargetIds?.let { targetIds ->
+            val selectedTorrents = torrents.filter { targetIds.contains(it.id) }
+            SetLocationDialog(
+                torrents = selectedTorrents,
+                rpcUrl = rpcUrl,
+                user = user,
+                pass = pass,
+                backdropLayer = backdropLayer,
+                onDismiss = { setLocationTargetIds = null },
+                onSuccess = {
+                    selectedIds = emptySet()
+                    viewModel.refreshTorrents(rpcUrl, user, pass)
+                },
+            )
+        }
+
+        setHrTargetIds?.let { targetIds ->
+            val selectedTorrents = torrents.filter { targetIds.contains(it.id) }
+            SetHrDialog(
+                torrents = selectedTorrents,
+                rpcUrl = rpcUrl,
+                user = user,
+                pass = pass,
+                backdropLayer = backdropLayer,
+                onDismiss = { setHrTargetIds = null },
+                onSuccess = {
+                    selectedIds = emptySet()
+                    viewModel.refreshTorrents(rpcUrl, user, pass)
+                },
+            )
+        }
+
+        if (showAddTorrentDialogState) {
+            var torrentUrlInput by remember { mutableStateOf(initialUrlForAdd ?: "") }
+            var downloadDirInput by remember { mutableStateOf(torrents.firstOrNull()?.downloadDir ?: "/downloads") }
+            var hrDaysInput by remember { mutableStateOf("") }
+            var freeSpaceText by remember { mutableStateOf("") }
+
+            val haptic = LocalHapticFeedback.current
+            val isDeveloperMode = remember(showAddTorrentDialogState) { SettingsManager.isDeveloperMode(context) }
+            var dialogRefractionDp by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogRefraction(context, isDark)) }
+            var dialogRefractionHeightDp by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogHeight(context, isDark)) }
+            var dialogBlurRadiusDp by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogBlur(context, isDark)) }
+            var dialogSaturationBoost by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogSaturation(context, isDark)) }
+            var dialogContrast by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogContrast(context, isDark)) }
+            var dialogWhitePoint by remember(showAddTorrentDialogState) { mutableFloatStateOf(SettingsManager.getDialogWhitePoint(context, isDark)) }
+            var showDialogTuningInspector by remember { mutableStateOf(false) }
+
+            val allDirs = remember(ServerManager.serversVersion, torrents) { DownloadDirManager.getAllDirs(context, torrents) }
+
+            LaunchedEffect(downloadDirInput) {
+                val path = downloadDirInput.trim()
+                if (path.isNotEmpty() && rpcUrl.isNotEmpty()) {
+                    val (effUrl, effUser, effPass) = DialogUtils.getEffectiveCredentials(context, rpcUrl, user, pass)
+                    val service = TransmissionClient.getService(effUrl, effUser, effPass)
+                    service.rpc(effUrl, null, RpcRequest("free-space", mapOf("path" to path)))
+                        .enqueue(object : retrofit2.Callback<RpcResponse<Map<String, Any>>> {
+                            override fun onResponse(call: retrofit2.Call<RpcResponse<Map<String, Any>>>, response: retrofit2.Response<RpcResponse<Map<String, Any>>>) {
+                                if (response.isSuccessful) {
+                                    val size = (response.body()?.arguments?.get("size-bytes") as? Double)?.toLong() ?: 0L
+                                    freeSpaceText = context.getString(R.string.free_space_label, FormatUtils.formatSize(size))
+                                }
+                            }
+                            override fun onFailure(call: retrofit2.Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
+                        })
+                } else {
+                    freeSpaceText = ""
+                }
+            }
+
+            LiquidGlassDialog(
+                onDismissRequest = {
+                    showAddTorrentDialogState = false
+                    initialUrlForAdd = null
+                    initialFileUriForAdd = null
+                    onCloseExternalAddTorrentDialog?.invoke()
+                },
+                backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
+                refractionDp = dialogRefractionDp,
+                refractionHeightDp = dialogRefractionHeightDp,
+                blurRadiusDp = dialogBlurRadiusDp,
+                saturationBoost = dialogSaturationBoost,
+                contrast = dialogContrast,
+                whitePoint = dialogWhitePoint,
+                bottomLeftContent = {
+                    if (freeSpaceText.isNotEmpty()) {
+                        Text(
+                            text = freeSpaceText,
+                            fontSize = 13.5.sp,
+                            color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
+                        )
+                    }
+                },
+                titleContent = {
+                    val activeServer = remember(ServerManager.serversVersion) { ServerManager.getActiveServer(context) }
+                    val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
+                    val avatarUri = activeServer?.avatarUri ?: ""
+                    val alias = activeServer?.alias ?: "Transmission"
+                    val initialChar = alias.trim().take(1).ifEmpty { "S" }
+                    val serverUrlLower = activeServer?.rpcUrl?.trim()?.lowercase() ?: ""
+
+                    var isSelfSigned by remember(serverUrlLower) { mutableStateOf(false) }
+
+                    LaunchedEffect(serverUrlLower) {
+                        if (serverUrlLower.startsWith("https://")) {
+                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                                isSelfSigned = SslCheckUtils.isSelfSignedSsl(serverUrlLower)
+                            }
+                        }
+                    }
+
+                    val badgeColor = when {
+                        serverUrlLower.startsWith("http://") -> Color(0xFFFF5252)
+                        serverUrlLower.startsWith("https://") && isSelfSigned -> Color(0xFFFFC107)
+                        else -> null
+                    }
+
+                    val avatarBitmap = remember(avatarUri) {
+                        if (avatarUri.isNotBlank()) {
+                            try {
+                                val file = java.io.File(avatarUri)
+                                if (file.exists()) {
+                                    android.graphics.BitmapFactory.decodeFile(file.absolutePath)?.asImageBitmap()
+                                } else null
+                            } catch (_: Exception) { null }
+                        } else null
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .then(
+                                if (isDeveloperMode) {
+                                    Modifier.pointerInput(Unit) {
+                                        detectVerticalDragGestures { change, dragAmount ->
+                                            if (dragAmount < -12f) {
+                                                change.consume()
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                showDialogTuningInspector = true
+                                            }
+                                        }
+                                    }
+                                } else Modifier
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = accentColor,
+                            border = BorderStroke(1.5.dp, Color.White),
+                            shadowElevation = 4.dp,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (avatarBitmap != null) {
+                                    Image(
+                                        bitmap = avatarBitmap,
+                                        contentDescription = alias,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(CircleShape)
+                                    )
+                                } else {
+                                    Text(
+                                        text = initialChar,
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = Color.White
+                                    )
+                                }
+                            }
+                        }
+
+                        if (badgeColor != null) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = 2.dp, y = (-2).dp)
+                                    .size(16.dp)
+                                    .clip(CircleShape)
+                                    .background(if (isDark) Color(0xFF1F2A38) else Color.White)
+                                    .padding(1.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_exclamation_circle),
+                                    contentDescription = "连接安全提示",
+                                    tint = badgeColor,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButtonText = stringResource(R.string.btn_confirm),
+                confirmButtonColor = Color(0xFF1D88E3),
+                onConfirm = {
+                    val url = torrentUrlInput.trim()
+                    val dir = downloadDirInput.trim()
+                    val days = hrDaysInput.replace(Regex("[^0-9.]"), "").toDoubleOrNull() ?: 0.0
+                    val uri = initialFileUriForAdd
+
+                    showAddTorrentDialogState = false
+                    initialUrlForAdd = null
+                    initialFileUriForAdd = null
+
+                    DialogUtils.performAddTorrent(
+                        context = context,
+                        rpcUrl = rpcUrl,
+                        user = user,
+                        pass = pass,
+                        url = url,
+                        downloadDir = dir,
+                        hrDays = days,
+                        fileUri = uri,
+                        onSuccess = {
+                            viewModel.refreshTorrents(rpcUrl, user, pass)
+                        }
+                    )
+                }
+            ) {
+                OutlinedTextField(
+                    value = if (initialFileUriForAdd != null) (initialFileUriForAdd?.lastPathSegment ?: stringResource(R.string.msg_local_file_selected)) else torrentUrlInput,
+                    onValueChange = { torrentUrlInput = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            if (initialFileUriForAdd != null || torrentUrlInput.isEmpty()) {
+                                handlePickFile()
+                            }
+                        },
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.hint_torrent_url)) },
+                    trailingIcon = {
+                        IconButton(onClick = { handlePickFile() }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_file_open),
+                                contentDescription = "打开本地种子文件",
+                                tint = Color(0xFF1D88E3)
+                            )
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
+                        unfocusedBorderColor = if (isDark) Color(0xFF455A64) else Color(0xFFB0BEC5),
+                        focusedLabelColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
+                        unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
+                        focusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
+                        unfocusedTextColor = if (isDark) Color.White else Color(0xFF2D3436)
+                    )
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                DirectoryDropdownTextField(
+                    value = downloadDirInput,
+                    onValueChange = { downloadDirInput = it },
+                    allDirs = allDirs,
+                    label = stringResource(R.string.hint_download_dir),
+                    isDark = isDark
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedTextField(
+                    value = hrDaysInput,
+                    onValueChange = { hrDaysInput = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.label_hr)) },
+                    trailingIcon = {
+                        QuickHrSlidingSelector(
+                            selectedDay = hrDaysInput,
+                            onDaySelected = { hrDaysInput = it }
+                        )
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
+                        unfocusedBorderColor = if (isDark) Color(0xFF455A64) else Color(0xFFB0BEC5),
+                        focusedLabelColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
+                        unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
+                        focusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
+                        unfocusedTextColor = if (isDark) Color.White else Color(0xFF2D3436)
+                    )
+                )
+            }
+
+            if (showDialogTuningInspector && isDeveloperMode) {
+                LiquidGlassTuningInspector(
+                    refractionDp = dialogRefractionDp,
+                    refractionHeightDp = dialogRefractionHeightDp,
+                    blurRadiusDp = dialogBlurRadiusDp,
+                    saturationBoost = dialogSaturationBoost,
+                    contrast = dialogContrast,
+                    whitePoint = dialogWhitePoint,
+                    onRefractionChange = { dialogRefractionDp = it },
+                    onRefractionHeightChange = { dialogRefractionHeightDp = it },
+                    onBlurRadiusChange = { dialogBlurRadiusDp = it },
+                    onSaturationBoostChange = { dialogSaturationBoost = it },
+                    onContrastChange = { dialogContrast = it },
+                    onWhitePointChange = { dialogWhitePoint = it },
+                    onReset = {
+                        val defRefraction = -60f
+                        val defHeight = if (isDark) 12f else 4f
+                        val defBlur = 32f
+                        val defSaturation = 1.50f
+                        val defContrast = 0.0f
+                        val defWhitePoint = if (isDark) 0.10f else 0.15f
+
+                        dialogRefractionDp = defRefraction
+                        dialogRefractionHeightDp = defHeight
+                        dialogBlurRadiusDp = defBlur
+                        dialogSaturationBoost = defSaturation
+                        dialogContrast = defContrast
+                        dialogWhitePoint = defWhitePoint
+
+                        SettingsManager.setDialogRefraction(context, defRefraction)
+                        SettingsManager.setDialogHeight(context, defHeight)
+                        SettingsManager.setDialogBlur(context, defBlur)
+                        SettingsManager.setDialogSaturation(context, defSaturation)
+                        SettingsManager.setDialogContrast(context, defContrast)
+                        SettingsManager.setDialogWhitePoint(context, defWhitePoint)
+                    },
+                    onSave = {
+                        SettingsManager.setDialogRefraction(context, dialogRefractionDp)
+                        SettingsManager.setDialogHeight(context, dialogRefractionHeightDp)
+                        SettingsManager.setDialogBlur(context, dialogBlurRadiusDp)
+                        SettingsManager.setDialogSaturation(context, dialogSaturationBoost)
+                        SettingsManager.setDialogContrast(context, dialogContrast)
+                        SettingsManager.setDialogWhitePoint(context, dialogWhitePoint)
+                        Toast.makeText(context, "弹窗玻璃参数保存成功", Toast.LENGTH_SHORT).show()
+                        showDialogTuningInspector = false
+                    },
+                    onDismiss = { showDialogTuningInspector = false },
+                )
+            }
+
+            if (showUpdateDialogState && updateInfoState != null) {
+                val info = updateInfoState!!
+                LiquidGlassDialog(
+                    onDismissRequest = { showUpdateDialogState = false },
+                    title = "发现新版本 ${info.latestVersion}",
+                    confirmButtonText = "前往下载",
+                    confirmButtonColor = Color(0xFF1D88E3),
+                    onConfirm = {
+                        showUpdateDialogState = false
+                        UpdateCheckUtils.openReleasesPage(context, info.releaseUrl)
+                    },
+                    bottomLeftContent = {
+                        TextButton(onClick = { showUpdateDialogState = false }) {
+                            Text("稍后再说", fontSize = 13.5.sp, color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72))
+                        }
+                    }
+                ) {
+                    Text(
+                        text = "发现 TransSync 新版本，点击【前往下载】可直接前往 GitHub Releases 页面下载最新 APK。",
+                        fontSize = 14.5.sp,
+                        color = if (isDark) Color.White else Color(0xFF2D3436)
+                    )
+                    if (info.releaseNotes.isNotBlank()) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = "更新日志：\n${info.releaseNotes}",
+                            fontSize = 12.5.sp,
+                            color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 种子列表区域组件
+ */
+@Composable
+private fun TorrentListContent(
+    torrents: List<Torrent>,
+    isLoading: Boolean,
+    listState: androidx.compose.foundation.lazy.LazyListState,
+    selectedIds: Set<Int>,
+    isTrackerBlurEnabled: Boolean,
+    revealedTrackerNames: Set<String>,
+    isDark: Boolean,
+    viewModel: TorrentListViewModel,
+    rpcUrl: String,
+    user: String,
+    pass: String,
+    onTorrentClick: (Torrent) -> Unit,
+    onToggleSelection: (Int) -> Unit,
+) {
+    if (torrents.isEmpty() && !isLoading) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "暂无种子任务",
+                color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72),
+                fontSize = 16.sp
+            )
+        }
+    } else {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .graphicsLayer(),
+            contentPadding = PaddingValues(
+                start = 0.dp,
+                end = 0.dp,
+                top = 60.dp,
+                bottom = 90.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(0.dp)
+        ) {
+            items(
+                items = torrents,
+                key = { it.id }
+            ) { torrent ->
+                val isSelected = selectedIds.contains(torrent.id)
+                TorrentItemCard(
+                    torrent = torrent,
+                    isSelected = isSelected,
+                    isTrackerBlurEnabled = isTrackerBlurEnabled,
+                    revealedTrackerNames = revealedTrackerNames,
+                    onClick = {
+                        if (selectedIds.isNotEmpty()) {
+                            onToggleSelection(torrent.id)
+                        } else {
+                            onTorrentClick(torrent)
+                        }
+                    },
+                    onLongClick = {
+                        onToggleSelection(torrent.id)
+                    },
+                    onToggleStatus = {
+                        viewModel.toggleTorrentStatus(rpcUrl, user, pass, torrent)
+                    }
+                )
             }
         }
     }

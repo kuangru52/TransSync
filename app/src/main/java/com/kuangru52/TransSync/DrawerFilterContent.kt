@@ -72,12 +72,7 @@ fun DrawerFilterContent(
 
     val sampleTrackerData = remember {
         mapOf(
-            "M-Team" to 5,
-            "CHD" to 3,
-            "Pigo" to 2,
-            "PTer" to 2,
-            "Audies" to 1,
-            "Ubits" to 1,
+            "Google" to 5,
         )
     }
 
@@ -196,25 +191,13 @@ fun DrawerFilterContent(
                     Surface(
                         onClick = {
                             if (!isActive) {
-                                val oldActiveServer = serversList.find { it.id == activeServerId }
                                 if (!isInspection) {
                                     ServerManager.setActiveServer(context, server.id)
+                                    Toast.makeText(context, "正在重启应用以生效 ${server.alias}...", Toast.LENGTH_SHORT).show()
+                                    AppRestartUtils.restartApp(context)
                                 }
                                 activeServerId = server.id
-
-                                val isCrossClientSwitch = (oldActiveServer?.clientType != server.clientType) ||
-                                        (server.clientType == ServerConfig.CLIENT_QBITTORRENT)
-
-                                if (isCrossClientSwitch && !isInspection) {
-                                    Toast.makeText(context, "正在无缝重启应用以生效 ${server.alias}...", Toast.LENGTH_SHORT).show()
-                                    AppRestartUtils.restartApp(context)
-                                } else {
-                                    if (!isInspection) {
-                                        Toast.makeText(context, "已切换至: ${server.alias}", Toast.LENGTH_SHORT).show()
-                                        viewModel?.switchServer(server)
-                                    }
-                                    onServerSwitched?.invoke(server)
-                                }
+                                onServerSwitched?.invoke(server)
                             } else {
                                 if (onOpenSettings != null) {
                                     onOpenSettings.invoke()
