@@ -33,13 +33,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.coroutineScope
@@ -579,24 +582,42 @@ fun TorrentFileTreeView(
                             coroutineScope {
                                 awaitPointerEventScope {
                                     while (true) {
-                                        awaitFirstDown(requireUnconsumed = false)
-                                        var longPressed = false
+                                        val down = awaitFirstDown(requireUnconsumed = false)
+                                        val downPos = down.position
+                                        var isLongPressed = false
 
                                         val longPressJob = launch {
                                             delay(viewConfiguration.longPressTimeoutMillis)
-                                            longPressed = true
+                                            isLongPressed = true
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             hoveredFileName = node.name
                                         }
 
-                                        val up = waitForUpOrCancellation()
-                                        longPressJob.cancel()
+                                        var pointerActive = true
+                                        while (pointerActive) {
+                                            val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                                            val changes = event.changes
+                                            val pointer = changes.find { it.id == down.id }
 
+                                            if (pointer == null || !pointer.pressed) {
+                                                pointerActive = false
+                                            } else {
+                                                // 允许最高 36.dp 的手指微微抖动容错，不会因轻微抖动致使弹窗隐去
+                                                val dx = pointer.position.x - downPos.x
+                                                val dy = pointer.position.y - downPos.y
+                                                val distPx = kotlin.math.hypot(dx.toDouble(), dy.toDouble()).toFloat()
+                                                if (distPx > 36f * density) {
+                                                    pointerActive = false
+                                                }
+                                            }
+                                        }
+
+                                        longPressJob.cancel()
                                         if (hoveredFileName == node.name) {
                                             hoveredFileName = null
                                         }
 
-                                        if (up != null && !longPressed) {
+                                        if (!isLongPressed && !pointerActive) {
                                             if (node.isFolder) {
                                                 expandedPaths = if (isExpanded) {
                                                     expandedPaths - currentPath
