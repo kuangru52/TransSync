@@ -10,13 +10,16 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -498,12 +501,7 @@ fun buildFileTree(files: List<TorrentFile>): List<FileNodeItem> {
     return root.children
 }
 
-private data class NodeLayoutItem(
-    val name: String,
-    val topY: Float,
-    val bottomY: Float
-)
-
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TorrentFileTreeView(
     files: List<TorrentFile>,
@@ -512,10 +510,7 @@ fun TorrentFileTreeView(
 ) {
     val rootNodes = remember(files) { buildFileTree(files) }
     var expandedPaths by remember { mutableStateOf(setOf<String>()) }
-
     var hoveredFileName by remember { mutableStateOf<String?>(null) }
-    val nodeLayoutList = remember { java.util.ArrayList<NodeLayoutItem>() }
-    var boxWindowY by remember { mutableFloatStateOf(0f) }
     val haptic = LocalHapticFeedback.current
     val isDark = isSystemInDarkTheme()
 
@@ -534,25 +529,23 @@ fun TorrentFileTreeView(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onGloballyPositioned { coordinates ->
-                            val nodeWindowY = coordinates.positionInWindow().y
-                            val relTopY = nodeWindowY - boxWindowY
-                            val height = coordinates.size.height.toFloat()
-                            val item = NodeLayoutItem(node.name, relTopY, relTopY + height)
-                            val index = nodeLayoutList.indexOfFirst { it.name == node.name && kotlin.math.abs(it.topY - relTopY) < 2f }
-                            if (index >= 0) {
-                                nodeLayoutList[index] = item
-                            } else {
-                                nodeLayoutList.add(item)
+                        .combinedClickable(
+                            onClick = {
+                                if (node.isFolder) {
+                                    expandedPaths = if (isExpanded) {
+                                        expandedPaths - currentPath
+                                    } else {
+                                        expandedPaths + currentPath
+                                    }
+                                } else {
+                                    if (hoveredFileName != null) hoveredFileName = null
+                                }
+                            },
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                hoveredFileName = if (hoveredFileName == node.name) null else node.name
                             }
-                        }
-                        .clickable(enabled = node.isFolder) {
-                            expandedPaths = if (isExpanded) {
-                                expandedPaths - currentPath
-                            } else {
-                                expandedPaths + currentPath
-                            }
-                        }
+                        )
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -614,59 +607,12 @@ fun TorrentFileTreeView(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .onGloballyPositioned { coordinates ->
-                boxWindowY = coordinates.positionInWindow().y
-            }
-            .pointerInput(Unit) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = { offset ->
-                        val y = offset.y
-                        var matchedName: String? = null
-                        for (i in 0 until nodeLayoutList.size) {
-                            val item = nodeLayoutList[i]
-                            if (y >= item.topY && y <= item.bottomY) {
-                                matchedName = item.name
-                                break
-                            }
-                        }
-                        if (matchedName != null) {
-                            hoveredFileName = matchedName
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                        }
-                    },
-                    onDrag = { change, _ ->
-                        change.consume()
-                        val currentY = change.position.y
-                        var matchedName: String? = null
-                        for (i in 0 until nodeLayoutList.size) {
-                            val item = nodeLayoutList[i]
-                            if (currentY >= item.topY && currentY <= item.bottomY) {
-                                matchedName = item.name
-                                break
-                            }
-                        }
-                        if (matchedName != null && matchedName != hoveredFileName) {
-                            hoveredFileName = matchedName
-                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                        }
-                    },
-                    onDragEnd = {
-                        hoveredFileName = null
-                    },
-                    onDragCancel = {
-                        hoveredFileName = null
-                    }
-                )
-            }
-    ) {
+    Box(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth()) {
             RenderNodes(rootNodes)
         }
 
-        // 5. 长按/滑动触发的多行完整名称悬浮栏 (名称悬浮栏)
+        // 5. 长按触发的多行完整名称悬浮栏 (再次长按或点击弹窗/其他文件即可收起)
         androidx.compose.animation.AnimatedVisibility(
             visible = hoveredFileName != null,
             enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeIn(),
@@ -675,6 +621,7 @@ fun TorrentFileTreeView(
         ) {
             hoveredFileName?.let { fullName ->
                 Surface(
+                    onClick = { hoveredFileName = null },
                     shape = RoundedCornerShape(14.dp),
                     color = if (isDark) Color(0xF21F2A38) else Color(0xF2FFFFFF),
                     border = BorderStroke(1.dp, if (isDark) Color(0x661D88E3) else Color(0x6600B0FF)),
@@ -708,6 +655,17 @@ fun TorrentFileTreeView(
                             softWrap = true,
                             modifier = Modifier.weight(1f)
                         )
+                        IconButton(
+                            onClick = { hoveredFileName = null },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "关闭全名弹窗",
+                                tint = secondaryTextColor,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
