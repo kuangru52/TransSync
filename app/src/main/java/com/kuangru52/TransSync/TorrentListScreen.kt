@@ -575,17 +575,25 @@ fun TorrentListScreen(
         }
         }
 
-        // 3. 手机端侧边栏滑出时的透明拦截层 (点击平滑收起侧边栏)
+        // 3. 手机端侧边栏滑出时主页面区域的透明点击拦截层 (仅盖住右侧主列表区域，点击平滑收起侧边栏，绝不挡住左侧 Drawer)
         if (!isLandscape && currentOffset > 0f) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { isDrawerOpen = false }
-                    )
-            )
+            val currentOffsetDp = with(LocalDensity.current) { currentOffset.toDp() }
+            Row(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                Spacer(modifier = Modifier.width(currentOffsetDp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .weight(1f)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { isDrawerOpen = false }
+                        )
+                )
+            }
         }
 
         // 7. 横屏右侧详情/设置层覆盖
