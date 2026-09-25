@@ -195,6 +195,56 @@ object SettingsManager {
             .edit { putFloat(KEY_SPEEDBAR_WHITE_POINT, value) }
     }
 
+    // --- FAB 按钮独立液态玻璃参数 ---
+    private const val KEY_FAB_REFRACTION = "fab_refraction"
+    private const val KEY_FAB_HEIGHT = "fab_height"
+    private const val KEY_FAB_BLUR = "fab_blur"
+    private const val KEY_FAB_SATURATION = "fab_saturation"
+    private const val KEY_FAB_CONTRAST = "fab_contrast"
+    private const val KEY_FAB_WHITE_POINT = "fab_white_point"
+
+    fun getFabRefraction(context: Context): Float =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_REFRACTION, 18f)
+
+    fun setFabRefraction(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_REFRACTION, value) }
+    }
+
+    fun getFabHeight(context: Context): Float =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_HEIGHT, 20f)
+
+    fun setFabHeight(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_HEIGHT, value) }
+    }
+
+    fun getFabBlur(context: Context): Float =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_BLUR, 16f)
+
+    fun setFabBlur(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_BLUR, value) }
+    }
+
+    fun getFabSaturation(context: Context): Float =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_SATURATION, 1.4f)
+
+    fun setFabSaturation(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_SATURATION, value) }
+    }
+
+    fun getFabContrast(context: Context): Float =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_CONTRAST, 0.12f)
+
+    fun setFabContrast(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_CONTRAST, value) }
+    }
+
+    fun getFabWhitePoint(context: Context): Float =
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_WHITE_POINT, 0.08f)
+
+    fun setFabWhitePoint(context: Context, value: Float) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_WHITE_POINT, value) }
+    }
+
     // --- 全局 GlassParams 数据类集中管理 ---
     fun getSpeedbarGlassParams(context: Context, isDark: Boolean): GlassParams {
         val defRefraction = if (isDark) 51f else 14f

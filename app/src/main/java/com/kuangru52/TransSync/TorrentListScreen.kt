@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
+import java.util.Locale
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -14,9 +15,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -26,8 +29,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -113,8 +118,20 @@ fun TorrentListScreen(
     var initialFileUriForAdd by remember { mutableStateOf<Uri?>(null) }
 
     val context = LocalContext.current
+    val isDark = isSystemInDarkTheme()
+    val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
+
     var updateInfoState by remember { mutableStateOf<UpdateInfo?>(null) }
     var showUpdateDialogState by remember { mutableStateOf(false) }
+
+    // 开发者模式 FAB 按钮动态调参控制
+    var showFabTuningInspector by remember { mutableStateOf(false) }
+    var fabRefractionDp by remember(isDark) { mutableFloatStateOf(SettingsManager.getFabRefraction(context)) }
+    var fabRefractionHeightDp by remember(isDark) { mutableFloatStateOf(SettingsManager.getFabHeight(context)) }
+    var fabBlurRadiusDp by remember(isDark) { mutableFloatStateOf(SettingsManager.getFabBlur(context)) }
+    var fabSaturationBoost by remember(isDark) { mutableFloatStateOf(SettingsManager.getFabSaturation(context)) }
+    var fabContrast by remember(isDark) { mutableFloatStateOf(SettingsManager.getFabContrast(context)) }
+    var fabWhitePoint by remember(isDark) { mutableFloatStateOf(SettingsManager.getFabWhitePoint(context)) }
 
     LaunchedEffect(Unit) {
         val info = UpdateCheckUtils.checkForUpdates(context)
@@ -133,7 +150,6 @@ fun TorrentListScreen(
         }
     }
 
-    val isDark = isSystemInDarkTheme()
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
@@ -547,9 +563,18 @@ fun TorrentListScreen(
                             onAddClick()
                             showAddTorrentDialogState = !showAddTorrentDialogState
                         },
+                        onLongClick = {
+                            showFabTuningInspector = true
+                        },
                         showAddDialog = showAddTorrentDialogState,
                         backdropLayer = backdropLayer,
                         boxPositionInRoot = boxPositionInRoot,
+                        refractionDp = fabRefractionDp,
+                        refractionHeightDp = fabRefractionHeightDp,
+                        blurRadiusDp = fabBlurRadiusDp,
+                        saturationBoost = fabSaturationBoost,
+                        contrast = fabContrast,
+                        whitePoint = fabWhitePoint,
                         isDark = isDark
                     )
                 }
@@ -1050,6 +1075,76 @@ fun TorrentListScreen(
                 )
             }
 
+            if (showFabTuningInspector) {
+                val defRefraction = 18f
+                val defHeight = 20f
+                val defBlur = 16f
+                val defSaturation = 1.4f
+                val defContrast = 0.12f
+                val defWhitePoint = 0.08f
+
+                LiquidGlassDialog(
+                    onDismissRequest = { showFabTuningInspector = false },
+                    backdropLayer = backdropLayer,
+                    boxPositionInRoot = boxPositionInRoot,
+                    title = "添加按键 (FAB) 晶体参数调试",
+                    confirmButtonText = "保存参数",
+                    confirmButtonColor = Color(0xFF1D88E3),
+                    bottomLeftContent = {
+                        TextButton(onClick = {
+                            fabRefractionDp = defRefraction
+                            fabRefractionHeightDp = defHeight
+                            fabBlurRadiusDp = defBlur
+                            fabSaturationBoost = defSaturation
+                            fabContrast = defContrast
+                            fabWhitePoint = defWhitePoint
+
+                            SettingsManager.setFabRefraction(context, defRefraction)
+                            SettingsManager.setFabHeight(context, defHeight)
+                            SettingsManager.setFabBlur(context, defBlur)
+                            SettingsManager.setFabSaturation(context, defSaturation)
+                            SettingsManager.setFabContrast(context, defContrast)
+                            SettingsManager.setFabWhitePoint(context, defWhitePoint)
+                        }) {
+                            Text("重置默认", fontSize = 13.5.sp, color = Color(0xFFE53935))
+                        }
+                    },
+                    onConfirm = {
+                        SettingsManager.setFabRefraction(context, fabRefractionDp)
+                        SettingsManager.setFabHeight(context, fabRefractionHeightDp)
+                        SettingsManager.setFabBlur(context, fabBlurRadiusDp)
+                        SettingsManager.setFabSaturation(context, fabSaturationBoost)
+                        SettingsManager.setFabContrast(context, fabContrast)
+                        SettingsManager.setFabWhitePoint(context, fabWhitePoint)
+                        Toast.makeText(context, "FAB 玻璃参数保存成功", Toast.LENGTH_SHORT).show()
+                        showFabTuningInspector = false
+                    }
+                ) {
+                    Column(
+                        modifier = Modifier.verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text("凸透镜折射强度 (Refraction): ${String.format(Locale.US, "%.1f", fabRefractionDp)} dp", fontSize = 13.sp, color = primaryTextColor)
+                        Slider(value = fabRefractionDp, onValueChange = { fabRefractionDp = it }, valueRange = 0f..40f)
+
+                        Text("边缘折射高度 (Refraction Height): ${String.format(Locale.US, "%.1f", fabRefractionHeightDp)} dp", fontSize = 13.sp, color = primaryTextColor)
+                        Slider(value = fabRefractionHeightDp, onValueChange = { fabRefractionHeightDp = it }, valueRange = 1f..40f)
+
+                        Text("高斯模糊半径 (Blur Radius): ${String.format(Locale.US, "%.1f", fabBlurRadiusDp)} dp", fontSize = 13.sp, color = primaryTextColor)
+                        Slider(value = fabBlurRadiusDp, onValueChange = { fabBlurRadiusDp = it }, valueRange = 0f..30f)
+
+                        Text("色彩饱和度 (Saturation Boost): ${String.format(Locale.US, "%.2f", fabSaturationBoost)}", fontSize = 13.sp, color = primaryTextColor)
+                        Slider(value = fabSaturationBoost, onValueChange = { fabSaturationBoost = it }, valueRange = 0.5f..2.5f)
+
+                        Text("对比度 (Contrast): ${String.format(Locale.US, "%.2f", fabContrast)}", fontSize = 13.sp, color = primaryTextColor)
+                        Slider(value = fabContrast, onValueChange = { fabContrast = it }, valueRange = -0.5f..0.5f)
+
+                        Text("白点/曝光光斑 (White Point): ${String.format(Locale.US, "%.2f", fabWhitePoint)}", fontSize = 13.sp, color = primaryTextColor)
+                        Slider(value = fabWhitePoint, onValueChange = { fabWhitePoint = it }, valueRange = -0.2f..0.5f)
+                    }
+                }
+            }
+
             if (showUpdateDialogState && updateInfoState != null) {
                 val info = updateInfoState!!
                 LiquidGlassDialog(
@@ -1089,18 +1184,28 @@ fun TorrentListScreen(
  * 具有 Kyant0 凸透镜折射与高斯模糊效果的圆形蓝色液态玻璃 FAB 按钮
  */
 @android.annotation.SuppressLint("NewApi")
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun LiquidGlassFab(
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     showAddDialog: Boolean,
     backdropLayer: GraphicsLayer?,
     boxPositionInRoot: Offset,
+    refractionDp: Float,
+    refractionHeightDp: Float,
+    blurRadiusDp: Float,
+    saturationBoost: Float,
+    contrast: Float,
+    whitePoint: Float,
     isDark: Boolean,
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
     val mainView = LocalView.current
+    val haptic = LocalHapticFeedback.current
     var fabPositionInRoot by remember { mutableStateOf(Offset.Zero) }
+    val isDeveloperMode = remember(showAddDialog) { SettingsManager.isDeveloperMode(mainView.context) }
 
     val fabRotation by animateFloatAsState(
         targetValue = if (showAddDialog) 135f else 0f,
@@ -1117,11 +1222,6 @@ private fun LiquidGlassFab(
     }
 
     Surface(
-        onClick = onClick,
-        shape = CircleShape,
-        color = Color.Transparent,
-        border = BorderStroke(1.5.dp, if (isDark) Color(0x80FFFFFF) else Color(0xCCFFFFFF)),
-        shadowElevation = 14.dp,
         modifier = modifier
             .size(56.dp)
             .onGloballyPositioned { coordinates ->
@@ -1133,6 +1233,19 @@ private fun LiquidGlassFab(
                     y = loc[1].toFloat() + offsetInWindow.y,
                 )
             }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = {
+                    if (isDeveloperMode) {
+                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onLongClick()
+                    }
+                }
+            ),
+        shape = CircleShape,
+        color = Color.Transparent,
+        border = BorderStroke(1.5.dp, if (isDark) Color(0x80FFFFFF) else Color(0xCCFFFFFF)),
+        shadowElevation = 14.dp
     ) {
         val localOffsetX = (fabPositionInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
         val localOffsetY = (fabPositionInRoot.y - boxPositionInRoot.y).coerceAtLeast(0f)
@@ -1155,22 +1268,22 @@ private fun LiquidGlassFab(
                                     val shader = cachedShader
                                     shader.setFloatUniform("size", size.width, size.height)
                                     shader.setFloatUniform("cornerRadius", size.width * 0.5f)
-                                    shader.setFloatUniform("refraction", with(density) { 18.dp.toPx() })
-                                    shader.setFloatUniform("refractionHeight", with(density) { 20.dp.toPx() })
-                                    shader.setFloatUniform("saturationBoost", 1.4f)
-                                    shader.setFloatUniform("contrast", 0.12f)
-                                    shader.setFloatUniform("whitePoint", 0.08f)
+                                    shader.setFloatUniform("refraction", with(density) { refractionDp.dp.toPx() })
+                                    shader.setFloatUniform("refractionHeight", with(density) { refractionHeightDp.dp.toPx() })
+                                    shader.setFloatUniform("saturationBoost", saturationBoost)
+                                    shader.setFloatUniform("contrast", contrast)
+                                    shader.setFloatUniform("whitePoint", whitePoint)
 
                                     val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
-                                    val blurPx = with(density) { 16.dp.toPx() }
+                                    val blurPx = with(density) { blurRadiusDp.dp.toPx() }
                                     val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
                                     renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
                                 } catch (_: Exception) {
-                                    val blurPx = with(density) { 16.dp.toPx() }
+                                    val blurPx = with(density) { blurRadiusDp.dp.toPx() }
                                     renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
                                 }
                             } else {
-                                val blurPx = with(density) { 16.dp.toPx() }
+                                val blurPx = with(density) { blurRadiusDp.dp.toPx() }
                                 renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
                             }
                         }
