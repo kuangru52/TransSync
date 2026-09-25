@@ -95,12 +95,26 @@ object WallpaperManager {
                 val selectedIndex = (currentHourIndex % localUris.size + localUris.size) % localUris.size
                 val uriStr = localUris[selectedIndex]
 
-                val uri = uriStr.toUri()
-                val inputStream = context.contentResolver.openInputStream(uri)
-                if (inputStream != null) {
-                    val bitmap = BitmapFactory.decodeStream(inputStream)
-                    inputStream.close()
-                    return@withContext bitmap?.asImageBitmap()
+                // 1. 优先尝试解译应用私有目录文件路径
+                if (uriStr.startsWith("/")) {
+                    val file = java.io.File(uriStr)
+                    if (file.exists() && file.length() > 0L) {
+                        val bitmap = BitmapFactory.decodeFile(file.absolutePath)
+                        if (bitmap != null) return@withContext bitmap.asImageBitmap()
+                    }
+                }
+
+                // 2. 尝试解译 content:// 协议 Uri
+                try {
+                    val uri = uriStr.toUri()
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    if (inputStream != null) {
+                        val bitmap = BitmapFactory.decodeStream(inputStream)
+                        inputStream.close()
+                        if (bitmap != null) return@withContext bitmap.asImageBitmap()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         } catch (e: Exception) {

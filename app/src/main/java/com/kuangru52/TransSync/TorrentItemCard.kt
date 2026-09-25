@@ -230,72 +230,81 @@ fun TorrentItemCard(
 
                 Spacer(modifier = Modifier.height(2.dp))
 
-                // 4) 进度条与百分比胶囊
-                BoxWithConstraints(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(18.dp),
-                    contentAlignment = Alignment.CenterStart,
-                ) {
-                    val totalWidth = this.maxWidth
-                    val fraction = (torrent.displayProgress / 1000f).coerceIn(0f, 1f)
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(2.dp)
-                            .background(if (isDark) Color(0x33FFFFFF) else Color(0x1A000000)),
-                    )
-
-                    if (fraction > 0f) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(fraction = fraction)
-                                .height(2.dp)
-                                .background(statusColor),
-                        )
-                    }
-
-                    if (torrent.displayProgress < 1000) {
-                        val pillWidth = 46.dp
-                        val rawOffset = totalWidth * fraction
-                        val startOffset = (rawOffset - (pillWidth / 2)).coerceIn(0.dp, (totalWidth - pillWidth).coerceAtLeast(0.dp))
-
-                        Box(
-                            modifier = Modifier.padding(start = startOffset),
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .height(18.dp)
-                                    .clip(RoundedCornerShape(100.dp))
-                                    .background(tagBgColor)
-                                    .border(1.dp, tagStrokeColor, RoundedCornerShape(100.dp))
-                                    .padding(horizontal = 8.dp),
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Text(
-                                    text = String.format(Locale.US, "%.1f", torrent.displayProgress / 10f),
-                                    style = TextStyle(
-                                        fontSize = 11.sp,
-                                        lineHeight = 11.sp,
-                                        platformStyle = PlatformTextStyle(includeFontPadding = false),
-                                        color = secondaryTextColor,
-                                    ),
-                                )
-                            }
-                        }
-                    }
-                }
-
-                if (torrent.displayStatusText.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = torrent.displayStatusText,
-                        fontSize = 11.sp,
-                        color = secondaryTextColor,
-                    )
-                }
+                // 4) 水管挤压变粗节点样式的动态进度条 (1:1 还原手绘图纸)
+                WaterPipeProgressBar(
+                    progressPromille = torrent.displayProgress,
+                    statusColor = statusColor,
+                    isDark = isDark,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
+        }
+    }
+}
+
+/**
+ * 水管挤压变粗节点样式的动态进度条组件：
+ * - 左侧：较粗的实心激活水管 (3.5dp)
+ * - 中间：被挤压变粗的膨胀节点 (15dp 高度，实心色块包裹纯白粗体百分比)
+ * - 右侧：较细的未完成水管 (1.5dp)
+ * - 没有任何线条穿过百分比节点，100% 还原手绘图纸细节！
+ */
+@Composable
+private fun WaterPipeProgressBar(
+    progressPromille: Int,
+    statusColor: Color,
+    isDark: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val fraction = (progressPromille / 1000f).coerceIn(0f, 1f)
+    val inactiveColor = if (isDark) Color(0x33FFFFFF) else Color(0x22000000)
+    val percentText = String.format(Locale.US, "%.1f", progressPromille / 10f)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // 左侧较粗的激活水管
+        if (fraction > 0f) {
+            Box(
+                modifier = Modifier
+                    .weight(fraction.coerceAtLeast(0.001f))
+                    .height(3.5.dp)
+                    .background(statusColor, RoundedCornerShape(topStart = 100.dp, bottomStart = 100.dp))
+            )
+        }
+
+        // 中间水管被挤压变粗的膨胀节点 (实心 statusColor 色块，包裹纯白粗体百分比)
+        Box(
+            modifier = Modifier
+                .wrapContentWidth()
+                .height(15.dp)
+                .background(statusColor, RoundedCornerShape(100.dp))
+                .padding(horizontal = 6.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = percentText,
+                style = TextStyle(
+                    fontSize = 10.sp,
+                    lineHeight = 10.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    platformStyle = PlatformTextStyle(includeFontPadding = false),
+                    color = Color.White
+                )
+            )
+        }
+
+        // 右侧较细的未完成水管 (1.5dp)
+        if (fraction < 1f) {
+            Box(
+                modifier = Modifier
+                    .weight((1f - fraction).coerceAtLeast(0.001f))
+                    .height(1.5.dp)
+                    .background(inactiveColor, RoundedCornerShape(topEnd = 100.dp, bottomEnd = 100.dp))
+            )
         }
     }
 }

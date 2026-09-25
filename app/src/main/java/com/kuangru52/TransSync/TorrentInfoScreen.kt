@@ -153,8 +153,6 @@ fun TorrentInfoScreen(
                 drawContent()
             },
     ) {
-        // 1. 全局壁纸背景 (录制进 infoBackdropLayer 供详情页中所有弹窗提取极致折射与磨砂玻璃)
-        WallpaperBackground()
         if (activeTorrent == null) {
             Box(
                 modifier = Modifier

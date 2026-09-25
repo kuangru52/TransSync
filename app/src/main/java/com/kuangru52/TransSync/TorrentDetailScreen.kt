@@ -1,9 +1,14 @@
 package com.kuangru52.transsync
 
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -27,9 +32,12 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -253,123 +261,177 @@ fun TorrentDetailScreen(
         fetchDetailData()
     }
 
-    var swipeOffsetX by remember { mutableFloatStateOf(0f) }
-    val animatedSwipeOffset by animateFloatAsState(
-        targetValue = swipeOffsetX,
-        animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
-        label = "swipeOffset"
-    )
+    val configuration = LocalConfiguration.current
+    val density = LocalDensity.current
+    val viewConfiguration = LocalViewConfiguration.current
+    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+
+    val pageOffsetAnim = remember { Animatable(0f) }
+    val currentPage = if (pageOffsetAnim.value > screenWidthPx * 0.5f) 1 else 0
+
+    // 返回键监听：如果在节点页，按返回键先平滑滑回信息页；如果在信息页，直接退出详情页
+    BackHandler(enabled = pageOffsetAnim.value > 0f) {
+        scope.launch {
+            pageOffsetAnim.animateTo(
+                targetValue = 0f,
+                animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)
+            )
+        }
+    }
+
+    var lastDragAmount by remember { mutableFloatStateOf(0f) }
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            .onGloballyPositioned { coordinates ->
-                val loc = IntArray(2)
-                detailView.getLocationOnScreen(loc)
-                val offsetInWindow = coordinates.positionInWindow()
-                detailViewLocation = Offset(
-                    x = loc[0].toFloat() + offsetInWindow.x,
-                    y = loc[1].toFloat() + offsetInWindow.y,
-                )
-            }
-            .drawWithContent {
-                backdropLayer.record {
-                    this@drawWithContent.drawContent()
-                }
-                drawContent()
-            }
-            .graphicsLayer {
-                translationX = animatedSwipeOffset
-            }
-            .pointerInput(pagerState.currentPage) {
-                awaitPointerEventScope {
-                    while (true) {
-                        val down = awaitFirstDown(pass = PointerEventPass.Initial)
-                        val pointerId = down.id
-                        var isDraggingRight = false
-                        var currentOffsetX = 0f
-
+            .pointerInput(Unit) {
+                coroutineScope {
+                    awaitPointerEventScope {
                         while (true) {
-                            val event = awaitPointerEvent(pass = PointerEventPass.Initial)
-                            val dragChange = event.changes.find { it.id == pointerId } ?: break
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            val startX = down.position.x
+                            val startY = down.position.y
+                            var isDragging = false
+                            var isHorizontalGesture = false
+                            lastDragAmount = 0f
 
-                            if (!dragChange.pressed) break
+                            while (true) {
+                                val event = awaitPointerEvent(pass = PointerEventPass.Initial)
+                                val changes = event.changes
+                                val pointer = changes.find { it.id == down.id } ?: break
 
-                            val dragAmount = dragChange.position.x - dragChange.previousPosition.x
+                                if (!pointer.pressed) break
 
-                            if (pagerState.currentPage == 0 && (dragAmount > 0f || currentOffsetX > 0f)) {
-                                isDraggingRight = true
+                                val dx = pointer.position.x - startX
+                                val dy = pointer.position.y - startY
+
+                                if (!isDragging) {
+                                    val dist = kotlin.math.hypot(dx.toDouble(), dy.toDouble()).toFloat()
+                                    if (dist > viewConfiguration.touchSlop) {
+                                        if (kotlin.math.abs(dx) > kotlin.math.abs(dy) * 1.5f) {
+                                            isDragging = true
+                                            isHorizontalGesture = true
+                                        } else {
+                                            // 上下滑动放行给列表
+                                            break
+                                        }
+                                    }
+                                }
+
+                                if (isHorizontalGesture) {
+                                    pointer.consume()
+                                    val dragAmount = pointer.position.x - pointer.previousPosition.x
+                                    lastDragAmount = dragAmount
+                                    val newOffset = (pageOffsetAnim.value - dragAmount).coerceIn(0f, screenWidthPx)
+                                    launch {
+                                        pageOffsetAnim.snapTo(newOffset)
+                                    }
+                                }
                             }
 
-                            if (isDraggingRight) {
-                                dragChange.consume()
-                                currentOffsetX = (currentOffsetX + dragAmount).coerceAtLeast(0f)
-                                swipeOffsetX = currentOffsetX
+                            if (isHorizontalGesture) {
+                                val currentPx = pageOffsetAnim.value
+                                val shouldBePeers = when {
+                                    lastDragAmount < -8f -> true  // 向左滑：显示节点页
+                                    lastDragAmount > 8f -> false  // 向右滑：显示信息页
+                                    else -> currentPx > screenWidthPx * 0.5f
+                                }
+                                launch {
+                                    pageOffsetAnim.animateTo(
+                                        targetValue = if (shouldBePeers) screenWidthPx else 0f,
+                                        animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)
+                                    )
+                                }
                             }
-                        }
-
-                        if (isDraggingRight) {
-                            if (swipeOffsetX > 100.dp.toPx()) {
-                                onBackClick()
-                            }
-                            swipeOffsetX = 0f
                         }
                     }
                 }
             }
     ) {
-        WallpaperBackground()
-
-        val currentWallpaperMode = remember(SettingsManager.wallpaperStateVersion) { SettingsManager.getWallpaperMode(context) }
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = if (currentWallpaperMode != "none") Color.Transparent else if (isDark) Color(0xFF161F29) else Color(0xFFF0F2F5),
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-            topBar = {},
-        ) { innerPadding ->
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(innerPadding)
-            ) {
-                HorizontalPager(
-                    state = pagerState,
-                    modifier = Modifier.fillMaxSize()
-                ) { page ->
-                    when (page) {
-                        0 -> TorrentInfoScreen(
-                            torrent = torrentInfoState,
-                            rpcUrl = rpcUrl,
-                            user = user,
-                            pass = pass,
-                            onRefresh = { fetchDetailData() },
-                        )
-                        1 -> TorrentPeersScreen(
-                            peers = peersState,
-                            isRefreshing = isPeersRefreshing,
-                            onRefresh = { reannouncePeers() }
-                        )
+        // 1. 被 backdropLayer 离屏录制的底图采样层 (包含全局唯一壁纸 + 信息页 + 节点页超宽画布)
+        val detailView = LocalView.current
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .onGloballyPositioned { coordinates ->
+                    val loc = IntArray(2)
+                    detailView.getLocationOnScreen(loc)
+                    val offsetInWindow = coordinates.positionInWindow()
+                    detailViewLocation = Offset(
+                        x = loc[0].toFloat() + offsetInWindow.x,
+                        y = loc[1].toFloat() + offsetInWindow.y,
+                    )
+                }
+                .drawWithContent {
+                    backdropLayer.record {
+                        this@drawWithContent.drawContent()
                     }
+                    drawContent()
+                }
+        ) {
+            // 全局唯一一张沉浸式壁纸 (从 $y = 0$ 最顶端开始铺满全屏，录制进 backdropLayer 中供详情页所有弹窗提取极致折射与磨砂玻璃)
+            WallpaperBackground()
+
+            // 超宽无缝平移 Row (信息页 100% 屏宽 + 节点页 100% 屏宽)
+            Row(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .wrapContentWidth(align = Alignment.Start, unbounded = true)
+                    .graphicsLayer {
+                        translationX = -pageOffsetAnim.value
+                    }
+            ) {
+                // 左侧 Page 0: 信息页 (TorrentInfoScreen)
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .requiredWidth(configuration.screenWidthDp.dp)
+                ) {
+                    TorrentInfoScreen(
+                        torrent = torrentInfoState,
+                        rpcUrl = rpcUrl,
+                        user = user,
+                        pass = pass,
+                        onRefresh = { fetchDetailData() },
+                    )
                 }
 
-                val backSwipeRatio = (animatedSwipeOffset / 180f).coerceIn(0f, 1f)
-
-                DetailFloatingTopBar(
-                    currentPage = pagerState.currentPage,
-                    backSwipeRatio = backSwipeRatio,
-                    onTabSelected = { index ->
-                        scope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    },
-                    onBackClick = onBackClick,
-                    isDark = isDark,
-                    modifier = Modifier.align(Alignment.TopCenter)
-                )
+                // 右侧 Page 1: 节点页 (TorrentPeersScreen)
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .requiredWidth(configuration.screenWidthDp.dp)
+                ) {
+                    TorrentPeersScreen(
+                        peers = peersState,
+                        isRefreshing = isPeersRefreshing,
+                        onRefresh = { reannouncePeers() }
+                    )
+                }
             }
         }
-}
+
+        // 2. 顶层悬浮控制栏 (不在 backdropLayer 内部录制，彻底防止 RenderNode 递归绘制崩溃)
+        val tabSlideRatio = (pageOffsetAnim.value / screenWidthPx).coerceIn(0f, 1f)
+
+        DetailFloatingTopBar(
+            currentPage = currentPage,
+            backSwipeRatio = tabSlideRatio,
+            onTabSelected = { index ->
+                scope.launch {
+                    pageOffsetAnim.animateTo(
+                        targetValue = if (index == 1) screenWidthPx else 0f,
+                        animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)
+                    )
+                }
+            },
+            onBackClick = onBackClick,
+            isDark = isDark,
+            modifier = Modifier
+                .statusBarsPadding()
+                .align(Alignment.TopCenter)
+        )
+    }
 }
 
 @Composable

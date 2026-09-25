@@ -229,8 +229,7 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
                 torrent.displayProgress = if ((torrent.status == 1) || (torrent.status == 2))
                     (torrent.recheckProgress * 1000).toInt() else (torrent.percentDone * 1000).toInt()
 
-                torrent.displayStatusText = if ((torrent.status == 1) || (torrent.status == 2))
-                    "校验中 (${String.format(Locale.US, "%.1f%%", torrent.recheckProgress * 100)})" else ""
+                torrent.displayStatusText = ""
 
                 val sizeStr = FormatUtils.formatSize(torrent.totalSize)
                 torrent.displaySize = if (torrent.percentDone >= 1.0) sizeStr else "${FormatUtils.formatSize(torrent.downloadedEver)} / $sizeStr"

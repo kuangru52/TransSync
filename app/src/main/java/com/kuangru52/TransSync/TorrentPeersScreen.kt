@@ -38,20 +38,20 @@ fun TorrentPeersScreen(
     val pullState = rememberPullToRefreshState()
 
     PullToRefreshBox(
-        isRefreshing = isRefreshing,
-        onRefresh = onRefresh,
-        state = pullState,
-        indicator = {
-            PullToRefreshDefaults.Indicator(
-                state = pullState,
-                isRefreshing = isRefreshing,
-                modifier = Modifier.align(Alignment.TopCenter),
-                containerColor = if (isDark) Color(0xFF212D3B) else Color.White,
-                color = if (isDark) Color(0xFF00B0FF) else Color(0xFF1D88E3),
-            )
-        },
-        modifier = modifier.fillMaxSize(),
-    ) {
+            isRefreshing = isRefreshing,
+            onRefresh = onRefresh,
+            state = pullState,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    state = pullState,
+                    isRefreshing = isRefreshing,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    containerColor = if (isDark) Color(0xFF212D3B) else Color.White,
+                    color = if (isDark) Color(0xFF00B0FF) else Color(0xFF1D88E3),
+                )
+            },
+            modifier = Modifier.fillMaxSize(),
+        ) {
         if (peers.isEmpty()) {
             Box(
                 modifier = Modifier

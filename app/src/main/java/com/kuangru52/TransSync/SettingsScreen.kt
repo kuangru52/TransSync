@@ -1,6 +1,7 @@
 package com.kuangru52.transsync
 
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
@@ -55,6 +56,8 @@ import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -99,10 +102,46 @@ fun SettingsScreen(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
-            val uriStrings = uris.map { it.toString() }
-            localWallpaperUris = uriStrings
-            SettingsManager.setLocalWallpaperUris(context, uriStrings)
-            Toast.makeText(context, "已选择 ${uris.size} 张本地图片", Toast.LENGTH_SHORT).show()
+            val internalPaths = mutableListOf<String>()
+            val wallpaperDir = java.io.File(context.filesDir, "wallpapers")
+            if (!wallpaperDir.exists()) wallpaperDir.mkdirs()
+
+            // 清理旧本地壁纸缓存
+            wallpaperDir.listFiles()?.forEach { it.delete() }
+
+            uris.forEachIndexed { index, uri ->
+                try {
+                    // 尝试获取持久化 Uri 权限
+                    try {
+                        context.contentResolver.takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        )
+                    } catch (_: Exception) {}
+
+                    // 核心修复：复制图片到应用私有目录，彻底保障冷启动 100% 永久有效！
+                    val destFile = java.io.File(wallpaperDir, "local_wall_$index.jpg")
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    if (inputStream != null) {
+                        destFile.outputStream().use { output ->
+                            inputStream.copyTo(output)
+                        }
+                        inputStream.close()
+                        internalPaths.add(destFile.absolutePath)
+                    } else {
+                        internalPaths.add(uri.toString())
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    internalPaths.add(uri.toString())
+                }
+            }
+
+            if (internalPaths.isNotEmpty()) {
+                localWallpaperUris = internalPaths
+                SettingsManager.setLocalWallpaperUris(context, internalPaths)
+                Toast.makeText(context, "已成功保存 ${internalPaths.size} 张本地壁纸", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -1569,12 +1608,12 @@ private fun CompactSegmentedGroup(
 }
 
 /**
- * 1:1 复刻 Kyant0 AndroidLiquidGlass 的 3D 液态玻璃 Slider 拖动条组件：
- * - 采用 3 层离屏录制架构：trackLayer 离屏录制蓝灰轨道，液态玻璃 Thumb 直接抓取并透射正下方的轨道图形，
- *   并实时叠加 Kyant0 AGSL 凸透镜折射 Shader 与高斯模糊 Filter，实现极其逼真的 3D 水晶玻璃透射折射变焦！
+ * 1:1 还原主页种子卡片进度条的水管挤压变粗节点样式 Slider 拖动条组件：
+ * - 左侧：较粗的实心激活水管 (3.5dp)
+ * - 中间：水管被挤压变粗的膨胀节点 (15dp 高度，实心色块包裹纯白粗体数值)
+ * - 右侧：较细的未完成水管 (1.5dp)
+ * - 没有任何线条穿过数值节点，完全统一视效！
  */
-@android.annotation.SuppressLint("NewApi")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LiquidGlassSlider(
     value: Float,
@@ -1582,28 +1621,13 @@ fun LiquidGlassSlider(
     valueRange: ClosedFloatingPointRange<Float> = 0f..100f,
     modifier: Modifier = Modifier
 ) {
-    val density = LocalDensity.current
     val isDark = isSystemInDarkTheme()
-    val graphicsContext = LocalGraphicsContext.current
-
-    val trackLayer = remember { graphicsContext.createGraphicsLayer() }
-    DisposableEffect(Unit) {
-        onDispose { graphicsContext.releaseGraphicsLayer(trackLayer) }
-    }
-
-    val cachedShader = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            try {
-                android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
-            } catch (_: Exception) { null }
-        } else null
-    }
+    val activeColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF0090FF)
+    val inactiveColor = if (isDark) Color(0x33FFFFFF) else Color(0x22000000)
 
     var sliderWidthPx by remember { mutableFloatStateOf(0f) }
     val normalizedValue = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
-
-    val activeTrackColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF0090FF)
-    val inactiveTrackColor = if (isDark) Color(0x55FFFFFF) else Color(0xFFD8D8D8)
+    val valueText = "${value.toInt()}"
 
     Box(
         modifier = modifier
@@ -1633,97 +1657,52 @@ fun LiquidGlassSlider(
             },
         contentAlignment = Alignment.CenterStart
     ) {
-        // 1. 底层：轨道的图形记录层 (被 trackLayer 离屏录制，供液态玻璃 Thumb 抓取并进行凸透镜折射)
-        Box(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(6.dp)
-                .clip(RoundedCornerShape(100.dp))
-                .drawWithContent {
-                    trackLayer.record {
-                        this@drawWithContent.drawContent()
-                    }
-                    drawContent()
-                }
+                .height(18.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(modifier = Modifier.fillMaxSize()) {
-                // 左侧激活蓝条
+            // 左侧较粗的激活水管
+            if (normalizedValue > 0f) {
                 Box(
                     modifier = Modifier
-                        .fillMaxHeight()
                         .weight(normalizedValue.coerceAtLeast(0.001f))
-                        .background(activeTrackColor, RoundedCornerShape(100.dp))
-                )
-                // 右侧未激活灰条
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .weight((1f - normalizedValue).coerceAtLeast(0.001f))
-                        .background(inactiveTrackColor, RoundedCornerShape(100.dp))
+                        .height(3.5.dp)
+                        .background(activeColor, RoundedCornerShape(topStart = 100.dp, bottomStart = 100.dp))
                 )
             }
-        }
 
-        // 2. 顶层：Kyant0 凸透镜 3D 液态玻璃 Thumb (精准折射 trackLayer 底下的蓝灰轨道！)
-        val thumbWidthDp = 32.dp
-        val thumbHeightDp = 24.dp
-        val thumbWidthPx = with(density) { thumbWidthDp.toPx() }
-        val thumbHeightPx = with(density) { thumbHeightDp.toPx() }
-
-        val thumbLeftPx = ((sliderWidthPx - thumbWidthPx) * normalizedValue).coerceAtLeast(0f)
-        val thumbTopPx = with(density) { (36.dp.toPx() - thumbHeightPx) / 2f }
-
-        Surface(
-            shape = RoundedCornerShape(12.dp),
-            color = Color.Transparent,
-            border = BorderStroke(1.dp, if (isDark) Color(0x99FFFFFF) else Color(0xCC00B0FF)),
-            shadowElevation = 8.dp,
-            modifier = Modifier
-                .offset { IntOffset(thumbLeftPx.roundToInt(), 0) }
-                .size(thumbWidthDp, thumbHeightDp)
-        ) {
+            // 中间水管被挤压变粗的膨胀节点 (实心 activeColor 色块，包裹纯白粗体数值)
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(12.dp))
-                    .graphicsLayer {
-                        clip = true
-                        shape = RoundedCornerShape(12.dp)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
-                                try {
-                                    val shader = cachedShader
-                                    shader.setFloatUniform("size", size.width, size.height)
-                                    shader.setFloatUniform("cornerRadius", with(density) { 12.dp.toPx() })
-                                    shader.setFloatUniform("refraction", with(density) { 24.dp.toPx() })
-                                    shader.setFloatUniform("refractionHeight", with(density) { 18.dp.toPx() })
-                                    shader.setFloatUniform("saturationBoost", 1.6f)
-                                    shader.setFloatUniform("contrast", 0.15f)
-                                    shader.setFloatUniform("whitePoint", 0.10f)
+                    .wrapContentWidth()
+                    .height(15.dp)
+                    .background(activeColor, RoundedCornerShape(100.dp))
+                    .padding(horizontal = 7.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = valueText,
+                    style = TextStyle(
+                        fontSize = 11.sp,
+                        lineHeight = 11.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        platformStyle = PlatformTextStyle(includeFontPadding = false),
+                        color = Color.White
+                    )
+                )
+            }
 
-                                    val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
-                                    val blurPx = with(density) { 4.dp.toPx() }
-                                    val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
-                                    renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
-                                } catch (_: Exception) {
-                                    val blurPx = with(density) { 4.dp.toPx() }
-                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
-                                }
-                            } else {
-                                val blurPx = with(density) { 4.dp.toPx() }
-                                renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
-                            }
-                        }
-                    }
-                    .drawWithContent {
-                        // 精准偏移并绘制 trackLayer，使 Shader 折射并弯曲正下方的蓝灰轨道！
-                        translate(left = -thumbLeftPx, top = -thumbTopPx) {
-                            drawLayer(trackLayer)
-                        }
-                        // 水晶玻璃透亮反射光罩
-                        drawRect(color = if (isDark) Color(0x331060B3) else Color(0x2200B0FF))
-                    }
-            )
+            // 右侧较细的未完成水管
+            if (normalizedValue < 1f) {
+                Box(
+                    modifier = Modifier
+                        .weight((1f - normalizedValue).coerceAtLeast(0.001f))
+                        .height(1.5.dp)
+                        .background(inactiveColor, RoundedCornerShape(topEnd = 100.dp, bottomEnd = 100.dp))
+                )
+            }
         }
     }
 }
