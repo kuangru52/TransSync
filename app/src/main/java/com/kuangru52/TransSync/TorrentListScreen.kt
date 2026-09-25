@@ -1229,7 +1229,7 @@ private fun LiquidGlassFab(
         shape = CircleShape,
         color = Color.Transparent,
         border = BorderStroke(1.dp, if (isDark) Color(0x44FFFFFF) else Color(0x66FFFFFF)),
-        shadowElevation = 14.dp
+        shadowElevation = 0.dp
     ) {
         val localOffsetX = (fabPositionInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
         val localOffsetY = (fabPositionInRoot.y - boxPositionInRoot.y).coerceAtLeast(0f)

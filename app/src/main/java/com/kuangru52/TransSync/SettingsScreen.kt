@@ -16,6 +16,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -1510,14 +1511,20 @@ fun SettingsFloatingTopBar(
             .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 4.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
-        // 左侧 44dp 圆形悬浮返回按钮 + 设置标题胶囊
+        // 左侧 44dp 圆形悬浮返回按钮 + 设置标题胶囊 (移除默认八边形阴影斑)
         Surface(
-            onClick = onBackClick,
             shape = RoundedCornerShape(100.dp),
             color = barBgColor,
             border = BorderStroke(1.dp, barBorderColor),
-            shadowElevation = 8.dp,
-            modifier = Modifier.height(44.dp),
+            shadowElevation = 0.dp,
+            modifier = Modifier
+                .height(44.dp)
+                .clip(RoundedCornerShape(100.dp))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onBackClick
+                ),
         ) {
             Row(
                 modifier = Modifier

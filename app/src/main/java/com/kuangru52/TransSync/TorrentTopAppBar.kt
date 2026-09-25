@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -16,6 +17,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -67,12 +69,18 @@ fun FloatingTopControls(
         if (selectedCount == 0) {
             // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊
             Surface(
-                onClick = onMenuClick,
                 shape = RoundedCornerShape(100.dp),
                 color = barBgColor,
                 border = BorderStroke(1.dp, barBorderColor),
-                shadowElevation = 8.dp,
-                modifier = Modifier.height(44.dp),
+                shadowElevation = 0.dp,
+                modifier = Modifier
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(100.dp))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onMenuClick
+                    ),
             ) {
                 Row(
                     modifier = Modifier
@@ -110,14 +118,20 @@ fun FloatingTopControls(
                 }
             }
 
-            // 右侧 [乌龟] 独立悬浮按键
+            // 右侧 [乌龟] 独立悬浮按键 (移除默认八边形阴影斑)
             Surface(
-                onClick = onTurtleClick,
                 shape = CircleShape,
                 color = barBgColor,
                 border = BorderStroke(1.dp, barBorderColor),
-                shadowElevation = 8.dp,
-                modifier = Modifier.size(44.dp),
+                shadowElevation = 0.dp,
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onTurtleClick
+                    ),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -213,7 +227,7 @@ fun MultiSelectRightCapsule(
         shape = RoundedCornerShape(cardCornerRadius),
         color = barBgColor,
         border = BorderStroke(1.dp, barBorderColor),
-        shadowElevation = 8.dp,
+        shadowElevation = 0.dp,
         modifier = Modifier.wrapContentSize(),
     ) {
         Column(
@@ -230,7 +244,17 @@ fun MultiSelectRightCapsule(
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onSelectAll, modifier = Modifier.size(40.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onSelectAll
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_select_all),
                         contentDescription = "全选",
@@ -239,7 +263,17 @@ fun MultiSelectRightCapsule(
                     )
                 }
 
-                IconButton(onClick = onDeleteSelected, modifier = Modifier.size(40.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = onDeleteSelected
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_delete),
                         contentDescription = "删除",
@@ -248,7 +282,17 @@ fun MultiSelectRightCapsule(
                     )
                 }
 
-                IconButton(onClick = { isExpanded = !isExpanded }, modifier = Modifier.size(40.dp)) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { isExpanded = !isExpanded }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_more_vert),
                         contentDescription = "更多操作",

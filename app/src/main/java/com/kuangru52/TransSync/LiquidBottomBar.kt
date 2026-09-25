@@ -194,13 +194,7 @@ fun LiquidBottomBarContent(
             .height(40.dp)
             .then(if (isSearchExpanded) Modifier.fillMaxWidth().padding(horizontal = 12.dp) else Modifier.wrapContentWidth())
             .animateContentSize(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f))
-            .scale(interactionScale)
-            .shadow(
-                elevation = 12.dp,
-                shape = RoundedCornerShape(100.dp),
-                ambientColor = Color.Black.copy(alpha = if (isDark) 0.4f else 0.15f),
-                spotColor = Color.Black.copy(alpha = if (isDark) 0.5f else 0.2f)
-            ),
+            .scale(interactionScale),
         shape = RoundedCornerShape(100.dp),
         color = Color.Transparent,
         border = BorderStroke(1.dp, if (isDark) Color(0x44FFFFFF) else Color(0x66FFFFFF))

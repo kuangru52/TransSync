@@ -9,6 +9,9 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -17,12 +20,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -458,16 +461,21 @@ fun DetailFloatingTopBar(
             .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
-        // 1. 左侧 44dp 圆形悬浮返回按钮
+        // 1. 左侧 44dp 圆形悬浮返回按钮 (移除默认八边形阴影斑)
         Surface(
-            onClick = onBackClick,
             shape = CircleShape,
             color = barBgColor,
             border = BorderStroke(1.dp, barBorderColor),
-            shadowElevation = 8.dp,
+            shadowElevation = 0.dp,
             modifier = Modifier
                 .size(44.dp)
-                .align(Alignment.CenterStart),
+                .align(Alignment.CenterStart)
+                .clip(CircleShape)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onBackClick
+                ),
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
