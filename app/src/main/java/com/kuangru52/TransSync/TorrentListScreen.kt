@@ -1181,8 +1181,8 @@ private fun LiquidGlassFab(
                                 drawLayer(backdropLayer)
                             }
                         }
-                        // 厚重半透明蓝色水晶滤镜
-                        drawRect(color = if (isDark) Color(0x991060B3) else Color(0x990090FF))
+                        // 通透半透明蓝色水晶滤镜
+                        drawRect(color = if (isDark) Color(0x661060B3) else Color(0x660090FF))
                     }
             )
 
