@@ -291,7 +291,7 @@ fun TorrentListScreen(
         // 1. 全局唯一一张壁纸 (铺满全屏与侧边栏底层)
         WallpaperBackground()
 
-        // 2. 被backdropLayer录制的统一单画布区域 (包含侧边栏 + 主种子列表)
+        // 2. 被backdropLayer录制的底图采样层 (仅包含侧边栏 + 种子列表)
         val mainView = LocalView.current
         Box(
             modifier = Modifier
@@ -368,130 +368,10 @@ fun TorrentListScreen(
                                 selectedIds = if (selectedIds.contains(id)) selectedIds - id else selectedIds + id
                             }
                         )
-
-                        val drawerSlideRatio = (currentOffset / drawerWidthPx).coerceIn(0f, 1f)
-                        FloatingTopControls(
-                            titleText = getFilterTitleText(currentFilter),
-                            sizeText = FormatUtils.formatSize(totalSize),
-                            altSpeedEnabled = altSpeedEnabled,
-                            selectedCount = selectedIds.size,
-                            drawerSlideRatio = drawerSlideRatio,
-                            onMenuClick = {
-                                if (!isLandscape) {
-                                    isDrawerOpen = !isDrawerOpen
-                                }
-                            },
-                            onTurtleClick = { viewModel.toggleAltSpeedLimits(rpcUrl, user, pass) },
-                            onCloseSelection = { selectedIds = emptySet() },
-                            onSelectAll = { selectedIds = torrents.map { it.id }.toSet() },
-                            onDeleteSelected = {
-                                val ids = selectedIds.toList()
-                                if (ids.isNotEmpty()) deleteIdsTarget = ids
-                            },
-                            onStartSelected = {
-                                val ids = selectedIds.toList()
-                                selectedIds = emptySet()
-                                viewModel.startTorrents(rpcUrl, user, pass, ids)
-                            },
-                            onStopSelected = {
-                                val ids = selectedIds.toList()
-                                selectedIds = emptySet()
-                                viewModel.stopTorrents(rpcUrl, user, pass, ids)
-                            },
-                            onRenameSelected = {
-                                val ids = selectedIds.toList()
-                                if (ids.size == 1) {
-                                    val id = ids.first()
-                                    torrents.find { it.id == id }?.let { torrent ->
-                                        renameTorrentTarget = torrent
-                                    }
-                                }
-                            },
-                            onSetLocationSelected = {
-                                val ids = selectedIds.toList()
-                                if (ids.isNotEmpty()) setLocationTargetIds = ids
-                            },
-                            onSetHrSelected = {
-                                val ids = selectedIds.toList()
-                                if (ids.isNotEmpty()) setHrTargetIds = ids
-                            },
-                            onVerifySelected = {
-                                val ids = selectedIds.toList()
-                                selectedIds = emptySet()
-                                viewModel.verifyTorrents(rpcUrl, user, pass, ids)
-                            },
-                            onReannounceSelected = {
-                                val ids = selectedIds.toList()
-                                selectedIds = emptySet()
-                                viewModel.reannounceTorrents(rpcUrl, user, pass, ids) {
-                                    Toast.makeText(context, R.string.msg_reannounce_success, Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            isDark = isDark,
-                            modifier = Modifier
-                                .statusBarsPadding()
-                                .align(Alignment.TopCenter)
-                        )
-
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = isFabVisible && selectedIds.isEmpty(),
-                            enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeIn(),
-                            exit = scaleOut(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeOut(),
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .navigationBarsPadding()
-                                .padding(end = 24.dp, bottom = 24.dp)
-                        ) {
-                            val fabRotation by animateFloatAsState(
-                                targetValue = if (showAddTorrentDialogState) 135f else 0f,
-                                animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
-                                label = "fabRotation"
-                            )
-                            val fabBgColor = if (isDark) Color(0xCC1D88E3) else Color(0xCC00B0FF)
-                            val fabBorderColor = if (isDark) Color(0x80FFFFFF) else Color(0x8000B0FF)
-
-                            Surface(
-                                onClick = {
-                                    onAddClick()
-                                    showAddTorrentDialogState = !showAddTorrentDialogState
-                                },
-                                shape = CircleShape,
-                                color = fabBgColor,
-                                border = BorderStroke(1.5.dp, fabBorderColor),
-                                shadowElevation = 12.dp,
-                                modifier = Modifier.size(56.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "添加种子",
-                                        tint = Color.White,
-                                        modifier = Modifier
-                                            .size(26.dp)
-                                            .graphicsLayer { rotationZ = fabRotation }
-                                    )
-                                }
-                            }
-                        }
-
-                        LiquidBottomBar(
-                            viewModel = viewModel,
-                            backdropLayer = backdropLayer,
-                            boxPositionInRoot = boxPositionInRoot,
-                            onSearchToggle = { isExpanded -> isSearchActive = isExpanded },
-                            onScrollToTop = { scope.launch { listState.animateScrollToItem(0) } },
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .navigationBarsPadding()
-                                .padding(bottom = 16.dp)
-                        )
                     }
                 }
             } else {
-                // 手机端：超宽无缝平移 Row，包含 Drawer(300dp) 与 主列表 (100% 屏宽)
+                // 手机端：超宽无缝平移 Row (侧边栏 300dp + 列表 100% 屏宽)
                 Row(
                     modifier = Modifier
                         .fillMaxHeight()
@@ -549,129 +429,150 @@ fun TorrentListScreen(
                                 selectedIds = if (selectedIds.contains(id)) selectedIds - id else selectedIds + id
                             }
                         )
-
-                        val drawerSlideRatio = (currentOffset / drawerWidthPx).coerceIn(0f, 1f)
-                        FloatingTopControls(
-                            titleText = getFilterTitleText(currentFilter),
-                            sizeText = FormatUtils.formatSize(totalSize),
-                            altSpeedEnabled = altSpeedEnabled,
-                            selectedCount = selectedIds.size,
-                            drawerSlideRatio = drawerSlideRatio,
-                            onMenuClick = {
-                                if (!isLandscape) {
-                                    isDrawerOpen = !isDrawerOpen
-                                }
-                            },
-                            onTurtleClick = { viewModel.toggleAltSpeedLimits(rpcUrl, user, pass) },
-                            onCloseSelection = { selectedIds = emptySet() },
-                            onSelectAll = { selectedIds = torrents.map { it.id }.toSet() },
-                            onDeleteSelected = {
-                                val ids = selectedIds.toList()
-                                if (ids.isNotEmpty()) deleteIdsTarget = ids
-                            },
-                            onStartSelected = {
-                                val ids = selectedIds.toList()
-                                selectedIds = emptySet()
-                                viewModel.startTorrents(rpcUrl, user, pass, ids)
-                            },
-                            onStopSelected = {
-                                val ids = selectedIds.toList()
-                                selectedIds = emptySet()
-                                viewModel.stopTorrents(rpcUrl, user, pass, ids)
-                            },
-                            onRenameSelected = {
-                                val ids = selectedIds.toList()
-                                if (ids.size == 1) {
-                                    val id = ids.first()
-                                    torrents.find { it.id == id }?.let { torrent ->
-                                        renameTorrentTarget = torrent
-                                    }
-                                }
-                            },
-                            onSetLocationSelected = {
-                                val ids = selectedIds.toList()
-                                if (ids.isNotEmpty()) setLocationTargetIds = ids
-                            },
-                            onSetHrSelected = {
-                                val ids = selectedIds.toList()
-                                if (ids.isNotEmpty()) setHrTargetIds = ids
-                            },
-                            onVerifySelected = {
-                                val ids = selectedIds.toList()
-                                selectedIds = emptySet()
-                                viewModel.verifyTorrents(rpcUrl, user, pass, ids)
-                            },
-                            onReannounceSelected = {
-                                val ids = selectedIds.toList()
-                                selectedIds = emptySet()
-                                viewModel.reannounceTorrents(rpcUrl, user, pass, ids) {
-                                    Toast.makeText(context, R.string.msg_reannounce_success, Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            isDark = isDark,
-                            modifier = Modifier
-                                .statusBarsPadding()
-                                .align(Alignment.TopCenter)
-                        )
-
-                        androidx.compose.animation.AnimatedVisibility(
-                            visible = isFabVisible && selectedIds.isEmpty(),
-                            enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeIn(),
-                            exit = scaleOut(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeOut(),
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .navigationBarsPadding()
-                                .padding(end = 24.dp, bottom = 24.dp)
-                        ) {
-                            val fabRotation by animateFloatAsState(
-                                targetValue = if (showAddTorrentDialogState) 135f else 0f,
-                                animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
-                                label = "fabRotation"
-                            )
-                            val fabBgColor = if (isDark) Color(0xCC1D88E3) else Color(0xCC00B0FF)
-                            val fabBorderColor = if (isDark) Color(0x80FFFFFF) else Color(0x8000B0FF)
-
-                            Surface(
-                                onClick = {
-                                    onAddClick()
-                                    showAddTorrentDialogState = !showAddTorrentDialogState
-                                },
-                                shape = CircleShape,
-                                color = fabBgColor,
-                                border = BorderStroke(1.5.dp, fabBorderColor),
-                                shadowElevation = 12.dp,
-                                modifier = Modifier.size(56.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Add,
-                                        contentDescription = "添加种子",
-                                        tint = Color.White,
-                                        modifier = Modifier
-                                            .size(26.dp)
-                                            .graphicsLayer { rotationZ = fabRotation }
-                                    )
-                                }
-                            }
-                        }
-
-                        LiquidBottomBar(
-                            viewModel = viewModel,
-                            backdropLayer = backdropLayer,
-                            boxPositionInRoot = boxPositionInRoot,
-                            onSearchToggle = { isExpanded -> isSearchActive = isExpanded },
-                            onScrollToTop = { scope.launch { listState.animateScrollToItem(0) } },
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .navigationBarsPadding()
-                                .padding(bottom = 16.dp)
-                        )
                     }
                 }
             }
+        }
+
+        // 3. 右侧随手势 100% 物理同步平移的主页面悬浮控制层 (不在 backdropLayer 内部录制，彻底防止 RenderNode 递归绘制崩溃)
+        val drawerSlideRatio = (currentOffset / drawerWidthPx).coerceIn(0f, 1f)
+        Row(
+            modifier = Modifier
+                .fillMaxHeight()
+                .wrapContentWidth(align = Alignment.Start, unbounded = true)
+                .graphicsLayer {
+                    translationX = if (!isLandscape) currentOffset - drawerWidthPx else 0f
+                }
+        ) {
+            if (!isLandscape) {
+                Spacer(modifier = Modifier.width(drawerWidthDp))
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .then(if (!isLandscape) Modifier.requiredWidth(configuration.screenWidthDp.dp) else Modifier.fillMaxWidth())
+            ) {
+                FloatingTopControls(
+                    titleText = getFilterTitleText(currentFilter),
+                    sizeText = FormatUtils.formatSize(totalSize),
+                    altSpeedEnabled = altSpeedEnabled,
+                    selectedCount = selectedIds.size,
+                    drawerSlideRatio = drawerSlideRatio,
+                    onMenuClick = {
+                        if (!isLandscape) {
+                            isDrawerOpen = !isDrawerOpen
+                        }
+                    },
+                    onTurtleClick = { viewModel.toggleAltSpeedLimits(rpcUrl, user, pass) },
+                    onCloseSelection = { selectedIds = emptySet() },
+                    onSelectAll = { selectedIds = torrents.map { it.id }.toSet() },
+                    onDeleteSelected = {
+                        val ids = selectedIds.toList()
+                        if (ids.isNotEmpty()) deleteIdsTarget = ids
+                    },
+                    onStartSelected = {
+                        val ids = selectedIds.toList()
+                        selectedIds = emptySet()
+                        viewModel.startTorrents(rpcUrl, user, pass, ids)
+                    },
+                    onStopSelected = {
+                        val ids = selectedIds.toList()
+                        selectedIds = emptySet()
+                        viewModel.stopTorrents(rpcUrl, user, pass, ids)
+                    },
+                    onRenameSelected = {
+                        val ids = selectedIds.toList()
+                        if (ids.size == 1) {
+                            val id = ids.first()
+                            torrents.find { it.id == id }?.let { torrent ->
+                                renameTorrentTarget = torrent
+                            }
+                        }
+                    },
+                    onSetLocationSelected = {
+                        val ids = selectedIds.toList()
+                        if (ids.isNotEmpty()) setLocationTargetIds = ids
+                    },
+                    onSetHrSelected = {
+                        val ids = selectedIds.toList()
+                        if (ids.isNotEmpty()) setHrTargetIds = ids
+                    },
+                    onVerifySelected = {
+                        val ids = selectedIds.toList()
+                        selectedIds = emptySet()
+                        viewModel.verifyTorrents(rpcUrl, user, pass, ids)
+                    },
+                    onReannounceSelected = {
+                        val ids = selectedIds.toList()
+                        selectedIds = emptySet()
+                        viewModel.reannounceTorrents(rpcUrl, user, pass, ids) {
+                            Toast.makeText(context, R.string.msg_reannounce_success, Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    isDark = isDark,
+                    modifier = Modifier
+                        .statusBarsPadding()
+                        .align(Alignment.TopCenter)
+                )
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isFabVisible && selectedIds.isEmpty(),
+                    enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeIn(),
+                    exit = scaleOut(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)) + fadeOut(),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .navigationBarsPadding()
+                        .padding(end = 24.dp, bottom = 24.dp)
+                ) {
+                    val fabRotation by animateFloatAsState(
+                        targetValue = if (showAddTorrentDialogState) 135f else 0f,
+                        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
+                        label = "fabRotation"
+                    )
+                    val fabBgColor = if (isDark) Color(0xCC1D88E3) else Color(0xCC00B0FF)
+                    val fabBorderColor = if (isDark) Color(0x80FFFFFF) else Color(0x8000B0FF)
+
+                    Surface(
+                        onClick = {
+                            onAddClick()
+                            showAddTorrentDialogState = !showAddTorrentDialogState
+                        },
+                        shape = CircleShape,
+                        color = fabBgColor,
+                        border = BorderStroke(1.5.dp, fabBorderColor),
+                        shadowElevation = 12.dp,
+                        modifier = Modifier.size(56.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "添加种子",
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .graphicsLayer { rotationZ = fabRotation }
+                            )
+                        }
+                    }
+                }
+
+                LiquidBottomBar(
+                    viewModel = viewModel,
+                    backdropLayer = backdropLayer,
+                    boxPositionInRoot = boxPositionInRoot,
+                    onSearchToggle = { isExpanded -> isSearchActive = isExpanded },
+                    onScrollToTop = { scope.launch { listState.animateScrollToItem(0) } },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 16.dp)
+                )
+            }
+        }
         }
 
         // 3. 手机端侧边栏滑出时的透明拦截层 (点击平滑收起侧边栏)
@@ -1159,7 +1060,6 @@ fun TorrentListScreen(
             }
         }
     }
-}
 
 /**
  * 种子列表区域组件

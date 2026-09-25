@@ -98,6 +98,32 @@ fun TorrentInfoScreen(
         }
     }
 
+    val samplePreviewTorrent = remember {
+        Torrent(
+            id = 1,
+            name = "Jumanji.The.Next.Level.2026.2160p.HQ.WEB-DL.mkv",
+            totalSize = 44238000000L,
+            percentDone = 0.605,
+            rateDownload = 1200000L,
+            rateUpload = 450000L,
+            status = 4,
+            downloadDir = "/downloads/movies",
+            uploadRatio = 6.04,
+            downloadedEver = 26700000000L,
+            uploadedEver = 160000000000L,
+            secondsSeeding = 186400,
+            trackerName = "Google",
+            trackers = listOf(Tracker(announce = "https://www.google.com/announce")),
+            trackerStats = listOf(TrackerStats(announce = "https://www.google.com/announce", seederCount = 42, leecherCount = 5, downloadCount = 120, hasScraped = true))
+        )
+    }
+
+    val effectiveTorrent = if (torrent == null && androidx.compose.ui.platform.LocalInspectionMode.current) {
+        samplePreviewTorrent
+    } else {
+        torrent
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -119,7 +145,7 @@ fun TorrentInfoScreen(
             .verticalScroll(rememberScrollState())
             .padding(start = 12.dp, end = 12.dp, top = 56.dp, bottom = 8.dp),
     ) {
-        if (torrent == null) {
+        if (effectiveTorrent == null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -129,6 +155,7 @@ fun TorrentInfoScreen(
                 CircularProgressIndicator(color = accentColor)
             }
         } else {
+            val torrent = effectiveTorrent
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
