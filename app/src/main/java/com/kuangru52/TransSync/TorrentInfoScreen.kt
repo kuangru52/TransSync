@@ -40,6 +40,8 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -660,48 +662,45 @@ fun TorrentFileTreeView(
                     }
                 }
 
-                // 5. 长按时浮现在该文件节点上方 (offset向上偏移44dp，完全避开手指盖挡，无叉号)
-                androidx.compose.animation.AnimatedVisibility(
-                    visible = isHovered,
-                    enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeIn(),
-                    exit = scaleOut(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeOut(),
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .offset(y = (-44).dp)
-                ) {
-                    Surface(
-                        onClick = { hoveredFileName = null },
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (isDark) Color(0xF51F2A38) else Color(0xF5FFFFFF),
-                        border = BorderStroke(1.dp, if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)),
-                        shadowElevation = 12.dp,
-                        modifier = Modifier.fillMaxWidth()
+                // 5. 长按悬浮全名 Popup (采用 Popup 完全不占 View 布局高度，下方列表零移动；IntOffset(0, -180) 向上浮现，完全避开手指)
+                if (isHovered) {
+                    Popup(
+                        alignment = Alignment.TopCenter,
+                        offset = IntOffset(0, -180)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (isDark) Color(0xF51F2A38) else Color(0xF5FFFFFF),
+                            border = BorderStroke(1.dp, if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)),
+                            shadowElevation = 12.dp,
+                            modifier = Modifier.fillMaxWidth(0.92f)
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_file_open),
-                                contentDescription = "全文件名",
-                                tint = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
+                            Row(
                                 modifier = Modifier
-                                    .size(18.dp)
-                                    .padding(end = 6.dp)
-                            )
-                            Text(
-                                text = node.name,
-                                style = TextStyle(
-                                    fontSize = 13.5.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = primaryTextColor,
-                                    lineBreak = LineBreak.Paragraph
-                                ),
-                                softWrap = true,
-                                modifier = Modifier.weight(1f)
-                            )
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_file_open),
+                                    contentDescription = "全文件名",
+                                    tint = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .padding(end = 6.dp)
+                                )
+                                Text(
+                                    text = node.name,
+                                    style = TextStyle(
+                                        fontSize = 13.5.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = primaryTextColor,
+                                        lineBreak = LineBreak.Paragraph
+                                    ),
+                                    softWrap = true,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
                         }
                     }
                 }
