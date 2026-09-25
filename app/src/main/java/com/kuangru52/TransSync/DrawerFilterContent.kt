@@ -280,8 +280,8 @@ fun DrawerFilterContent(
                         .height(36.dp)
                         .padding(horizontal = 12.dp),
                     shape = RoundedCornerShape(100.dp),
-                    color = if (isSelected) (if (isDark) Color(0xCC1D88E3) else Color(0xCC00B0FF)) else Color.Transparent,
-                    border = if (isSelected) BorderStroke(1.dp, Color.White.copy(alpha = 0.6f)) else null,
+                    color = if (isSelected) Color(0x44FFFFFF) else Color.Transparent,
+                    border = if (isSelected) BorderStroke(1.dp, Color(0xB3FFFFFF)) else null,
                 ) {
                     Row(
                         modifier = Modifier
@@ -294,7 +294,7 @@ fun DrawerFilterContent(
                             style = TextStyle(
                                 fontSize = 14.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else (if (isDark) Color.White else Color(0xFF2D3436))
+                                color = if (isSelected) Color.White else Color(0xDDFFFFFF)
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -302,7 +302,7 @@ fun DrawerFilterContent(
                             text = "[$sizeText]",
                             style = TextStyle(
                                 fontSize = 12.sp,
-                                color = if (isSelected) Color.White.copy(alpha = 0.85f) else (if (isDark) Color(0x88FFFFFF) else Color(0xFF636E72))
+                                color = if (isSelected) Color.White.copy(alpha = 0.9f) else Color(0xAAFFFFFF)
                             )
                         )
                     }
@@ -398,8 +398,8 @@ fun DrawerFilterContent(
                                 }
                             },
                             shape = RoundedCornerShape(100.dp),
-                            color = if (isChipSelected) (if (isDark) Color(0xCC1D88E3) else Color(0xCC00B0FF)) else (if (isDark) Color(0x66141D26) else Color(0x66FFFFFF)),
-                            border = BorderStroke(1.dp, if (isChipSelected) Color.White.copy(alpha = 0.6f) else (if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0))),
+                            color = if (isChipSelected) Color(0x55FFFFFF) else Color(0x1AFFFFFF),
+                            border = BorderStroke(1.dp, if (isChipSelected) Color(0xEEFFFFFF) else Color(0x33FFFFFF)),
                             modifier = Modifier.height(32.dp)
                         ) {
                             Box(
@@ -416,7 +416,7 @@ fun DrawerFilterContent(
                                         fontSize = 12.sp,
                                         lineHeight = 12.sp,
                                         platformStyle = PlatformTextStyle(includeFontPadding = false),
-                                        color = if (isChipSelected) Color.White else (if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72))
+                                        color = if (isChipSelected) Color.White else Color(0xDDFFFFFF)
                                     )
                                 )
                             }

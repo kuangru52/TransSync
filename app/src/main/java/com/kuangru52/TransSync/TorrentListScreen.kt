@@ -1096,10 +1096,10 @@ fun TorrentListScreen(
                     onContrastChange = { fabContrast = it },
                     onWhitePointChange = { fabWhitePoint = it },
                     onReset = {
-                        val defRefraction = 18f
-                        val defHeight = 20f
-                        val defBlur = 16f
-                        val defSaturation = 1.4f
+                        val defRefraction = 40f
+                        val defHeight = 37f
+                        val defBlur = 10f
+                        val defSaturation = 1.40f
                         val defContrast = 0.12f
                         val defWhitePoint = 0.08f
 

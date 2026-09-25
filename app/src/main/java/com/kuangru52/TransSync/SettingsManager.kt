@@ -149,7 +149,7 @@ object SettingsManager {
 
     @Suppress("UNUSED_PARAMETER")
     fun getSpeedbarBlur(context: Context, isDark: Boolean): Float {
-        val defaultVal = 28f
+        val defaultVal = 14f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_SPEEDBAR_BLUR, defaultVal)
     }
@@ -185,7 +185,7 @@ object SettingsManager {
 
     @Suppress("UNUSED_PARAMETER")
     fun getSpeedbarWhitePoint(context: Context, isDark: Boolean): Float {
-        val defaultVal = if (isDark) 0.10f else 0.20f
+        val defaultVal = 0.10f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_SPEEDBAR_WHITE_POINT, defaultVal)
     }
@@ -204,28 +204,28 @@ object SettingsManager {
     private const val KEY_FAB_WHITE_POINT = "fab_white_point"
 
     fun getFabRefraction(context: Context): Float =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_REFRACTION, 18f)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_REFRACTION, 40f)
 
     fun setFabRefraction(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_REFRACTION, value) }
     }
 
     fun getFabHeight(context: Context): Float =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_HEIGHT, 20f)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_HEIGHT, 37f)
 
     fun setFabHeight(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_HEIGHT, value) }
     }
 
     fun getFabBlur(context: Context): Float =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_BLUR, 16f)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_BLUR, 10f)
 
     fun setFabBlur(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_BLUR, value) }
     }
 
     fun getFabSaturation(context: Context): Float =
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_SATURATION, 1.4f)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getFloat(KEY_FAB_SATURATION, 1.40f)
 
     fun setFabSaturation(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit { putFloat(KEY_FAB_SATURATION, value) }
@@ -247,13 +247,6 @@ object SettingsManager {
 
     // --- 全局 GlassParams 数据类集中管理 ---
     fun getSpeedbarGlassParams(context: Context, isDark: Boolean): GlassParams {
-        val defRefraction = if (isDark) 51f else 14f
-        val defHeight = 3f
-        val defBlur = 14f
-        val defSaturation = 1.60f
-        val defContrast = 1.0f
-        val defWhitePoint = if (isDark) 0.10f else 0.20f
-
         return GlassParams(
             refraction = getSpeedbarRefraction(context, isDark),
             refractionHeight = getSpeedbarHeight(context, isDark),
@@ -292,9 +285,10 @@ object SettingsManager {
         setDialogContrast(context, params.contrast)
         setDialogWhitePoint(context, params.whitePoint)
     }
+
     @Suppress("UNUSED_PARAMETER")
     fun getDialogRefraction(context: Context, isDark: Boolean): Float {
-        val defaultVal = -60f
+        val defaultVal = -21f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_REFRACTION, defaultVal)
     }
@@ -305,7 +299,7 @@ object SettingsManager {
     }
 
     fun getDialogHeight(context: Context, isDark: Boolean): Float {
-        val defaultVal = if (isDark) 50f else 4f
+        val defaultVal = 8f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_HEIGHT, defaultVal)
     }
@@ -316,7 +310,7 @@ object SettingsManager {
     }
 
     fun getDialogBlur(context: Context, isDark: Boolean): Float {
-        val defaultVal = 32f
+        val defaultVal = 26f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_BLUR, defaultVal)
     }
@@ -328,7 +322,7 @@ object SettingsManager {
 
     @Suppress("UNUSED_PARAMETER")
     fun getDialogSaturation(context: Context, isDark: Boolean): Float {
-        val defaultVal = 3.0f
+        val defaultVal = 1.00f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_SATURATION, defaultVal)
     }
@@ -340,7 +334,7 @@ object SettingsManager {
 
     @Suppress("UNUSED_PARAMETER")
     fun getDialogContrast(context: Context, isDark: Boolean): Float {
-        val defaultVal = 1.0f
+        val defaultVal = 0.00f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_CONTRAST, defaultVal)
     }
@@ -352,7 +346,7 @@ object SettingsManager {
 
     @Suppress("UNUSED_PARAMETER")
     fun getDialogWhitePoint(context: Context, isDark: Boolean): Float {
-        val defaultVal = if (isDark) 0.10f else 0.20f
+        val defaultVal = 0.00f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getFloat(KEY_DIALOG_WHITE_POINT, defaultVal)
     }
