@@ -298,6 +298,7 @@ object SettingsManager {
             .edit { putFloat(KEY_DIALOG_REFRACTION, value) }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun getDialogHeight(context: Context, isDark: Boolean): Float {
         val defaultVal = 8f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -309,6 +310,7 @@ object SettingsManager {
             .edit { putFloat(KEY_DIALOG_HEIGHT, value) }
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun getDialogBlur(context: Context, isDark: Boolean): Float {
         val defaultVal = 26f
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)

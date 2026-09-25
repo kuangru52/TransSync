@@ -86,7 +86,7 @@ fun DirectoryDropdownTextField(
                     unfocusedLabelColor = if (isDark) Color(0xFF90CAF9) else Color(0xFF636E72),
                     focusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
                     unfocusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
-                )
+                ),
             )
 
             if (allDirs.isNotEmpty()) {
@@ -100,7 +100,7 @@ fun DirectoryDropdownTextField(
                         .heightIn(max = 200.dp) // 限制最大高度为 200dp 悬浮卡片形式，决不上下顶到屏幕边缘
                         .shadow(8.dp, RoundedCornerShape(16.dp))
                         .clip(RoundedCornerShape(16.dp))
-                        .background(if (isDark) Color(0xFF1A232E) else Color.White)
+                        .background(if (isDark) Color(0xFF1A232E) else Color.White),
                 ) {
                     allDirs.forEach { dir ->
                         DropdownMenuItem(

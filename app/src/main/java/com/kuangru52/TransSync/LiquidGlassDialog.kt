@@ -230,16 +230,15 @@ fun LiquidGlassDialog(
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (effectiveRefractionDp != 0f) && (cachedShader != null)) {
                                 try {
-                                    val shader = cachedShader
-                                    shader.setFloatUniform("size", size.width, size.height)
-                                    shader.setFloatUniform("cornerRadius", with(density) { 24.dp.toPx() })
-                                    shader.setFloatUniform("refraction", with(density) { effectiveRefractionDp.dp.toPx() })
-                                    shader.setFloatUniform("refractionHeight", with(density) { effectiveRefractionHeightDp.dp.toPx() })
-                                    shader.setFloatUniform("saturationBoost", effectiveSaturationBoost)
-                                    shader.setFloatUniform("contrast", effectiveContrast)
-                                    shader.setFloatUniform("whitePoint", effectiveWhitePoint)
+                                    cachedShader.setFloatUniform("size", size.width, size.height)
+                                    cachedShader.setFloatUniform("cornerRadius", with(density) { 24.dp.toPx() })
+                                    cachedShader.setFloatUniform("refraction", with(density) { effectiveRefractionDp.dp.toPx() })
+                                    cachedShader.setFloatUniform("refractionHeight", with(density) { effectiveRefractionHeightDp.dp.toPx() })
+                                    cachedShader.setFloatUniform("saturationBoost", effectiveSaturationBoost)
+                                    cachedShader.setFloatUniform("contrast", effectiveContrast)
+                                    cachedShader.setFloatUniform("whitePoint", effectiveWhitePoint)
 
-                                    val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                    val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(cachedShader, "content")
 
                                     renderEffect = if (effectiveBlurRadiusDp > 0f) {
                                         val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }

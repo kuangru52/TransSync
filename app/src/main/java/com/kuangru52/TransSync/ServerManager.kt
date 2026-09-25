@@ -56,7 +56,7 @@ object ServerManager {
                                 pass = pass,
                                 isActive = (id == activeId),
                                 avatarUri = avatarUri,
-                            )
+                            ),
                         )
                     }
                 }

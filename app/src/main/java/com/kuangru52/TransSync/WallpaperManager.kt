@@ -2,7 +2,7 @@ package com.kuangru52.transsync
 
 import android.content.Context
 import android.graphics.BitmapFactory
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -95,7 +95,7 @@ object WallpaperManager {
                 val selectedIndex = (currentHourIndex % localUris.size + localUris.size) % localUris.size
                 val uriStr = localUris[selectedIndex]
 
-                val uri = Uri.parse(uriStr)
+                val uri = uriStr.toUri()
                 val inputStream = context.contentResolver.openInputStream(uri)
                 if (inputStream != null) {
                     val bitmap = BitmapFactory.decodeStream(inputStream)

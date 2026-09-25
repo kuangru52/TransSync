@@ -4,7 +4,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
-import java.util.Locale
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -119,7 +118,6 @@ fun TorrentListScreen(
 
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
-    val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
 
     var updateInfoState by remember { mutableStateOf<UpdateInfo?>(null) }
     var showUpdateDialogState by remember { mutableStateOf(false) }
