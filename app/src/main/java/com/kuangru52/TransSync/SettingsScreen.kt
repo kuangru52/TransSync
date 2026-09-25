@@ -2,6 +2,7 @@ package com.kuangru52.transsync
 
 import android.content.Context
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -37,6 +38,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -532,18 +534,13 @@ fun SettingsScreen(
                                         fontWeight = FontWeight.Bold
                                     )
                                 }
-                                Slider(
+                                LiquidGlassSlider(
                                     value = wallpaperBlur,
                                     onValueChange = {
                                         wallpaperBlur = it
                                         SettingsManager.setWallpaperBlur(context, it)
                                     },
                                     valueRange = 0f..100f,
-                                    colors = SliderDefaults.colors(
-                                        thumbColor = accentColor,
-                                        activeTrackColor = accentColor,
-                                        inactiveTrackColor = if (isDark) Color(0x33FFFFFF) else Color(0x22000000)
-                                    ),
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
@@ -1518,8 +1515,9 @@ private fun CompactSegmentedGroup(
     val isDark = isSystemInDarkTheme()
     val groupBgColor = if (isDark) Color(0x66131B24) else Color(0x66FFFFFF)
     val groupBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
-    val activeBgColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
-    val textColor = if (isDark) Color.White else Color(0xFF2D3436)
+    val activeBgColor = if (isDark) Color(0x44FFFFFF) else Color(0x55FFFFFF)
+    val activeBorderColor = if (isDark) Color(0xAAFFFFFF) else Color(0xCCFFFFFF)
+    val textColor = if (isDark) Color(0xDDFFFFFF) else Color(0xFF2D3436)
 
     Surface(
         shape = RoundedCornerShape(100.dp),
@@ -1543,6 +1541,7 @@ private fun CompactSegmentedGroup(
                     onClick = { onOptionSelected(valueKey) },
                     shape = RoundedCornerShape(100.dp),
                     color = if (isSelected) activeBgColor else Color.Transparent,
+                    border = if (isSelected) BorderStroke(1.dp, activeBorderColor) else null,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
@@ -1562,6 +1561,95 @@ private fun CompactSegmentedGroup(
             }
         }
     }
+}
+
+/**
+ * Kyant0 AGSL 凸透镜 3D 液态玻璃 Slider 拖动条组件
+ */
+@android.annotation.SuppressLint("NewApi")
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun LiquidGlassSlider(
+    value: Float,
+    onValueChange: (Float) -> Unit,
+    valueRange: ClosedFloatingPointRange<Float> = 0f..100f,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val isDark = isSystemInDarkTheme()
+
+    val cachedShader = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
+            } catch (_: Exception) { null }
+        } else null
+    }
+
+    Slider(
+        value = value,
+        onValueChange = onValueChange,
+        valueRange = valueRange,
+        thumb = {
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Color.Transparent,
+                border = BorderStroke(1.dp, if (isDark) Color(0x99FFFFFF) else Color(0xCC00B0FF)),
+                shadowElevation = 6.dp,
+                modifier = Modifier.size(width = 30.dp, height = 24.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(14.dp))
+                        .graphicsLayer {
+                            clip = true
+                            shape = RoundedCornerShape(14.dp)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                    try {
+                                        val shader = cachedShader
+                                        shader.setFloatUniform("size", size.width, size.height)
+                                        shader.setFloatUniform("cornerRadius", with(density) { 14.dp.toPx() })
+                                        shader.setFloatUniform("refraction", with(density) { 24.dp.toPx() })
+                                        shader.setFloatUniform("refractionHeight", with(density) { 18.dp.toPx() })
+                                        shader.setFloatUniform("saturationBoost", 1.5f)
+                                        shader.setFloatUniform("contrast", 0.15f)
+                                        shader.setFloatUniform("whitePoint", 0.10f)
+
+                                        val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                        val blurPx = with(density) { 6.dp.toPx() }
+                                        val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                        renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                                    } catch (_: Exception) {
+                                        val blurPx = with(density) { 6.dp.toPx() }
+                                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                    }
+                                } else {
+                                    val blurPx = with(density) { 6.dp.toPx() }
+                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                }
+                            }
+                        }
+                        .drawWithContent {
+                            drawContent()
+                            drawRect(color = if (isDark) Color(0x331060B3) else Color(0x2200B0FF))
+                        }
+                )
+            }
+        },
+        track = { sliderState ->
+            SliderDefaults.Track(
+                sliderState = sliderState,
+                modifier = Modifier.height(6.dp),
+                colors = SliderDefaults.colors(
+                    activeTrackColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF0090FF),
+                    inactiveTrackColor = if (isDark) Color(0x55FFFFFF) else Color(0xFFD8D8D8)
+                )
+            )
+        },
+        modifier = modifier.fillMaxWidth()
+    )
 }
 
 @androidx.compose.ui.tooling.preview.Preview(name = "设置页 - 浅色模式", showBackground = true)

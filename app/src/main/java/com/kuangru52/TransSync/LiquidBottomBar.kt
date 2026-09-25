@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
@@ -192,7 +192,7 @@ fun LiquidBottomBarContent(
         Surface(
         modifier = Modifier
             .height(40.dp)
-            .then(if (isSearchExpanded) Modifier.width(310.dp) else Modifier.wrapContentWidth())
+            .then(if (isSearchExpanded) Modifier.fillMaxWidth().padding(horizontal = 12.dp) else Modifier.wrapContentWidth())
             .animateContentSize(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f))
             .scale(interactionScale)
             .shadow(
@@ -208,7 +208,7 @@ fun LiquidBottomBarContent(
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .wrapContentWidth()
+                .then(if (isSearchExpanded) Modifier.fillMaxWidth() else Modifier.wrapContentWidth())
                 .clip(RoundedCornerShape(100.dp))
                 .onGloballyPositioned { coordinates ->
                     val loc = IntArray(2)
@@ -330,7 +330,7 @@ fun LiquidBottomBarContent(
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .wrapContentWidth()
+                    .then(if (isSearchExpanded) Modifier.fillMaxWidth() else Modifier.wrapContentWidth())
                     .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -342,8 +342,8 @@ fun LiquidBottomBarContent(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "关闭搜索",
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "搜索",
                             tint = if (isDark) Color.White else Color.Black,
                             modifier = Modifier
                                 .size(22.dp)

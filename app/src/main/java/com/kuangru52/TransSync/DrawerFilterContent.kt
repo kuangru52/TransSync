@@ -116,7 +116,7 @@ fun DrawerFilterContent(
         "Error" to stringResource(R.string.nav_error),
     )
 
-    val dividerGlowColor = if (isDark) Color(0x40FFFFFF) else Color(0x33000000)
+    val dividerGlowColor = Color.White.copy(alpha = 0.85f)
 
     Column(
         modifier = Modifier
@@ -333,21 +333,13 @@ fun DrawerFilterContent(
         }
 
         val topDividerAlpha by animateFloatAsState(
-            targetValue = when {
-                trackerScrollState.isScrollInProgress && isPullingDown -> 1f
-                trackerScrollState.value > 0 -> 0.35f
-                else -> 0f
-            },
+            targetValue = if (trackerScrollState.value > 0) 1f else 0f,
             animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
             label = "topDividerAlpha"
         )
 
         val bottomDividerAlpha by animateFloatAsState(
-            targetValue = when {
-                trackerScrollState.isScrollInProgress && isPullingUp -> 1f
-                trackerScrollState.value < trackerScrollState.maxValue && trackerScrollState.maxValue > 0 -> 0.35f
-                else -> 0f
-            },
+            targetValue = if (trackerScrollState.maxValue > 0 && trackerScrollState.value < trackerScrollState.maxValue) 1f else 0f,
             animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
             label = "bottomDividerAlpha"
         )

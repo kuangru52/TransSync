@@ -422,7 +422,10 @@ fun DetailFloatingTopBar(
             }
         }
 
-        // 2. 中间 180dp 胶囊形悬浮 Tab 切换组 [信息 | 节点] (居中对齐)
+        // 2. 中间 180dp 胶囊形悬浮 Tab 切换组 [信息 | 节点] (居中对齐，采用通透磨砂玻璃高光选中态)
+        val activeBgColor = if (isDark) Color(0x44FFFFFF) else Color(0x55FFFFFF)
+        val activeBorderColor = if (isDark) Color(0xAAFFFFFF) else Color(0xCCFFFFFF)
+
         Surface(
             shape = RoundedCornerShape(100.dp),
             color = barBgColor,
@@ -446,7 +449,8 @@ fun DetailFloatingTopBar(
                     Surface(
                         onClick = { onTabSelected(index) },
                         shape = RoundedCornerShape(100.dp),
-                        color = if (isSelected) accentColor else Color.Transparent,
+                        color = if (isSelected) activeBgColor else Color.Transparent,
+                        border = if (isSelected) BorderStroke(1.dp, activeBorderColor) else null,
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight(),
