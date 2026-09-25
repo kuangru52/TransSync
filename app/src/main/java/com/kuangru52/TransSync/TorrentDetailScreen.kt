@@ -392,6 +392,8 @@ fun TorrentDetailScreen(
                         rpcUrl = rpcUrl,
                         user = user,
                         pass = pass,
+                        backdropLayer = backdropLayer,
+                        boxPositionInRoot = detailViewLocation,
                         onRefresh = { fetchDetailData() },
                     )
                 }
