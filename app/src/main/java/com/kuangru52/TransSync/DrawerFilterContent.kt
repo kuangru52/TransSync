@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.PlatformTextStyle
@@ -39,26 +40,76 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * 1:1 绝对复刻 activity_torrent_list.xml 与 nav_header.xml (含渐变灵动发光分割线 divider_horizontal_glow)
+ * 侧边栏 DrawerFilterContent：
+ * - 兼具运行时真实 ViewModel 数据驱动与 Compose Preview 编辑器视图渲染支持
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 @Suppress("UNUSED_PARAMETER")
 fun DrawerFilterContent(
-    viewModel: TorrentListViewModel,
-    currentFilter: String,
-    rpcUrl: String,
-    onSelectFilter: (String) -> Unit,
+    viewModel: TorrentListViewModel? = null,
+    currentFilter: String = "All",
+    rpcUrl: String = "",
+    onSelectFilter: (String) -> Unit = {},
     onServerSwitched: ((ServerConfig) -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
-    val drawerData by viewModel.drawerData.observeAsState(emptyMap())
-    val trackerData by viewModel.trackerData.observeAsState(emptyMap())
-    val freeSpace by viewModel.freeSpace.observeAsState("--")
-    val isTrackerBlurEnabled by viewModel.isTrackerBlurEnabled.observeAsState(initial = false)
-    val revealedTrackerNames by viewModel.revealedTrackerNames.observeAsState(emptySet())
+    val isInspection = LocalInspectionMode.current
+
+    val sampleDrawerData = remember {
+        mapOf(
+            "All" to DrawerItemData(12, 78174110000000L),
+            "Downloading" to DrawerItemData(3, 47460000000L),
+            "Seeding" to DrawerItemData(8, 78100000000000L),
+            "Paused" to DrawerItemData(1, 6980000000L),
+            "Active" to DrawerItemData(4, 53700000000L),
+            "Inactive" to DrawerItemData(8, 78100000000000L),
+            "Error" to DrawerItemData(0, 0L),
+        )
+    }
+
+    val sampleTrackerData = remember {
+        mapOf(
+            "M-Team" to 5,
+            "CHD" to 3,
+            "Pigo" to 2,
+            "PTer" to 2,
+            "Audies" to 1,
+            "Ubits" to 1,
+        )
+    }
+
+    val drawerData = if (viewModel != null && !isInspection) {
+        viewModel.drawerData.observeAsState(emptyMap()).value
+    } else {
+        sampleDrawerData
+    }
+
+    val trackerData = if (viewModel != null && !isInspection) {
+        viewModel.trackerData.observeAsState(emptyMap()).value
+    } else {
+        sampleTrackerData
+    }
+
+    val freeSpace = if (viewModel != null && !isInspection) {
+        viewModel.freeSpace.observeAsState("--").value
+    } else {
+        "12.4 TB"
+    }
+
+    val isTrackerBlurEnabled = if (viewModel != null && !isInspection) {
+        viewModel.isTrackerBlurEnabled.observeAsState(initial = false).value
+    } else {
+        false
+    }
+
+    val revealedTrackerNames = if (viewModel != null && !isInspection) {
+        viewModel.revealedTrackerNames.observeAsState(emptySet()).value
+    } else {
+        emptySet()
+    }
 
     val categories = listOf(
         "All" to stringResource(R.string.nav_all),
@@ -80,9 +131,18 @@ fun DrawerFilterContent(
     ) {
         // --- 1. Header (交互式圆形服务器备注切换按钮组) ---
         val serversVersion = ServerManager.serversVersion
-        val serversList = remember(serversVersion) { ServerManager.getServers(context) }
+        val realServersList = remember(serversVersion) { ServerManager.getServers(context) }
+        val serversList = if (isInspection || realServersList.isEmpty()) {
+            listOf(
+                ServerConfig(id = "1", alias = "Transmission", rpcUrl = "https://192.168.1.100:9091/transmission/rpc"),
+                ServerConfig(id = "2", alias = "qBittorrent", rpcUrl = "http://192.168.1.101:8080"),
+            )
+        } else {
+            realServersList
+        }
+
         val activeServer = remember(serversVersion) { ServerManager.getActiveServer(context) }
-        var activeServerId by remember(serversVersion) { mutableStateOf(activeServer?.id) }
+        var activeServerId by remember(serversVersion) { mutableStateOf(activeServer?.id ?: "1") }
         val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
 
         Row(
@@ -102,7 +162,7 @@ fun DrawerFilterContent(
                 var isSelfSigned by remember(server.rpcUrl) { mutableStateOf(value = false) }
 
                 LaunchedEffect(server.rpcUrl) {
-                    if (urlLower.startsWith("https://")) {
+                    if (urlLower.startsWith("https://") && !isInspection) {
                         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                             isSelfSigned = SslCheckUtils.isSelfSignedSsl(server.rpcUrl)
                         }
@@ -110,9 +170,9 @@ fun DrawerFilterContent(
                 }
 
                 val badgeColor = when {
-                    urlLower.startsWith("http://") -> Color(0xFFFF5252) // 红色圆叹号：HTTP 无证书明文连接
-                    urlLower.startsWith("https://") && isSelfSigned -> Color(0xFFFFC107) // 黄色圆叹号：mkcert / 自签名证书
-                    else -> null // Let's Encrypt 等权威 CA -> 完全受信任，不显示警告！
+                    urlLower.startsWith("http://") -> Color(0xFFFF5252)
+                    urlLower.startsWith("https://") && isSelfSigned -> Color(0xFFFFC107)
+                    else -> null
                 }
 
                 val avatarBitmap = remember(server.avatarUri) {
@@ -137,24 +197,28 @@ fun DrawerFilterContent(
                         onClick = {
                             if (!isActive) {
                                 val oldActiveServer = serversList.find { it.id == activeServerId }
-                                ServerManager.setActiveServer(context, server.id)
+                                if (!isInspection) {
+                                    ServerManager.setActiveServer(context, server.id)
+                                }
                                 activeServerId = server.id
 
                                 val isCrossClientSwitch = (oldActiveServer?.clientType != server.clientType) ||
                                         (server.clientType == ServerConfig.CLIENT_QBITTORRENT)
 
-                                if (isCrossClientSwitch) {
+                                if (isCrossClientSwitch && !isInspection) {
                                     Toast.makeText(context, "正在无缝重启应用以生效 ${server.alias}...", Toast.LENGTH_SHORT).show()
                                     AppRestartUtils.restartApp(context)
                                 } else {
-                                    Toast.makeText(context, "已切换至: ${server.alias}", Toast.LENGTH_SHORT).show()
-                                    viewModel.switchServer(server)
+                                    if (!isInspection) {
+                                        Toast.makeText(context, "已切换至: ${server.alias}", Toast.LENGTH_SHORT).show()
+                                        viewModel?.switchServer(server)
+                                    }
                                     onServerSwitched?.invoke(server)
                                 }
                             } else {
                                 if (onOpenSettings != null) {
                                     onOpenSettings.invoke()
-                                } else {
+                                } else if (!isInspection) {
                                     context.startActivity(Intent(context, SettingsActivity::class.java))
                                 }
                             }
@@ -192,7 +256,6 @@ fun DrawerFilterContent(
                         }
                     }
 
-                    // 侧边栏右上角圆形叹号 Badge (HTTP 显示红色, HTTPS 自签名显示黄色)
                     if (badgeColor != null) {
                         Box(
                             modifier = Modifier
@@ -264,7 +327,6 @@ fun DrawerFilterContent(
             }
         }
 
-        // 每次下拉或上推均稳定触发分割线显示（从上往下拉显示上分割线，从下往上拉显示下分割线，边界提示用户）
         val trackerScrollState = rememberScrollState()
         var previousScrollOffset by remember { mutableIntStateOf(0) }
         var isPullingDown by remember { mutableStateOf(false) }
@@ -274,11 +336,9 @@ fun DrawerFilterContent(
             if (trackerScrollState.isScrollInProgress) {
                 val diff = trackerScrollState.value - previousScrollOffset
                 if (diff < 0) {
-                    // 从上往下拉：上分割线高亮
                     isPullingDown = true
                     isPullingUp = false
                 } else if (diff > 0) {
-                    // 从下往上拉：下分割线高亮
                     isPullingDown = false
                     isPullingUp = true
                 }
@@ -349,7 +409,7 @@ fun DrawerFilterContent(
                         Surface(
                             onClick = {
                                 if (shouldBlur) {
-                                    viewModel.revealTracker(trackerName)
+                                    viewModel?.revealTracker(trackerName)
                                 } else {
                                     onSelectFilter("tracker:$trackerName")
                                 }
@@ -422,7 +482,7 @@ fun DrawerFilterContent(
                 onClick = {
                     if (onOpenSettings != null) {
                         onOpenSettings.invoke()
-                    } else {
+                    } else if (!isInspection) {
                         context.startActivity(Intent(context, SettingsActivity::class.java))
                     }
                 }
@@ -437,37 +497,21 @@ fun DrawerFilterContent(
     }
 }
 
-@androidx.compose.ui.tooling.preview.Preview(name = "侧边栏 - 预览", showBackground = true)
+@androidx.compose.ui.tooling.preview.Preview(name = "侧边栏 - 浅色模式", showBackground = true)
 @Composable
-fun DrawerFilterContent_Preview() {
+fun DrawerFilterContent_Light_Preview() {
     MaterialTheme {
-        Box(
+        Surface(
             modifier = Modifier
                 .width(300.dp)
-                .fillMaxHeight()
-                .background(Color(0xFF161F29))
+                .fillMaxHeight(),
+            color = Color(0xFFF0F2F5)
         ) {
-            val context = androidx.compose.ui.platform.LocalContext.current
             DrawerFilterContent(
-                viewModel = TorrentListViewModel(context.applicationContext as android.app.Application),
+                viewModel = null,
                 currentFilter = "All",
                 rpcUrl = "https://192.168.1.100:9091/transmission/rpc",
                 onSelectFilter = {}
-            )
-        }
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(name = "侧边栏 - 浅色模式", showBackground = true)
-@Composable
-fun DrawerFilterContentPreview() {
-    MaterialTheme {
-        Box(modifier = Modifier.width(320.dp)) {
-            DrawerFilterContent(
-                viewModel = TorrentListViewModel(LocalContext.current.applicationContext as android.app.Application),
-                currentFilter = "All",
-                rpcUrl = "",
-                onSelectFilter = {},
             )
         }
     }
@@ -477,16 +521,17 @@ fun DrawerFilterContentPreview() {
 @Composable
 fun DrawerFilterContent_Dark_Preview() {
     MaterialTheme {
-        Box(
+        Surface(
             modifier = Modifier
-                .width(320.dp)
-                .background(Color(0xFF161F29)),
+                .width(300.dp)
+                .fillMaxHeight(),
+            color = Color(0xFF161F29)
         ) {
             DrawerFilterContent(
-                viewModel = TorrentListViewModel(LocalContext.current.applicationContext as android.app.Application),
+                viewModel = null,
                 currentFilter = "Downloading",
-                rpcUrl = "",
-                onSelectFilter = {},
+                rpcUrl = "https://192.168.1.100:9091/transmission/rpc",
+                onSelectFilter = {}
             )
         }
     }
