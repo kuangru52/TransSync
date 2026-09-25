@@ -443,6 +443,12 @@ fun LiquidGlassTuningInspector(
     saturationBoost: Float,
     contrast: Float = 1.0f,
     whitePoint: Float = 0.15f,
+    refractionRange: ClosedFloatingPointRange<Float> = -300f..0f,
+    refractionHeightRange: ClosedFloatingPointRange<Float> = 0f..30f,
+    blurRadiusRange: ClosedFloatingPointRange<Float> = 0f..60f,
+    saturationBoostRange: ClosedFloatingPointRange<Float> = 0.50f..2.00f,
+    contrastRange: ClosedFloatingPointRange<Float> = -0.50f..0.50f,
+    whitePointRange: ClosedFloatingPointRange<Float> = -1.00f..1.00f,
     onRefractionChange: (Float) -> Unit,
     onRefractionHeightChange: (Float) -> Unit,
     onBlurRadiusChange: (Float) -> Unit,
@@ -519,23 +525,23 @@ fun LiquidGlassTuningInspector(
                         }
                     }
 
-                    // 1. 折射量 (Refraction: -300dp —— 0dp)
-                    CompactTuningRow("折射", "${refractionDp.toInt()}dp", refractionDp, -300f..0f, onRefractionChange)
+                    // 1. 折射量
+                    CompactTuningRow("折射", "${refractionDp.toInt()}dp", refractionDp, refractionRange, onRefractionChange)
 
-                    // 2. 折射高度 (Refraction Height: 0dp —— 30dp)
-                    CompactTuningRow("高度", "${refractionHeightDp.toInt()}dp", refractionHeightDp, 0f..30f, onRefractionHeightChange)
+                    // 2. 折射高度
+                    CompactTuningRow("高度", "${refractionHeightDp.toInt()}dp", refractionHeightDp, refractionHeightRange, onRefractionHeightChange)
 
-                    // 3. 模糊半径 (Blur Radius: 0dp —— 60dp)
-                    CompactTuningRow("模糊", "${blurRadiusDp.toInt()}dp", blurRadiusDp, 0f..60f, onBlurRadiusChange)
+                    // 3. 模糊半径
+                    CompactTuningRow("模糊", "${blurRadiusDp.toInt()}dp", blurRadiusDp, blurRadiusRange, onBlurRadiusChange)
 
-                    // 4. 彩度增强 (Saturation Boost: 0.50 —— 2.00)
-                    CompactTuningRow("彩度", String.format(java.util.Locale.US, "%.2f", saturationBoost), saturationBoost, 0.50f..2.00f, onSaturationBoostChange)
+                    // 4. 彩度增强
+                    CompactTuningRow("彩度", String.format(java.util.Locale.US, "%.2f", saturationBoost), saturationBoost, saturationBoostRange, onSaturationBoostChange)
 
-                    // 5. 对比度 (Contrast: -0.50 —— 0.50)
-                    CompactTuningRow("对比", String.format(java.util.Locale.US, "%.2f", contrast), contrast, -0.50f..0.50f, onContrastChange)
+                    // 5. 对比度
+                    CompactTuningRow("对比", String.format(java.util.Locale.US, "%.2f", contrast), contrast, contrastRange, onContrastChange)
 
-                    // 6. 白点 (White Point: -1.00 —— 1.00)
-                    CompactTuningRow("白点", String.format(java.util.Locale.US, "%.2f", whitePoint), whitePoint, -1.00f..1.00f, onWhitePointChange)
+                    // 6. 白点
+                    CompactTuningRow("白点", String.format(java.util.Locale.US, "%.2f", whitePoint), whitePoint, whitePointRange, onWhitePointChange)
                 }
             }
         }

@@ -1076,40 +1076,48 @@ fun TorrentListScreen(
             }
 
             if (showFabTuningInspector) {
-                val defRefraction = 18f
-                val defHeight = 20f
-                val defBlur = 16f
-                val defSaturation = 1.4f
-                val defContrast = 0.12f
-                val defWhitePoint = 0.08f
+                LiquidGlassTuningInspector(
+                    refractionDp = fabRefractionDp,
+                    refractionHeightDp = fabRefractionHeightDp,
+                    blurRadiusDp = fabBlurRadiusDp,
+                    saturationBoost = fabSaturationBoost,
+                    contrast = fabContrast,
+                    whitePoint = fabWhitePoint,
+                    refractionRange = 0f..40f,
+                    refractionHeightRange = 1f..40f,
+                    blurRadiusRange = 0f..30f,
+                    saturationBoostRange = 0.5f..2.5f,
+                    contrastRange = -0.5f..0.5f,
+                    whitePointRange = -0.2f..0.5f,
+                    onRefractionChange = { fabRefractionDp = it },
+                    onRefractionHeightChange = { fabRefractionHeightDp = it },
+                    onBlurRadiusChange = { fabBlurRadiusDp = it },
+                    onSaturationBoostChange = { fabSaturationBoost = it },
+                    onContrastChange = { fabContrast = it },
+                    onWhitePointChange = { fabWhitePoint = it },
+                    onReset = {
+                        val defRefraction = 18f
+                        val defHeight = 20f
+                        val defBlur = 16f
+                        val defSaturation = 1.4f
+                        val defContrast = 0.12f
+                        val defWhitePoint = 0.08f
 
-                LiquidGlassDialog(
-                    onDismissRequest = { showFabTuningInspector = false },
-                    backdropLayer = backdropLayer,
-                    boxPositionInRoot = boxPositionInRoot,
-                    title = "添加按键 (FAB) 晶体参数调试",
-                    confirmButtonText = "保存参数",
-                    confirmButtonColor = Color(0xFF1D88E3),
-                    bottomLeftContent = {
-                        TextButton(onClick = {
-                            fabRefractionDp = defRefraction
-                            fabRefractionHeightDp = defHeight
-                            fabBlurRadiusDp = defBlur
-                            fabSaturationBoost = defSaturation
-                            fabContrast = defContrast
-                            fabWhitePoint = defWhitePoint
+                        fabRefractionDp = defRefraction
+                        fabRefractionHeightDp = defHeight
+                        fabBlurRadiusDp = defBlur
+                        fabSaturationBoost = defSaturation
+                        fabContrast = defContrast
+                        fabWhitePoint = defWhitePoint
 
-                            SettingsManager.setFabRefraction(context, defRefraction)
-                            SettingsManager.setFabHeight(context, defHeight)
-                            SettingsManager.setFabBlur(context, defBlur)
-                            SettingsManager.setFabSaturation(context, defSaturation)
-                            SettingsManager.setFabContrast(context, defContrast)
-                            SettingsManager.setFabWhitePoint(context, defWhitePoint)
-                        }) {
-                            Text("重置默认", fontSize = 13.5.sp, color = Color(0xFFE53935))
-                        }
+                        SettingsManager.setFabRefraction(context, defRefraction)
+                        SettingsManager.setFabHeight(context, defHeight)
+                        SettingsManager.setFabBlur(context, defBlur)
+                        SettingsManager.setFabSaturation(context, defSaturation)
+                        SettingsManager.setFabContrast(context, defContrast)
+                        SettingsManager.setFabWhitePoint(context, defWhitePoint)
                     },
-                    onConfirm = {
+                    onSave = {
                         SettingsManager.setFabRefraction(context, fabRefractionDp)
                         SettingsManager.setFabHeight(context, fabRefractionHeightDp)
                         SettingsManager.setFabBlur(context, fabBlurRadiusDp)
@@ -1118,31 +1126,9 @@ fun TorrentListScreen(
                         SettingsManager.setFabWhitePoint(context, fabWhitePoint)
                         Toast.makeText(context, "FAB 玻璃参数保存成功", Toast.LENGTH_SHORT).show()
                         showFabTuningInspector = false
-                    }
-                ) {
-                    Column(
-                        modifier = Modifier.verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Text("凸透镜折射强度 (Refraction): ${String.format(Locale.US, "%.1f", fabRefractionDp)} dp", fontSize = 13.sp, color = primaryTextColor)
-                        Slider(value = fabRefractionDp, onValueChange = { fabRefractionDp = it }, valueRange = 0f..40f)
-
-                        Text("边缘折射高度 (Refraction Height): ${String.format(Locale.US, "%.1f", fabRefractionHeightDp)} dp", fontSize = 13.sp, color = primaryTextColor)
-                        Slider(value = fabRefractionHeightDp, onValueChange = { fabRefractionHeightDp = it }, valueRange = 1f..40f)
-
-                        Text("高斯模糊半径 (Blur Radius): ${String.format(Locale.US, "%.1f", fabBlurRadiusDp)} dp", fontSize = 13.sp, color = primaryTextColor)
-                        Slider(value = fabBlurRadiusDp, onValueChange = { fabBlurRadiusDp = it }, valueRange = 0f..30f)
-
-                        Text("色彩饱和度 (Saturation Boost): ${String.format(Locale.US, "%.2f", fabSaturationBoost)}", fontSize = 13.sp, color = primaryTextColor)
-                        Slider(value = fabSaturationBoost, onValueChange = { fabSaturationBoost = it }, valueRange = 0.5f..2.5f)
-
-                        Text("对比度 (Contrast): ${String.format(Locale.US, "%.2f", fabContrast)}", fontSize = 13.sp, color = primaryTextColor)
-                        Slider(value = fabContrast, onValueChange = { fabContrast = it }, valueRange = -0.5f..0.5f)
-
-                        Text("白点/曝光光斑 (White Point): ${String.format(Locale.US, "%.2f", fabWhitePoint)}", fontSize = 13.sp, color = primaryTextColor)
-                        Slider(value = fabWhitePoint, onValueChange = { fabWhitePoint = it }, valueRange = -0.2f..0.5f)
-                    }
-                }
+                    },
+                    onDismiss = { showFabTuningInspector = false }
+                )
             }
 
             if (showUpdateDialogState && updateInfoState != null) {
@@ -1244,7 +1230,7 @@ private fun LiquidGlassFab(
             ),
         shape = CircleShape,
         color = Color.Transparent,
-        border = BorderStroke(1.5.dp, if (isDark) Color(0x80FFFFFF) else Color(0xCCFFFFFF)),
+        border = BorderStroke(1.dp, if (isDark) Color(0x44FFFFFF) else Color(0x66FFFFFF)),
         shadowElevation = 14.dp
     ) {
         val localOffsetX = (fabPositionInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
