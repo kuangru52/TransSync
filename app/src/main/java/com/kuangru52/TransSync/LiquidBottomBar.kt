@@ -210,8 +210,7 @@ fun LiquidBottomBarContent(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxHeight()
-                .wrapContentWidth()
+                .fillMaxSize()
                 .clip(RoundedCornerShape(100.dp))
                 .onGloballyPositioned { coordinates ->
                     val loc = IntArray(2)
@@ -332,8 +331,7 @@ fun LiquidBottomBarContent(
             // 顶层 100% 绝对清晰的前景网速文字与搜索输入框
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .wrapContentWidth()
+                    .fillMaxSize()
                     .padding(horizontal = 12.dp),
                 contentAlignment = Alignment.Center
             ) {
