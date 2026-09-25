@@ -13,6 +13,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -501,6 +502,30 @@ fun buildFileTree(files: List<TorrentFile>): List<FileNodeItem> {
     return root.children
 }
 
+private data class FlatFileNodeItem(
+    val node: FileNodeItem,
+    val currentPath: String,
+    val isExpanded: Boolean
+)
+
+private fun flattenTreeNodes(
+    nodes: List<FileNodeItem>,
+    expandedPaths: Set<String>,
+    parentPath: String = "",
+    result: MutableList<FlatFileNodeItem> = mutableListOf()
+): List<FlatFileNodeItem> {
+    val sortedNodes = nodes.sortedBy { !it.isFolder }
+    for (node in sortedNodes) {
+        val currentPath = if (parentPath.isEmpty()) node.name else "$parentPath/${node.name}"
+        val isExpanded = expandedPaths.contains(currentPath)
+        result.add(FlatFileNodeItem(node, currentPath, isExpanded))
+        if (node.isFolder && isExpanded && node.children.isNotEmpty()) {
+            flattenTreeNodes(node.children, expandedPaths, currentPath, result)
+        }
+    }
+    return result
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TorrentFileTreeView(
@@ -514,38 +539,48 @@ fun TorrentFileTreeView(
     val haptic = LocalHapticFeedback.current
     val isDark = isSystemInDarkTheme()
 
-    fun getPath(node: FileNodeItem, parentPath: String = ""): String {
-        return if (parentPath.isEmpty()) node.name else "$parentPath/${node.name}"
+    val flatNodes = remember(rootNodes, expandedPaths) {
+        flattenTreeNodes(rootNodes, expandedPaths)
     }
 
-    @Composable
-    fun RenderNodes(nodes: List<FileNodeItem>, parentPath: String = "") {
-        val sortedNodes = remember(nodes) { nodes.sortedBy { !it.isFolder } }
+    Box(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth()) {
-            for (node in sortedNodes) {
-                val currentPath = getPath(node, parentPath)
-                val isExpanded = expandedPaths.contains(currentPath)
+            for (item in flatNodes) {
+                val node = item.node
+                val currentPath = item.currentPath
+                val isExpanded = item.isExpanded
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .combinedClickable(
-                            onClick = {
-                                if (node.isFolder) {
-                                    expandedPaths = if (isExpanded) {
-                                        expandedPaths - currentPath
+                        .pointerInput(currentPath) {
+                            detectTapGestures(
+                                onTap = {
+                                    if (node.isFolder) {
+                                        expandedPaths = if (isExpanded) {
+                                            expandedPaths - currentPath
+                                        } else {
+                                            expandedPaths + currentPath
+                                        }
                                     } else {
-                                        expandedPaths + currentPath
+                                        if (hoveredFileName != null) hoveredFileName = null
                                     }
-                                } else {
-                                    if (hoveredFileName != null) hoveredFileName = null
+                                },
+                                onLongPress = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    hoveredFileName = node.name
+                                },
+                                onPress = {
+                                    try {
+                                        tryAwaitRelease()
+                                    } finally {
+                                        if (hoveredFileName == node.name) {
+                                            hoveredFileName = null
+                                        }
+                                    }
                                 }
-                            },
-                            onLongClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                hoveredFileName = if (hoveredFileName == node.name) null else node.name
-                            }
-                        )
+                            )
+                        }
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -598,21 +633,10 @@ fun TorrentFileTreeView(
                         }
                     }
                 }
-
-                // 递归渲染子文件夹
-                if (node.isFolder && isExpanded && node.children.isNotEmpty()) {
-                    RenderNodes(node.children, currentPath)
-                }
             }
         }
-    }
 
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            RenderNodes(rootNodes)
-        }
-
-        // 5. 长按触发的多行完整名称悬浮栏 (再次长按或点击弹窗/其他文件即可收起)
+        // 5. 长按触发的多行完整名称悬浮栏 (按住不放时持续显示，手指抬起松开后自动关闭隐去)
         androidx.compose.animation.AnimatedVisibility(
             visible = hoveredFileName != null,
             enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeIn(),
