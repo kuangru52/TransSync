@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_start_selected"
+        android:title="Start" />
+    <item
+        android:id="@+id/menu_stop_selected"
+        android:title="Stop" />
+    <item
+        android:id="@+id/action_rename"
+        android:title="Rename" />
+    <item
+        android:id="@+id/action_set_location"
+        android:title="Set Location" />
+    <item
+        android:id="@+id/action_verify"
+        android:title="Verify" />
+    <item
+        android:id="@+id/action_reannounce"
+        android:title="Reannounce" />
+</menu>
