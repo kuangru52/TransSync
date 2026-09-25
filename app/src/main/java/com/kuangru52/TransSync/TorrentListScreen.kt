@@ -247,6 +247,8 @@ fun TorrentListScreen(
         }
     }
 
+    var lastDragAmount by remember { mutableFloatStateOf(0f) }
+
     // --- 单页面超宽画布 (Single Unified Canvas Architecture) ---
     Box(
         modifier = modifier
@@ -255,16 +257,25 @@ fun TorrentListScreen(
                 if (!isLandscape) {
                     Modifier.pointerInput(Unit) {
                         detectHorizontalDragGestures(
-                            onDragStart = {},
+                            onDragStart = {
+                                lastDragAmount = 0f
+                            },
                             onHorizontalDrag = { change, dragAmount ->
                                 change.consume()
+                                lastDragAmount = dragAmount
                                 val newOffset = (drawerOffsetAnim.value + dragAmount).coerceIn(0f, drawerWidthPx)
                                 scope.launch {
                                     drawerOffsetAnim.snapTo(newOffset)
                                 }
                             },
                             onDragEnd = {
-                                val shouldOpen = drawerOffsetAnim.value > drawerWidthPx * 0.4f
+                                val currentPx = drawerOffsetAnim.value
+                                val shouldOpen = when {
+                                    lastDragAmount < -8f -> false
+                                    lastDragAmount > 8f -> true
+                                    isDrawerOpen -> currentPx > drawerWidthPx * 0.65f
+                                    else -> currentPx > drawerWidthPx * 0.35f
+                                }
                                 isDrawerOpen = shouldOpen
                                 scope.launch {
                                     drawerOffsetAnim.animateTo(
@@ -274,7 +285,8 @@ fun TorrentListScreen(
                                 }
                             },
                             onDragCancel = {
-                                val shouldOpen = drawerOffsetAnim.value > drawerWidthPx * 0.4f
+                                val currentPx = drawerOffsetAnim.value
+                                val shouldOpen = if (isDrawerOpen) currentPx > drawerWidthPx * 0.65f else currentPx > drawerWidthPx * 0.35f
                                 isDrawerOpen = shouldOpen
                                 scope.launch {
                                     drawerOffsetAnim.animateTo(
@@ -574,7 +586,7 @@ fun TorrentListScreen(
         }
         }
 
-        // 3. 手机端侧边栏滑出时主页面区域的透明点击拦截层 (仅盖住右侧主列表区域，点击平滑收起侧边栏，绝不挡住左侧 Drawer)
+        // 3. 手机端侧边栏滑出时主页面区域的透明点击/滑动拦截层 (盖住右侧主列表区域，点击或向左滑动均平滑收起侧边栏)
         if (!isLandscape && currentOffset > 0f) {
             val currentOffsetDp = with(LocalDensity.current) { currentOffset.toDp() }
             Row(
@@ -586,6 +598,28 @@ fun TorrentListScreen(
                     modifier = Modifier
                         .fillMaxHeight()
                         .weight(1f)
+                        .pointerInput(Unit) {
+                            detectHorizontalDragGestures(
+                                onHorizontalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    val newOffset = (drawerOffsetAnim.value + dragAmount).coerceIn(0f, drawerWidthPx)
+                                    scope.launch {
+                                        drawerOffsetAnim.snapTo(newOffset)
+                                    }
+                                },
+                                onDragEnd = {
+                                    val currentPx = drawerOffsetAnim.value
+                                    val shouldOpen = currentPx > drawerWidthPx * 0.65f
+                                    isDrawerOpen = shouldOpen
+                                    scope.launch {
+                                        drawerOffsetAnim.animateTo(
+                                            targetValue = if (shouldOpen) drawerWidthPx else 0f,
+                                            animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)
+                                        )
+                                    }
+                                }
+                            )
+                        }
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
