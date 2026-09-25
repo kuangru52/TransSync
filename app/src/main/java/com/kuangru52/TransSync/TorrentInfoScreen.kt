@@ -3,8 +3,15 @@ package com.kuangru52.transsync
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,10 +25,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalGraphicsContext
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -486,6 +498,12 @@ fun buildFileTree(files: List<TorrentFile>): List<FileNodeItem> {
     return root.children
 }
 
+private data class NodeLayoutItem(
+    val name: String,
+    val topY: Float,
+    val bottomY: Float
+)
+
 @Composable
 fun TorrentFileTreeView(
     files: List<TorrentFile>,
@@ -494,6 +512,11 @@ fun TorrentFileTreeView(
 ) {
     val rootNodes = remember(files) { buildFileTree(files) }
     var expandedPaths by remember { mutableStateOf(setOf<String>()) }
+
+    var hoveredFileName by remember { mutableStateOf<String?>(null) }
+    val nodeLayoutMap = remember { mutableStateMapOf<String, NodeLayoutItem>() }
+    val haptic = LocalHapticFeedback.current
+    val isDark = isSystemInDarkTheme()
 
     fun getPath(node: FileNodeItem, parentPath: String = ""): String {
         return if (parentPath.isEmpty()) node.name else "$parentPath/${node.name}"
@@ -510,6 +533,11 @@ fun TorrentFileTreeView(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .onGloballyPositioned { coordinates ->
+                            val topY = coordinates.positionInParent().y
+                            val height = coordinates.size.height.toFloat()
+                            nodeLayoutMap[currentPath] = NodeLayoutItem(node.name, topY, topY + height)
+                        }
                         .clickable(enabled = node.isFolder) {
                             expandedPaths = if (isExpanded) {
                                 expandedPaths - currentPath
@@ -539,7 +567,7 @@ fun TorrentFileTreeView(
                         Spacer(modifier = Modifier.width(16.dp))
                     }
 
-                    // 3. 文件夹 / 文件名称
+                    // 3. 文件夹 / 文件名称（单行截断显示）
                     Text(
                         text = node.name,
                         fontSize = 13.sp,
@@ -578,7 +606,86 @@ fun TorrentFileTreeView(
         }
     }
 
-    RenderNodes(rootNodes)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .pointerInput(Unit) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { offset ->
+                        val target = nodeLayoutMap.values.find { offset.y >= it.topY && offset.y <= it.bottomY }
+                        if (target != null) {
+                            hoveredFileName = target.name
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                        }
+                    },
+                    onDrag = { change, _ ->
+                        change.consume()
+                        val target = nodeLayoutMap.values.find { change.position.y >= it.topY && change.position.y <= it.bottomY }
+                        if (target != null && target.name != hoveredFileName) {
+                            hoveredFileName = target.name
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        }
+                    },
+                    onDragEnd = {
+                        hoveredFileName = null
+                    },
+                    onDragCancel = {
+                        hoveredFileName = null
+                    }
+                )
+            }
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            RenderNodes(rootNodes)
+        }
+
+        // 5. 长按/滑动触发的多行完整名称悬浮栏 (名称悬浮栏)
+        androidx.compose.animation.AnimatedVisibility(
+            visible = hoveredFileName != null,
+            enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeIn(),
+            exit = scaleOut(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeOut(),
+            modifier = Modifier.align(Alignment.TopCenter)
+        ) {
+            hoveredFileName?.let { fullName ->
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = if (isDark) Color(0xF21F2A38) else Color(0xF2FFFFFF),
+                    border = BorderStroke(1.dp, if (isDark) Color(0x661D88E3) else Color(0x6600B0FF)),
+                    shadowElevation = 12.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 14.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_file_open),
+                            contentDescription = "全文件名",
+                            tint = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
+                            modifier = Modifier
+                                .size(18.dp)
+                                .padding(end = 6.dp)
+                        )
+                        Text(
+                            text = fullName,
+                            style = TextStyle(
+                                fontSize = 13.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = primaryTextColor,
+                                lineHeight = 18.sp
+                            ),
+                            softWrap = true,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable
