@@ -195,7 +195,7 @@ fun LiquidBottomBarContent(
         Surface(
         modifier = Modifier
             .height(40.dp)
-            .then(if (isSearchExpanded) Modifier.width(310.dp) else Modifier.widthIn(min = 180.dp, max = 260.dp))
+            .then(if (isSearchExpanded) Modifier.width(310.dp) else Modifier.wrapContentWidth())
             .animateContentSize(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f))
             .scale(interactionScale)
             .shadow(
@@ -210,7 +210,8 @@ fun LiquidBottomBarContent(
     ) {
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .fillMaxHeight()
+                .wrapContentWidth()
                 .clip(RoundedCornerShape(100.dp))
                 .onGloballyPositioned { coordinates ->
                     val loc = IntArray(2)
@@ -331,8 +332,9 @@ fun LiquidBottomBarContent(
             // 顶层 100% 绝对清晰的前景网速文字与搜索输入框
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 12.dp),
+                    .fillMaxHeight()
+                    .wrapContentWidth()
+                    .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center
             ) {
                 if (!isSearchExpanded) {
