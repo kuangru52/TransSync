@@ -16,6 +16,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -134,7 +135,7 @@ fun TorrentInfoScreen(
         )
     }
 
-    val effectiveTorrent = if (torrent == null && androidx.compose.ui.platform.LocalInspectionMode.current) {
+    val activeTorrent = if (torrent == null && androidx.compose.ui.platform.LocalInspectionMode.current) {
         samplePreviewTorrent
     } else {
         torrent
@@ -157,11 +158,9 @@ fun TorrentInfoScreen(
                     this@drawWithContent.drawContent()
                 }
                 drawContent()
-            }
-            .verticalScroll(rememberScrollState())
-            .padding(start = 12.dp, end = 12.dp, top = 56.dp, bottom = 8.dp),
+            },
     ) {
-        if (effectiveTorrent == null) {
+        if (activeTorrent == null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -171,246 +170,256 @@ fun TorrentInfoScreen(
                 CircularProgressIndicator(color = accentColor)
             }
         } else {
-            val torrent = effectiveTorrent
-            Column(
-                modifier = Modifier.fillMaxWidth(),
+            val torrent = activeTorrent
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 12.dp, end = 12.dp, top = 56.dp, bottom = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // 1. 卡片 1: 种子名称与 1:1 复刻原版的递归树状文件结构
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = cardBgColor,
-                    border = BorderStroke(1.dp, cardBorderColor)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = FormatUtils.formatTorrentTitle(torrent.name),
-                            style = TextStyle(
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = accentColor,
-                                lineBreak = LineBreak.Paragraph
-                            ),
-                            modifier = Modifier.clickable {
-                                isFileTreeExpanded = !isFileTreeExpanded
-                            }
-                        )
-
-                        if (isFileTreeExpanded && !torrent.files.isNullOrEmpty()) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            TorrentFileTreeView(
-                                files = torrent.files,
-                                primaryTextColor = primaryTextColor,
-                                secondaryTextColor = secondaryTextColor
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = cardBgColor,
+                        border = BorderStroke(1.dp, cardBorderColor)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                text = FormatUtils.formatTorrentTitle(torrent.name),
+                                style = TextStyle(
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = accentColor,
+                                    lineBreak = LineBreak.Paragraph
+                                ),
+                                modifier = Modifier.clickable {
+                                    isFileTreeExpanded = !isFileTreeExpanded
+                                }
                             )
+
+                            if (isFileTreeExpanded && !torrent.files.isNullOrEmpty()) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                TorrentFileTreeView(
+                                    files = torrent.files,
+                                    primaryTextColor = primaryTextColor,
+                                    secondaryTextColor = secondaryTextColor
+                                )
+                            }
                         }
                     }
                 }
 
                 // 2. 卡片 2: 2x3 网格统计卡片
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = cardBgColor,
-                    border = BorderStroke(1.dp, cardBorderColor)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            InfoGridCell("总大小", FormatUtils.formatSize(torrent.totalSize), secondaryTextColor, primaryTextColor, Modifier.weight(1f))
-                            InfoGridCell("分享率", String.format(Locale.US, "%.2f", torrent.uploadRatio), secondaryTextColor, primaryTextColor, Modifier.weight(1f))
-                        }
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            val percent = (torrent.percentDone * 100).toInt()
-                            InfoGridCell("已下载", "${FormatUtils.formatSize(torrent.downloadedEver)} ($percent%)", secondaryTextColor, Color(0xFF2196F3), Modifier.weight(1f))
-                            InfoGridCell("已上传", FormatUtils.formatSize(torrent.uploadedEver), secondaryTextColor, Color(0xFF43A047), Modifier.weight(1f))
-                        }
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                            val trackerStat = torrent.trackerStats?.firstOrNull { (it.hasScraped) || (it.seederCount > 0) || (it.leecherCount > 0) || (it.downloadCount > 0) }
-                                ?: torrent.trackerStats?.firstOrNull()
-
-                            val seeders = trackerStat?.seederCount ?: -1
-                            val leechers = trackerStat?.leecherCount ?: -1
-                            val completed = trackerStat?.downloadCount ?: -1
-
-                            val swarmText = if ((seeders >= 0) && (leechers >= 0)) {
-                                if (completed >= 0) "$seeders / $leechers / $completed" else "$seeders / $leechers / --"
-                            } else {
-                                "-- / -- / --"
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = cardBgColor,
+                        border = BorderStroke(1.dp, cardBorderColor)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                InfoGridCell("总大小", FormatUtils.formatSize(torrent.totalSize), secondaryTextColor, primaryTextColor, Modifier.weight(1f))
+                                InfoGridCell("分享率", String.format(Locale.US, "%.2f", torrent.uploadRatio), secondaryTextColor, primaryTextColor, Modifier.weight(1f))
                             }
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                val percent = (torrent.percentDone * 100).toInt()
+                                InfoGridCell("已下载", "${FormatUtils.formatSize(torrent.downloadedEver)} ($percent%)", secondaryTextColor, Color(0xFF2196F3), Modifier.weight(1f))
+                                InfoGridCell("已上传", FormatUtils.formatSize(torrent.uploadedEver), secondaryTextColor, Color(0xFF43A047), Modifier.weight(1f))
+                            }
+                            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                val trackerStat = torrent.trackerStats?.firstOrNull { (it.hasScraped) || (it.seederCount > 0) || (it.leecherCount > 0) || (it.downloadCount > 0) }
+                                    ?: torrent.trackerStats?.firstOrNull()
 
-                            val seedSec = torrent.secondsSeeding
-                            val days = seedSec / (24 * 3600)
-                            val hrs = (seedSec % (24 * 3600)) / 3600
-                            val mins = (seedSec % 3600) / 60
-                            val seedTimeText = if (seedSec > 0) "${days}d ${hrs}h ${mins}m" else "--"
+                                val seeders = trackerStat?.seederCount ?: -1
+                                val leechers = trackerStat?.leecherCount ?: -1
+                                val completed = trackerStat?.downloadCount ?: -1
 
-                            InfoGridCell("做种 / 下载 / 完成", swarmText, secondaryTextColor, primaryTextColor, Modifier.weight(1f))
-                            InfoGridCell("做种时间", seedTimeText, secondaryTextColor, primaryTextColor, Modifier.weight(1f))
+                                val swarmText = if ((seeders >= 0) && (leechers >= 0)) {
+                                    if (completed >= 0) "$seeders / $leechers / $completed" else "$seeders / $leechers / --"
+                                } else {
+                                    "-- / -- / --"
+                                }
+
+                                val seedSec = torrent.secondsSeeding
+                                val days = seedSec / (24 * 3600)
+                                val hrs = (seedSec % (24 * 3600)) / 3600
+                                val mins = (seedSec % 3600) / 60
+                                val seedTimeText = if (seedSec > 0) "${days}d ${hrs}h ${mins}m" else "--"
+
+                                InfoGridCell("做种 / 下载 / 完成", swarmText, secondaryTextColor, primaryTextColor, Modifier.weight(1f))
+                                InfoGridCell("做种时间", seedTimeText, secondaryTextColor, primaryTextColor, Modifier.weight(1f))
+                            }
                         }
                     }
                 }
 
                 // 3. 卡片 3: 保存位置与 Tracker 列表卡片
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = cardBgColor,
-                    border = BorderStroke(1.dp, cardBorderColor)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        // 下载目录行
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("下载目录", fontSize = 12.sp, color = secondaryTextColor, modifier = Modifier.width(90.dp))
-                            Text(
-                                text = torrent.downloadDir ?: "",
-                                fontSize = 13.sp,
-                                color = primaryTextColor,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { copyToClipboard("downloadDir", torrent.downloadDir ?: "") }
-                            )
-                            IconButton(
-                                onClick = { showSetLocationDialogState = true },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_file_open),
-                                    contentDescription = "修改保存位置",
-                                    tint = secondaryTextColor,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-
-                        // Tracker 行 (仅显示有效域名，自动过滤假/本地伪 Tracker)
-                        val displayTrackerDomain = remember(torrent) {
-                            val realTrackers = torrent.trackers?.mapNotNull {
-                                if (it.announce.isNotBlank() && !it.announce.startsWith("**") && !it.announce.contains("[DHT]") && !it.announce.contains("[PeX]") && !it.announce.contains("[LSD]")) it.announce else null
-                            } ?: emptyList()
-
-                            val realStatsTrackers = torrent.trackerStats?.mapNotNull {
-                                if (it.announce.isNotBlank() && !it.announce.startsWith("**") && !it.announce.contains("[DHT]") && !it.announce.contains("[PeX]") && !it.announce.contains("[LSD]")) it.announce else null
-                            } ?: emptyList()
-
-                            val firstAnnounce = realTrackers.firstOrNull() ?: realStatsTrackers.firstOrNull() ?: ""
-                            if (firstAnnounce.isNotEmpty()) {
-                                try {
-                                    val uri = java.net.URI(firstAnnounce)
-                                    uri.host ?: firstAnnounce.substringAfter("://").substringBefore("/").substringBefore(":")
-                                } catch (_: Exception) {
-                                    firstAnnounce.substringAfter("://").substringBefore("/").substringBefore(":")
-                                }
-                            } else {
-                                "无"
-                            }
-                        }
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Tracker", fontSize = 12.sp, color = secondaryTextColor, modifier = Modifier.width(90.dp))
-                            Text(
-                                text = displayTrackerDomain,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryTextColor,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .clickable { copyToClipboard("tracker", displayTrackerDomain) }
-                            )
-                            IconButton(
-                                onClick = { showEditTrackersDialogState = true },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_edit),
-                                    contentDescription = "编辑 Tracker",
-                                    tint = secondaryTextColor,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-
-                        // H&R 考核行 (点击调起 H&R 考核修改弹窗)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { showSetHrDialogState = true },
-                        ) {
-                            HrStatusInfoRow(torrent = torrent, secondaryTextColor = secondaryTextColor, primaryTextColor = primaryTextColor)
-                        }
-
-                        // 错误信息行 (如果有错误)
-                        if (torrent.error != 0 && torrent.errorString.isNotEmpty()) {
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = cardBgColor,
+                        border = BorderStroke(1.dp, cardBorderColor)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            // 下载目录行
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text("错误信息", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE53935), modifier = Modifier.width(90.dp))
+                                Text("下载目录", fontSize = 12.sp, color = secondaryTextColor, modifier = Modifier.width(90.dp))
                                 Text(
-                                    text = torrent.errorString,
+                                    text = torrent.downloadDir ?: "",
                                     fontSize = 13.sp,
-                                    color = Color(0xFFE53935),
-                                    modifier = Modifier.weight(1f)
+                                    color = primaryTextColor,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { copyToClipboard("downloadDir", torrent.downloadDir ?: "") }
                                 )
+                                IconButton(
+                                    onClick = { showSetLocationDialogState = true },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_file_open),
+                                        contentDescription = "修改保存位置",
+                                        tint = secondaryTextColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+
+                            // Tracker 行 (仅显示有效域名，自动过滤假/本地伪 Tracker)
+                            val displayTrackerDomain = remember(torrent) {
+                                val realTrackers = torrent.trackers?.mapNotNull {
+                                    if (it.announce.isNotBlank() && !it.announce.startsWith("**") && !it.announce.contains("[DHT]") && !it.announce.contains("[PeX]") && !it.announce.contains("[LSD]")) it.announce else null
+                                } ?: emptyList()
+
+                                val realStatsTrackers = torrent.trackerStats?.mapNotNull {
+                                    if (it.announce.isNotBlank() && !it.announce.startsWith("**") && !it.announce.contains("[DHT]") && !it.announce.contains("[PeX]") && !it.announce.contains("[LSD]")) it.announce else null
+                                } ?: emptyList()
+
+                                val firstAnnounce = realTrackers.firstOrNull() ?: realStatsTrackers.firstOrNull() ?: ""
+                                if (firstAnnounce.isNotEmpty()) {
+                                    try {
+                                        val uri = java.net.URI(firstAnnounce)
+                                        uri.host ?: firstAnnounce.substringAfter("://").substringBefore("/").substringBefore(":")
+                                    } catch (_: Exception) {
+                                        firstAnnounce.substringAfter("://").substringBefore("/").substringBefore(":")
+                                    }
+                                } else {
+                                    "无"
+                                }
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Tracker", fontSize = 12.sp, color = secondaryTextColor, modifier = Modifier.width(90.dp))
+                                Text(
+                                    text = displayTrackerDomain,
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryTextColor,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable { copyToClipboard("tracker", displayTrackerDomain) }
+                                )
+                                IconButton(
+                                    onClick = { showEditTrackersDialogState = true },
+                                    modifier = Modifier.size(32.dp)
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_edit),
+                                        contentDescription = "编辑 Tracker",
+                                        tint = secondaryTextColor,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+
+                            // H&R 考核行 (点击调起 H&R 考核修改弹窗)
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { showSetHrDialogState = true },
+                            ) {
+                                HrStatusInfoRow(torrent = torrent, secondaryTextColor = secondaryTextColor, primaryTextColor = primaryTextColor)
+                            }
+
+                            // 错误信息行 (如果有错误)
+                            if (torrent.error != 0 && torrent.errorString.isNotEmpty()) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("错误信息", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE53935), modifier = Modifier.width(90.dp))
+                                    Text(
+                                        text = torrent.errorString,
+                                        fontSize = 13.sp,
+                                        color = Color(0xFFE53935),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
                             }
                         }
                     }
                 }
 
                 // 4. 卡片 4: 预计剩余、H&R 考核与日期状态卡片
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    color = cardBgColor,
-                    border = BorderStroke(1.dp, cardBorderColor)
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        val etaText = when {
-                            torrent.percentDone >= 1.0 -> "已完成"
-                            torrent.eta == null || torrent.eta < 0L -> "未知"
-                            torrent.eta == 0L -> "已完成"
-                            else -> {
-                                val etaSec = torrent.eta
-                                val days = etaSec / (24 * 3600)
-                                val hrs = (etaSec % (24 * 3600)) / 3600
-                                val mins = (etaSec % 3600) / 60
-                                val secs = etaSec % 60
-                                when {
-                                    days > 0 -> "${days}d ${hrs}h ${mins}m"
-                                    hrs > 0 -> "${hrs}h ${mins}m ${secs}s"
-                                    mins > 0 -> "${mins}m ${secs}s"
-                                    else -> "${secs}s"
+                item {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        color = cardBgColor,
+                        border = BorderStroke(1.dp, cardBorderColor)
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            val etaText = when {
+                                torrent.percentDone >= 1.0 -> "已完成"
+                                torrent.eta == null || torrent.eta < 0L -> "未知"
+                                torrent.eta == 0L -> "已完成"
+                                else -> {
+                                    val etaSec = torrent.eta
+                                    val days = etaSec / (24 * 3600)
+                                    val hrs = (etaSec % (24 * 3600)) / 3600
+                                    val mins = (etaSec % 3600) / 60
+                                    val secs = etaSec % 60
+                                    when {
+                                        days > 0 -> "${days}d ${hrs}h ${mins}m"
+                                        hrs > 0 -> "${hrs}h ${mins}m ${secs}s"
+                                        mins > 0 -> "${mins}m ${secs}s"
+                                        else -> "${secs}s"
+                                    }
                                 }
                             }
-                        }
 
-                        InfoRow("预计剩余", etaText, secondaryTextColor, if (torrent.percentDone < 1.0 && (torrent.eta ?: -1L) > 0L) Color(0xFF2196F3) else primaryTextColor)
-                        InfoRow("添加日期", FormatUtils.formatDate(torrent.addedDate), secondaryTextColor, primaryTextColor)
-                        InfoRow("完成日期", if (torrent.doneDate > 0) FormatUtils.formatDate(torrent.doneDate) else "未完成", secondaryTextColor, primaryTextColor)
-                        InfoRow("最后活动", if (torrent.activityDate > 0) FormatUtils.formatDate(torrent.activityDate) else "未活动", secondaryTextColor, primaryTextColor)
+                            InfoRow("预计剩余", etaText, secondaryTextColor, if (torrent.percentDone < 1.0 && (torrent.eta ?: -1L) > 0L) Color(0xFF2196F3) else primaryTextColor)
+                            InfoRow("添加日期", FormatUtils.formatDate(torrent.addedDate), secondaryTextColor, primaryTextColor)
+                            InfoRow("完成日期", if (torrent.doneDate > 0) FormatUtils.formatDate(torrent.doneDate) else "未完成", secondaryTextColor, primaryTextColor)
+                            InfoRow("最后活动", if (torrent.activityDate > 0) FormatUtils.formatDate(torrent.activityDate) else "未活动", secondaryTextColor, primaryTextColor)
+                        }
                     }
                 }
             }
         }
 
         // 1. 重命名统一弹窗
-        if (showRenameDialogState && torrent != null) {
+        if (showRenameDialogState && activeTorrent != null) {
             RenameTorrentDialog(
-                targetTorrent = torrent,
+                targetTorrent = activeTorrent,
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
@@ -422,9 +431,9 @@ fun TorrentInfoScreen(
         }
 
         // 2. 设置保存位置统一弹窗
-        if (showSetLocationDialogState && torrent != null) {
+        if (showSetLocationDialogState && activeTorrent != null) {
             SetLocationDialog(
-                torrents = listOf(torrent),
+                torrents = listOf(activeTorrent),
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
@@ -436,9 +445,9 @@ fun TorrentInfoScreen(
         }
 
         // 3. 编辑 Tracker 统一弹窗
-        if (showEditTrackersDialogState && torrent != null) {
+        if (showEditTrackersDialogState && activeTorrent != null) {
             EditTrackersDialog(
-                torrent = torrent,
+                torrent = activeTorrent,
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
@@ -450,9 +459,9 @@ fun TorrentInfoScreen(
         }
 
         // 4. 设置 H&R 考核统一弹窗
-        if (showSetHrDialogState && torrent != null) {
+        if (showSetHrDialogState && activeTorrent != null) {
             SetHrDialog(
-                torrents = listOf(torrent),
+                torrents = listOf(activeTorrent),
                 rpcUrl = rpcUrl,
                 user = user,
                 pass = pass,
@@ -475,6 +484,12 @@ data class FileNodeItem(
     val length: Long = 0,
     val bytesCompleted: Long = 0,
     val children: MutableList<FileNodeItem> = mutableListOf()
+)
+
+data class FlatFileNodeItem(
+    val node: FileNodeItem,
+    val currentPath: String,
+    val isExpanded: Boolean
 )
 
 fun buildFileTree(files: List<TorrentFile>): List<FileNodeItem> {
@@ -502,13 +517,7 @@ fun buildFileTree(files: List<TorrentFile>): List<FileNodeItem> {
     return root.children
 }
 
-private data class FlatFileNodeItem(
-    val node: FileNodeItem,
-    val currentPath: String,
-    val isExpanded: Boolean
-)
-
-private fun flattenTreeNodes(
+fun flattenTreeNodes(
     nodes: List<FileNodeItem>,
     expandedPaths: Set<String>,
     parentPath: String = "",
@@ -543,44 +552,36 @@ fun TorrentFileTreeView(
         flattenTreeNodes(rootNodes, expandedPaths)
     }
 
-    Box(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            for (item in flatNodes) {
-                val node = item.node
-                val currentPath = item.currentPath
-                val isExpanded = item.isExpanded
+    Column(modifier = Modifier.fillMaxWidth()) {
+        for (item in flatNodes) {
+            val node = item.node
+            val currentPath = item.currentPath
+            val isExpanded = item.isExpanded
+            val isHovered = hoveredFileName == node.name
 
+            Box(
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .pointerInput(currentPath) {
-                            detectTapGestures(
-                                onTap = {
-                                    if (node.isFolder) {
-                                        expandedPaths = if (isExpanded) {
-                                            expandedPaths - currentPath
-                                        } else {
-                                            expandedPaths + currentPath
-                                        }
+                        .combinedClickable(
+                            onClick = {
+                                if (node.isFolder) {
+                                    expandedPaths = if (isExpanded) {
+                                        expandedPaths - currentPath
                                     } else {
-                                        if (hoveredFileName != null) hoveredFileName = null
+                                        expandedPaths + currentPath
                                     }
-                                },
-                                onLongPress = {
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                    hoveredFileName = node.name
-                                },
-                                onPress = {
-                                    try {
-                                        tryAwaitRelease()
-                                    } finally {
-                                        if (hoveredFileName == node.name) {
-                                            hoveredFileName = null
-                                        }
-                                    }
+                                } else {
+                                    if (hoveredFileName != null) hoveredFileName = null
                                 }
-                            )
-                        }
+                            },
+                            onLongClick = {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                hoveredFileName = if (hoveredFileName == node.name) null else node.name
+                            }
+                        )
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -633,61 +634,48 @@ fun TorrentFileTreeView(
                         }
                     }
                 }
-            }
-        }
 
-        // 5. 长按触发的多行完整名称悬浮栏 (按住不放时持续显示，手指抬起松开后自动关闭隐去)
-        androidx.compose.animation.AnimatedVisibility(
-            visible = hoveredFileName != null,
-            enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeIn(),
-            exit = scaleOut(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeOut(),
-            modifier = Modifier.align(Alignment.TopCenter)
-        ) {
-            hoveredFileName?.let { fullName ->
-                Surface(
-                    onClick = { hoveredFileName = null },
-                    shape = RoundedCornerShape(14.dp),
-                    color = if (isDark) Color(0xF21F2A38) else Color(0xF2FFFFFF),
-                    border = BorderStroke(1.dp, if (isDark) Color(0x661D88E3) else Color(0x6600B0FF)),
-                    shadowElevation = 12.dp,
+                // 5. 长按时浮现在该文件节点上方 (offset向上偏移44dp，完全避开手指盖挡，无叉号)
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = isHovered,
+                    enter = scaleIn(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeIn(),
+                    exit = scaleOut(animationSpec = spring(dampingRatio = 0.75f, stiffness = 400f)) + fadeOut(),
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .align(Alignment.TopCenter)
+                        .offset(y = (-44).dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 14.dp, vertical = 10.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        onClick = { hoveredFileName = null },
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (isDark) Color(0xF51F2A38) else Color(0xF5FFFFFF),
+                        border = BorderStroke(1.dp, if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)),
+                        shadowElevation = 12.dp,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_file_open),
-                            contentDescription = "全文件名",
-                            tint = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
+                        Row(
                             modifier = Modifier
-                                .size(18.dp)
-                                .padding(end = 6.dp)
-                        )
-                        Text(
-                            text = fullName,
-                            style = TextStyle(
-                                fontSize = 13.5.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = primaryTextColor,
-                                lineHeight = 18.sp
-                            ),
-                            softWrap = true,
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = { hoveredFileName = null },
-                            modifier = Modifier.size(24.dp)
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "关闭全名弹窗",
-                                tint = secondaryTextColor,
-                                modifier = Modifier.size(16.dp)
+                                painter = painterResource(id = R.drawable.ic_file_open),
+                                contentDescription = "全文件名",
+                                tint = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .padding(end = 6.dp)
+                            )
+                            Text(
+                                text = node.name,
+                                style = TextStyle(
+                                    fontSize = 13.5.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = primaryTextColor,
+                                    lineBreak = LineBreak.Paragraph
+                                ),
+                                softWrap = true,
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
