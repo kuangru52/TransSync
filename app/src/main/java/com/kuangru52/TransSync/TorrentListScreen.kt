@@ -288,10 +288,7 @@ fun TorrentListScreen(
                 } else Modifier
             )
     ) {
-        // 1. 全局唯一一张壁纸 (铺满全屏与侧边栏底层)
-        WallpaperBackground()
-
-        // 2. 被backdropLayer录制的底图采样层 (仅包含侧边栏 + 种子列表)
+        // 1. 被 backdropLayer 录制的底图采样层 (包含全局壁纸 + 侧边栏 + 种子列表)
         val mainView = LocalView.current
         Box(
             modifier = Modifier
@@ -312,6 +309,8 @@ fun TorrentListScreen(
                     drawContent()
                 }
         ) {
+            // 全局唯一一张壁纸 (录制进 backdropLayer 中供网速条与弹窗提取极致液态模糊)
+            WallpaperBackground()
             if (isLandscape) {
                 Row(
                     modifier = Modifier.fillMaxSize()
