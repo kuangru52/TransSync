@@ -2,6 +2,7 @@ package com.kuangru52.transsync
 
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -39,11 +40,16 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.animation.core.Animatable
@@ -536,39 +542,16 @@ fun TorrentListScreen(
                         .navigationBarsPadding()
                         .padding(end = 24.dp, bottom = 24.dp)
                 ) {
-                    val fabRotation by animateFloatAsState(
-                        targetValue = if (showAddTorrentDialogState) 135f else 0f,
-                        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
-                        label = "fabRotation"
-                    )
-                    val fabBgColor = if (isDark) Color(0xCC1D88E3) else Color(0xCC00B0FF)
-                    val fabBorderColor = if (isDark) Color(0x80FFFFFF) else Color(0x8000B0FF)
-
-                    Surface(
+                    LiquidGlassFab(
                         onClick = {
                             onAddClick()
                             showAddTorrentDialogState = !showAddTorrentDialogState
                         },
-                        shape = CircleShape,
-                        color = fabBgColor,
-                        border = BorderStroke(1.5.dp, fabBorderColor),
-                        shadowElevation = 12.dp,
-                        modifier = Modifier.size(56.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "添加种子",
-                                tint = Color.White,
-                                modifier = Modifier
-                                    .size(26.dp)
-                                    .graphicsLayer { rotationZ = fabRotation }
-                            )
-                        }
-                    }
+                        showAddDialog = showAddTorrentDialogState,
+                        backdropLayer = backdropLayer,
+                        boxPositionInRoot = boxPositionInRoot,
+                        isDark = isDark
+                    )
                 }
 
                 LiquidBottomBar(
@@ -1101,6 +1084,120 @@ fun TorrentListScreen(
             }
         }
     }
+
+/**
+ * 具有 Kyant0 凸透镜折射与高斯模糊效果的圆形蓝色液态玻璃 FAB 按钮
+ */
+@android.annotation.SuppressLint("NewApi")
+@Composable
+private fun LiquidGlassFab(
+    onClick: () -> Unit,
+    showAddDialog: Boolean,
+    backdropLayer: GraphicsLayer?,
+    boxPositionInRoot: Offset,
+    isDark: Boolean,
+    modifier: Modifier = Modifier
+) {
+    val density = LocalDensity.current
+    val mainView = LocalView.current
+    var fabPositionInRoot by remember { mutableStateOf(Offset.Zero) }
+
+    val fabRotation by animateFloatAsState(
+        targetValue = if (showAddDialog) 135f else 0f,
+        animationSpec = spring(dampingRatio = 0.6f, stiffness = 400f),
+        label = "fabRotation"
+    )
+
+    val cachedShader = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
+            } catch (_: Exception) { null }
+        } else null
+    }
+
+    Surface(
+        onClick = onClick,
+        shape = CircleShape,
+        color = Color.Transparent,
+        border = BorderStroke(1.5.dp, if (isDark) Color(0x80FFFFFF) else Color(0xCCFFFFFF)),
+        shadowElevation = 14.dp,
+        modifier = modifier
+            .size(56.dp)
+            .onGloballyPositioned { coordinates ->
+                val loc = IntArray(2)
+                mainView.getLocationOnScreen(loc)
+                val offsetInWindow = coordinates.positionInWindow()
+                fabPositionInRoot = Offset(
+                    x = loc[0].toFloat() + offsetInWindow.x,
+                    y = loc[1].toFloat() + offsetInWindow.y,
+                )
+            }
+    ) {
+        val localOffsetX = (fabPositionInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
+        val localOffsetY = (fabPositionInRoot.y - boxPositionInRoot.y).coerceAtLeast(0f)
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            // 1. 底层：凸透镜凸面折射与磨砂玻璃 AGSL Shader (完美采样 backdropLayer 底图)
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .clip(CircleShape)
+                    .graphicsLayer {
+                        clip = true
+                        shape = CircleShape
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                try {
+                                    val shader = cachedShader
+                                    shader.setFloatUniform("size", size.width, size.height)
+                                    shader.setFloatUniform("cornerRadius", size.width * 0.5f)
+                                    shader.setFloatUniform("refraction", with(density) { 18.dp.toPx() })
+                                    shader.setFloatUniform("refractionHeight", with(density) { 20.dp.toPx() })
+                                    shader.setFloatUniform("saturationBoost", 1.4f)
+                                    shader.setFloatUniform("contrast", 0.12f)
+                                    shader.setFloatUniform("whitePoint", 0.08f)
+
+                                    val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                    val blurPx = with(density) { 16.dp.toPx() }
+                                    val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                    renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                                } catch (_: Exception) {
+                                    val blurPx = with(density) { 16.dp.toPx() }
+                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                }
+                            } else {
+                                val blurPx = with(density) { 16.dp.toPx() }
+                                renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                            }
+                        }
+                    }
+                    .drawWithContent {
+                        if (backdropLayer != null) {
+                            translate(left = -localOffsetX, top = -localOffsetY) {
+                                drawLayer(backdropLayer)
+                            }
+                        }
+                        // 厚重半透明蓝色水晶滤镜
+                        drawRect(color = if (isDark) Color(0x991060B3) else Color(0x990090FF))
+                    }
+            )
+
+            // 2. 顶层 100% 绝对清晰的白色 "+" 图标
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "添加种子",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(26.dp)
+                    .graphicsLayer { rotationZ = fabRotation }
+            )
+        }
+    }
+}
 
 /**
  * 种子列表区域组件

@@ -3,7 +3,6 @@ package com.kuangru52.transsync
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -42,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.window.Popup
@@ -145,7 +145,7 @@ fun TorrentInfoScreen(
         )
     }
 
-    val activeTorrent = if (torrent == null && androidx.compose.ui.platform.LocalInspectionMode.current) {
+    val activeTorrent = if (torrent == null && LocalInspectionMode.current) {
         samplePreviewTorrent
     } else {
         torrent
@@ -617,7 +617,7 @@ fun TorrentFileTreeView(
                                             hoveredFileName = null
                                         }
 
-                                        if (!isLongPressed && !pointerActive) {
+                                        if (!isLongPressed) {
                                             if (node.isFolder) {
                                                 expandedPaths = if (isExpanded) {
                                                     expandedPaths - currentPath

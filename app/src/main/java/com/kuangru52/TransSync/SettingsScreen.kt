@@ -8,7 +8,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -36,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -138,7 +136,6 @@ fun SettingsScreen(
     val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
     val secondaryTextColor = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
     val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
-    val topBarBgColor = if (isDark) Color(0xFF161F29) else Color(0xFF455A64)
 
     val settingsView = LocalView.current
     var settingsViewLocation by remember { mutableStateOf(Offset.Zero) }

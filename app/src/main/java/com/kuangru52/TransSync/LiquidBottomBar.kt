@@ -1,7 +1,5 @@
 package com.kuangru52.transsync
 
-import com.kuangru52.transsync.R
-
 import android.annotation.SuppressLint
 import android.graphics.Shader
 import android.os.Build
@@ -44,7 +42,6 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.positionInWindow
 import android.view.WindowManager
 import androidx.compose.ui.platform.LocalDensity
