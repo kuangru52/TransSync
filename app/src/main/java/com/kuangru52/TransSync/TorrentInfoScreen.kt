@@ -550,7 +550,7 @@ fun TorrentFileTreeView(
                         overflow = TextOverflow.Ellipsis
                     )
 
-                    // 4. 文件大小与完成百分比
+                    // 4. 文件大小与完成百分比（已 100% 完成的文件省略显示 100.0%，未完成的下载中文件显示具体百分比如 20.2%）
                     if (!node.isFolder) {
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
@@ -558,13 +558,15 @@ fun TorrentFileTreeView(
                             fontSize = 12.sp,
                             color = secondaryTextColor
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
                         val progress = if (node.length > 0) (node.bytesCompleted.toDouble() / node.length * 100) else 0.0
-                        Text(
-                            text = String.format(Locale.US, "%.1f%%", progress),
-                            fontSize = 12.sp,
-                            color = secondaryTextColor
-                        )
+                        if (progress < 99.95) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = String.format(Locale.US, "%.1f%%", progress),
+                                fontSize = 12.sp,
+                                color = secondaryTextColor
+                            )
+                        }
                     }
                 }
 
