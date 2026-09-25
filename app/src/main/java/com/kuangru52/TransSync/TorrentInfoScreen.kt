@@ -514,7 +514,8 @@ fun TorrentFileTreeView(
     var expandedPaths by remember { mutableStateOf(setOf<String>()) }
 
     var hoveredFileName by remember { mutableStateOf<String?>(null) }
-    val nodeLayoutMap = remember { mutableStateMapOf<String, NodeLayoutItem>() }
+    val nodeLayoutList = remember { java.util.ArrayList<NodeLayoutItem>() }
+    var boxWindowY by remember { mutableFloatStateOf(0f) }
     val haptic = LocalHapticFeedback.current
     val isDark = isSystemInDarkTheme()
 
@@ -534,9 +535,16 @@ fun TorrentFileTreeView(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onGloballyPositioned { coordinates ->
-                            val topY = coordinates.positionInParent().y
+                            val nodeWindowY = coordinates.positionInWindow().y
+                            val relTopY = nodeWindowY - boxWindowY
                             val height = coordinates.size.height.toFloat()
-                            nodeLayoutMap[currentPath] = NodeLayoutItem(node.name, topY, topY + height)
+                            val item = NodeLayoutItem(node.name, relTopY, relTopY + height)
+                            val index = nodeLayoutList.indexOfFirst { it.name == node.name && kotlin.math.abs(it.topY - relTopY) < 2f }
+                            if (index >= 0) {
+                                nodeLayoutList[index] = item
+                            } else {
+                                nodeLayoutList.add(item)
+                            }
                         }
                         .clickable(enabled = node.isFolder) {
                             expandedPaths = if (isExpanded) {
@@ -609,20 +617,39 @@ fun TorrentFileTreeView(
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .onGloballyPositioned { coordinates ->
+                boxWindowY = coordinates.positionInWindow().y
+            }
             .pointerInput(Unit) {
                 detectDragGesturesAfterLongPress(
                     onDragStart = { offset ->
-                        val target = nodeLayoutMap.values.find { offset.y >= it.topY && offset.y <= it.bottomY }
-                        if (target != null) {
-                            hoveredFileName = target.name
+                        val y = offset.y
+                        var matchedName: String? = null
+                        for (i in 0 until nodeLayoutList.size) {
+                            val item = nodeLayoutList[i]
+                            if (y >= item.topY && y <= item.bottomY) {
+                                matchedName = item.name
+                                break
+                            }
+                        }
+                        if (matchedName != null) {
+                            hoveredFileName = matchedName
                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                         }
                     },
                     onDrag = { change, _ ->
                         change.consume()
-                        val target = nodeLayoutMap.values.find { change.position.y >= it.topY && change.position.y <= it.bottomY }
-                        if (target != null && target.name != hoveredFileName) {
-                            hoveredFileName = target.name
+                        val currentY = change.position.y
+                        var matchedName: String? = null
+                        for (i in 0 until nodeLayoutList.size) {
+                            val item = nodeLayoutList[i]
+                            if (currentY >= item.topY && currentY <= item.bottomY) {
+                                matchedName = item.name
+                                break
+                            }
+                        }
+                        if (matchedName != null && matchedName != hoveredFileName) {
+                            hoveredFileName = matchedName
                             haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         }
                     },
