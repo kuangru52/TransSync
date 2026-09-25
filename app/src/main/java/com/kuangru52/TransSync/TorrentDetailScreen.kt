@@ -334,14 +334,22 @@ fun TorrentDetailScreen(
 
                             if (isHorizontalGesture) {
                                 val currentPx = pageOffsetAnim.value
-                                val shouldBePeers = when {
-                                    lastDragAmount < -8f -> true  // 向左滑：显示节点页
-                                    lastDragAmount > 8f -> false  // 向右滑：显示信息页
-                                    else -> currentPx > screenWidthPx * 0.5f
+                                val isCurrentlyPeers = currentPx > screenWidthPx * 0.5f
+
+                                val targetOffset = when {
+                                    isCurrentlyPeers && (lastDragAmount > 6f || currentPx < screenWidthPx * 0.5f) -> 0f
+                                    isCurrentlyPeers -> screenWidthPx
+                                    !isCurrentlyPeers && (currentPx > 100.dp.toPx() || lastDragAmount > 12f) -> {
+                                        onBackClick()
+                                        0f
+                                    }
+                                    !isCurrentlyPeers && (lastDragAmount < -6f || currentPx > screenWidthPx * 0.5f) -> screenWidthPx
+                                    else -> 0f
                                 }
+
                                 launch {
                                     pageOffsetAnim.animateTo(
-                                        targetValue = if (shouldBePeers) screenWidthPx else 0f,
+                                        targetValue = targetOffset,
                                         animationSpec = spring(dampingRatio = 0.82f, stiffness = 380f)
                                     )
                                 }
