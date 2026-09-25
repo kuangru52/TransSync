@@ -13,7 +13,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -38,6 +40,9 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -160,6 +165,8 @@ fun TorrentInfoScreen(
                 drawContent()
             },
     ) {
+        // 1. 全局壁纸背景 (录制进 infoBackdropLayer 供详情页中所有弹窗提取极致折射与磨砂玻璃)
+        WallpaperBackground()
         if (activeTorrent == null) {
             Box(
                 modifier = Modifier
@@ -294,7 +301,7 @@ fun TorrentInfoScreen(
                                 }
                             }
 
-                            // Tracker 行 (仅显示有效域名，自动过滤假/本地伪 Tracker)
+                            // Tracker 行 (仅显示有效域名，若有多个 Tracker 自动分多行展示)
                             val displayTrackerDomain = remember(torrent) {
                                 val realTrackers = torrent.trackers?.mapNotNull {
                                     if (it.announce.isNotBlank() && !it.announce.startsWith("**") && !it.announce.contains("[DHT]") && !it.announce.contains("[PeX]") && !it.announce.contains("[LSD]")) it.announce else null
@@ -304,14 +311,16 @@ fun TorrentInfoScreen(
                                     if (it.announce.isNotBlank() && !it.announce.startsWith("**") && !it.announce.contains("[DHT]") && !it.announce.contains("[PeX]") && !it.announce.contains("[LSD]")) it.announce else null
                                 } ?: emptyList()
 
-                                val firstAnnounce = realTrackers.firstOrNull() ?: realStatsTrackers.firstOrNull() ?: ""
-                                if (firstAnnounce.isNotEmpty()) {
-                                    try {
-                                        val uri = java.net.URI(firstAnnounce)
-                                        uri.host ?: firstAnnounce.substringAfter("://").substringBefore("/").substringBefore(":")
-                                    } catch (_: Exception) {
-                                        firstAnnounce.substringAfter("://").substringBefore("/").substringBefore(":")
-                                    }
+                                val allAnnounces = (realTrackers + realStatsTrackers).distinct()
+                                if (allAnnounces.isNotEmpty()) {
+                                    allAnnounces.map { announce ->
+                                        try {
+                                            val uri = java.net.URI(announce)
+                                            uri.host ?: announce.substringAfter("://").substringBefore("/").substringBefore(":")
+                                        } catch (_: Exception) {
+                                            announce.substringAfter("://").substringBefore("/").substringBefore(":")
+                                        }
+                                    }.distinct().joinToString("\n")
                                 } else {
                                     "无"
                                 }
@@ -321,7 +330,7 @@ fun TorrentInfoScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                verticalAlignment = Alignment.Top
                             ) {
                                 Text("Tracker", fontSize = 12.sp, color = secondaryTextColor, modifier = Modifier.width(90.dp))
                                 Text(
@@ -329,8 +338,7 @@ fun TorrentInfoScreen(
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = primaryTextColor,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
+                                    lineHeight = 18.sp,
                                     modifier = Modifier
                                         .weight(1f)
                                         .clickable { copyToClipboard("tracker", displayTrackerDomain) }
@@ -565,23 +573,40 @@ fun TorrentFileTreeView(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .combinedClickable(
-                            onClick = {
-                                if (node.isFolder) {
-                                    expandedPaths = if (isExpanded) {
-                                        expandedPaths - currentPath
-                                    } else {
-                                        expandedPaths + currentPath
+                        .pointerInput(currentPath) {
+                            coroutineScope {
+                                awaitPointerEventScope {
+                                    while (true) {
+                                        awaitFirstDown(requireUnconsumed = false)
+                                        var longPressed = false
+
+                                        val longPressJob = launch {
+                                            delay(viewConfiguration.longPressTimeoutMillis)
+                                            longPressed = true
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            hoveredFileName = node.name
+                                        }
+
+                                        val up = waitForUpOrCancellation()
+                                        longPressJob.cancel()
+
+                                        if (hoveredFileName == node.name) {
+                                            hoveredFileName = null
+                                        }
+
+                                        if (up != null && !longPressed) {
+                                            if (node.isFolder) {
+                                                expandedPaths = if (isExpanded) {
+                                                    expandedPaths - currentPath
+                                                } else {
+                                                    expandedPaths + currentPath
+                                                }
+                                            }
+                                        }
                                     }
-                                } else {
-                                    if (hoveredFileName != null) hoveredFileName = null
                                 }
-                            },
-                            onLongClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                hoveredFileName = if (hoveredFileName == node.name) null else node.name
                             }
-                        )
+                        }
                         .padding(vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {

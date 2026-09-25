@@ -42,7 +42,7 @@
     <string name="time_yesterday">Yesterday&#160;&#160;&#160;%s</string>
     <string name="state_not_finished">Unfinished</string>
     <string name="state_none">None</string>
-    <string name="dialog_edit_tracker_title">Edit Trackers (one per line)</string>
+    <string name="dialog_edit_tracker_title">Edit Trackers</string>
     <string name="dialog_save">Save</string>
     <string name="dialog_cancel">Cancel</string>
     <string name="msg_fetch_tracker_failed">Failed to fetch trackers</string>
