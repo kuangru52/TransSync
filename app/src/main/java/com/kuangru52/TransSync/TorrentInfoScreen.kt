@@ -170,7 +170,8 @@ fun TorrentInfoScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                .padding(start = 12.dp, end = 12.dp, top = 110.dp, bottom = 12.dp),
+                    .padding(horizontal = 12.dp),
+                contentPadding = PaddingValues(top = 70.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // 1. 卡片 1: 种子名称与 1:1 复刻原版的递归树状文件结构
