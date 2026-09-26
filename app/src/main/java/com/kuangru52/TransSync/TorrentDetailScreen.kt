@@ -464,6 +464,8 @@ fun TorrentDetailScreen(
         DetailFloatingTopBar(
             currentPage = currentPage,
             backSwipeRatio = backSwipeRatio,
+            backdropLayer = backdropLayer,
+            boxPositionInRoot = detailViewLocation,
             onTabSelected = { index ->
                 scope.launch {
                     pageOffsetAnim.animateTo(
@@ -485,15 +487,15 @@ fun TorrentDetailScreen(
 fun DetailFloatingTopBar(
     currentPage: Int,
     backSwipeRatio: Float = 0f,
+    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onTabSelected: (Int) -> Unit,
     onBackClick: () -> Unit,
     isDark: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier,
 ) {
-    val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
-    val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
 
     val arrowRotation = backSwipeRatio * 180f
 
@@ -503,21 +505,16 @@ fun DetailFloatingTopBar(
             .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 4.dp),
         contentAlignment = Alignment.Center,
     ) {
-        // 1. 左侧 44dp 圆形悬浮返回按钮 (移除默认八边形阴影斑)
-        Surface(
+        // 1. 左侧 44dp 圆形悬浮返回按钮 (采用统一 3D 液态玻璃效果)
+        LiquidGlassTopSurface(
             shape = CircleShape,
-            color = barBgColor,
             border = BorderStroke(1.dp, barBorderColor),
-            shadowElevation = 0.dp,
+            backdropLayer = backdropLayer,
+            boxPositionInRoot = boxPositionInRoot,
+            onClick = onBackClick,
             modifier = Modifier
                 .size(44.dp)
-                .align(Alignment.CenterStart)
-                .clip(CircleShape)
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onBackClick
-                ),
+                .align(Alignment.CenterStart),
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -536,15 +533,15 @@ fun DetailFloatingTopBar(
             }
         }
 
-        // 2. 中间 180dp 胶囊形悬浮 Tab 切换组 [信息 | 节点] (居中对齐，采用通透磨砂玻璃高光选中态)
+        // 2. 中间 180dp 胶囊形悬浮 Tab 切换组 [信息 | 节点] (采用统一 3D 液态玻璃效果)
         val activeBgColor = if (isDark) Color(0x44FFFFFF) else Color(0x55FFFFFF)
         val activeBorderColor = if (isDark) Color(0xAAFFFFFF) else Color(0xCCFFFFFF)
 
-        Surface(
+        LiquidGlassTopSurface(
             shape = RoundedCornerShape(100.dp),
-            color = barBgColor,
             border = BorderStroke(1.dp, barBorderColor),
-            shadowElevation = 8.dp,
+            backdropLayer = backdropLayer,
+            boxPositionInRoot = boxPositionInRoot,
             modifier = Modifier
                 .height(44.dp)
                 .width(180.dp)

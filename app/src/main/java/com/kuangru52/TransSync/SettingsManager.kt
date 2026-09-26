@@ -266,6 +266,42 @@ object SettingsManager {
         setSpeedbarWhitePoint(context, params.whitePoint)
     }
 
+    private const val KEY_TOPBAR_REFRACTION = "topbar_refraction"
+    private const val KEY_TOPBAR_HEIGHT = "topbar_height"
+    private const val KEY_TOPBAR_BLUR = "topbar_blur"
+    private const val KEY_TOPBAR_SATURATION = "topbar_saturation"
+    private const val KEY_TOPBAR_CONTRAST = "topbar_contrast"
+    private const val KEY_TOPBAR_WHITE_POINT = "topbar_white_point"
+
+    fun getTopBarGlassParams(context: Context, isDark: Boolean): GlassParams {
+        val defRefraction = if (isDark) -25f else 25f
+        val defHeight = 12f
+        val defBlur = 20f
+        val defSat = 1.5f
+        val defContrast = 0.15f
+        val defWhite = 0.10f
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        return GlassParams(
+            refraction = prefs.getFloat(KEY_TOPBAR_REFRACTION, defRefraction),
+            refractionHeight = prefs.getFloat(KEY_TOPBAR_HEIGHT, defHeight),
+            blurRadius = prefs.getFloat(KEY_TOPBAR_BLUR, defBlur),
+            saturationBoost = prefs.getFloat(KEY_TOPBAR_SATURATION, defSat),
+            contrast = prefs.getFloat(KEY_TOPBAR_CONTRAST, defContrast),
+            whitePoint = prefs.getFloat(KEY_TOPBAR_WHITE_POINT, defWhite),
+        )
+    }
+
+    fun saveTopBarGlassParams(context: Context, params: GlassParams) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
+            putFloat(KEY_TOPBAR_REFRACTION, params.refraction)
+            putFloat(KEY_TOPBAR_HEIGHT, params.refractionHeight)
+            putFloat(KEY_TOPBAR_BLUR, params.blurRadius)
+            putFloat(KEY_TOPBAR_SATURATION, params.saturationBoost)
+            putFloat(KEY_TOPBAR_CONTRAST, params.contrast)
+            putFloat(KEY_TOPBAR_WHITE_POINT, params.whitePoint)
+        }
+    }
+
     fun getDialogGlassParams(context: Context, isDark: Boolean): GlassParams {
         return GlassParams(
             refraction = getDialogRefraction(context, isDark),

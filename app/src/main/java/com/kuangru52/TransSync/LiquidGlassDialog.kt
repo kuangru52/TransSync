@@ -2,8 +2,11 @@ package com.kuangru52.transsync
 
 import android.graphics.Shader
 import android.os.Build
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -401,6 +404,128 @@ fun LiquidGlassDialogPreview() {
             onConfirm = {},
         ) {
             Text("预览弹窗内容", fontSize = 14.sp)
+        }
+    }
+}
+
+/**
+ * 统一的顶部控制条液态玻璃表面组件（乌龟图标、返回箭头、胶囊悬浮栏等）：
+ * - 采用 Kyant0 AGSL 凸透镜折射 Shader 与实时模糊采样，实现全应用统一的 3D 液态玻璃透射视效！
+ */
+@android.annotation.SuppressLint("NewApi")
+@Composable
+fun LiquidGlassTopSurface(
+    shape: androidx.compose.ui.graphics.Shape,
+    border: BorderStroke?,
+    modifier: Modifier = Modifier,
+    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
+    onClick: (() -> Unit)? = null,
+    content: @Composable BoxScope.() -> Unit
+) {
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val isDark = isSystemInDarkTheme()
+
+    val initialParams = remember(isDark) { SettingsManager.getTopBarGlassParams(context, isDark) }
+    var liveRefraction by remember(isDark) { mutableFloatStateOf(initialParams.refraction) }
+    var liveRefractionHeight by remember(isDark) { mutableFloatStateOf(initialParams.refractionHeight) }
+    var liveBlurRadius by remember(isDark) { mutableFloatStateOf(initialParams.blurRadius) }
+    var liveSaturation by remember(isDark) { mutableFloatStateOf(initialParams.saturationBoost) }
+    var liveContrast by remember(isDark) { mutableFloatStateOf(initialParams.contrast) }
+    var liveWhitePoint by remember(isDark) { mutableFloatStateOf(initialParams.whitePoint) }
+
+    val cachedShader = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
+            } catch (_: Exception) { null }
+        } else null
+    }
+
+    var surfaceAbsolutePosition by remember { mutableStateOf(Offset.Zero) }
+    val surfaceView = LocalView.current
+
+    Surface(
+        shape = shape,
+        color = Color.Transparent,
+        border = border,
+        shadowElevation = 0.dp,
+        modifier = modifier
+            .onGloballyPositioned { coordinates ->
+                val loc = IntArray(2)
+                surfaceView.getLocationOnScreen(loc)
+                val offsetInWindow = coordinates.positionInWindow()
+                surfaceAbsolutePosition = Offset(
+                    x = loc[0].toFloat() + offsetInWindow.x,
+                    y = loc[1].toFloat() + offsetInWindow.y,
+                )
+            }
+            .clip(shape)
+            .then(
+                if (onClick != null) {
+                    Modifier.clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = onClick
+                    )
+                } else Modifier
+            )
+    ) {
+        val localOffsetX = (surfaceAbsolutePosition.x - boxPositionInRoot.x).coerceAtLeast(0f)
+        val localOffsetY = (surfaceAbsolutePosition.y - boxPositionInRoot.y).coerceAtLeast(0f)
+
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .graphicsLayer {
+                        clip = true
+                        this.shape = shape
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                try {
+                                    val shader = cachedShader
+                                    shader.setFloatUniform("size", size.width, size.height)
+                                    shader.setFloatUniform("cornerRadius", with(density) { 20.dp.toPx() })
+                                    shader.setFloatUniform("refraction", with(density) { liveRefraction.dp.toPx() })
+                                    shader.setFloatUniform("refractionHeight", with(density) { liveRefractionHeight.dp.toPx() })
+                                    shader.setFloatUniform("saturationBoost", liveSaturation)
+                                    shader.setFloatUniform("contrast", liveContrast)
+                                    shader.setFloatUniform("whitePoint", liveWhitePoint)
+
+                                    val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                    val blurPx = with(density) { liveBlurRadius.dp.toPx() }
+                                    val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                    renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                                } catch (_: Exception) {
+                                    val blurPx = with(density) { liveBlurRadius.dp.toPx() }
+                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                }
+                            } else {
+                                val blurPx = with(density) { liveBlurRadius.dp.toPx() }
+                                renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                            }
+                        }
+                    }
+                    .drawWithContent {
+                        if (backdropLayer != null) {
+                            translate(left = -localOffsetX, top = -localOffsetY) {
+                                drawLayer(backdropLayer)
+                            }
+                        }
+                        drawRect(color = if (isDark) Color(0x331F2A38) else Color(0x33FFFFFF))
+                    }
+            )
+
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+                content = content
+            )
         }
     }
 }

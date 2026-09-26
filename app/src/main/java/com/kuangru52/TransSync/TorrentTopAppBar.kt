@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -18,7 +19,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -38,6 +46,8 @@ fun FloatingTopControls(
     altSpeedEnabled: Boolean,
     selectedCount: Int,
     drawerSlideRatio: Float = 0f,
+    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onMenuClick: () -> Unit,
     onTurtleClick: () -> Unit,
     onCloseSelection: () -> Unit,
@@ -59,6 +69,11 @@ fun FloatingTopControls(
 
     val menuRotation = drawerSlideRatio * 180f
 
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+    val isDeveloperMode = remember { SettingsManager.isDeveloperMode(context) }
+    var showTuningInspector by remember { mutableStateOf(false) }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -68,19 +83,13 @@ fun FloatingTopControls(
     ) {
         if (selectedCount == 0) {
             // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊
-            Surface(
+            LiquidGlassTopSurface(
                 shape = RoundedCornerShape(100.dp),
-                color = barBgColor,
                 border = BorderStroke(1.dp, barBorderColor),
-                shadowElevation = 0.dp,
-                modifier = Modifier
-                    .height(44.dp)
-                    .clip(RoundedCornerShape(100.dp))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onMenuClick
-                    ),
+                backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
+                onClick = onMenuClick,
+                modifier = Modifier.height(44.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -118,20 +127,24 @@ fun FloatingTopControls(
                 }
             }
 
-            // 右侧 [乌龟] 独立悬浮按键 (移除默认八边形阴影斑)
-            Surface(
+            // 右侧 [乌龟] 独立悬浮按键 (支持开发者模式下拉调参)
+            LiquidGlassTopSurface(
                 shape = CircleShape,
-                color = barBgColor,
                 border = BorderStroke(1.dp, barBorderColor),
-                shadowElevation = 0.dp,
+                backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
+                onClick = onTurtleClick,
                 modifier = Modifier
                     .size(44.dp)
-                    .clip(CircleShape)
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onTurtleClick
-                    ),
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { change, dragAmount ->
+                            if (isDeveloperMode && dragAmount > 10f) {
+                                change.consume()
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showTuningInspector = true
+                            }
+                        }
+                    }
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
