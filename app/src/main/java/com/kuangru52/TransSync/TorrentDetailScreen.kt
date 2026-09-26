@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalGraphicsContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.font.FontWeight
@@ -79,13 +80,22 @@ fun TorrentDetailScreen(
     var peersState by remember { mutableStateOf<List<Peer>>(emptyList()) }
     var isPeersRefreshing by remember { mutableStateOf(value = false) }
 
+    val isInspection = LocalInspectionMode.current
     val graphicsContext = LocalGraphicsContext.current
-    val backdropLayer = remember(torrentId, pagerState.currentPage) {
-        graphicsContext.createGraphicsLayer()
+    val backdropLayer = remember(torrentId, pagerState.currentPage, isInspection) {
+        if (!isInspection) {
+            try {
+                graphicsContext.createGraphicsLayer()
+            } catch (_: Exception) { null }
+        } else null
     }
-    DisposableEffect(torrentId, pagerState.currentPage) {
+    DisposableEffect(torrentId, pagerState.currentPage, isInspection) {
         onDispose {
-            graphicsContext.releaseGraphicsLayer(backdropLayer)
+            if (backdropLayer != null) {
+                try {
+                    graphicsContext.releaseGraphicsLayer(backdropLayer)
+                } catch (_: Exception) {}
+            }
         }
     }
 
@@ -403,8 +413,12 @@ fun TorrentDetailScreen(
                 .drawWithContent {
                     val dummy = recordTick.toString()
                     if (dummy.isEmpty()) {}
-                    backdropLayer.record {
-                        this@drawWithContent.drawContent()
+                    if (backdropLayer != null) {
+                        try {
+                            backdropLayer.record {
+                                this@drawWithContent.drawContent()
+                            }
+                        } catch (_: Exception) {}
                     }
                     drawContent()
                 }

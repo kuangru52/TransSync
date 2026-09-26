@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -131,13 +132,23 @@ object WallpaperManager {
 fun WallpaperBackground(
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
+    val isInspection = LocalInspectionMode.current
     val isDark = isSystemInDarkTheme()
+    val baseColor = if (isDark) Color(0xFF161F29) else Color(0xFFF0F2F5)
+
+    if (isInspection) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(baseColor)
+        )
+        return
+    }
+
+    val context = LocalContext.current
     val mode = SettingsManager.getWallpaperMode(context)
     val localUris = SettingsManager.getLocalWallpaperUris(context)
     val blurRadius = SettingsManager.getWallpaperBlur(context)
-
-    val baseColor = if (isDark) Color(0xFF161F29) else Color(0xFFF0F2F5)
 
     Box(
         modifier = modifier

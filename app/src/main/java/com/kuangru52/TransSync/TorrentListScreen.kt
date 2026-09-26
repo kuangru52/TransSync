@@ -61,8 +61,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalGraphicsContext
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalInspectionMode
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -162,13 +163,22 @@ fun TorrentListScreen(
         java.util.UUID.randomUUID().toString()
     }
 
+    val isInspection = LocalInspectionMode.current
     val graphicsContext = LocalGraphicsContext.current
-    val backdropLayer = remember(dialogSessionKey) {
-        graphicsContext.createGraphicsLayer()
+    val backdropLayer = remember(dialogSessionKey, isInspection) {
+        if (!isInspection) {
+            try {
+                graphicsContext.createGraphicsLayer()
+            } catch (_: Exception) { null }
+        } else null
     }
-    DisposableEffect(dialogSessionKey) {
+    DisposableEffect(dialogSessionKey, isInspection) {
         onDispose {
-            graphicsContext.releaseGraphicsLayer(backdropLayer)
+            if (backdropLayer != null) {
+                try {
+                    graphicsContext.releaseGraphicsLayer(backdropLayer)
+                } catch (_: Exception) {}
+            }
         }
     }
     var boxPositionInRoot by remember { mutableStateOf(Offset.Zero) }
@@ -335,8 +345,12 @@ fun TorrentListScreen(
                     )
                 }
                 .drawWithContent {
-                    backdropLayer.record {
-                        this@drawWithContent.drawContent()
+                    if (backdropLayer != null) {
+                        try {
+                            backdropLayer.record {
+                                this@drawWithContent.drawContent()
+                            }
+                        } catch (_: Exception) {}
                     }
                     drawContent()
                 }
