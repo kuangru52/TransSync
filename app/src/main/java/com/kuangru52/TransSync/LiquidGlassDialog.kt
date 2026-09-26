@@ -519,7 +519,7 @@ fun LiquidGlassTopSurface(
 
             // 2. 最上层：100% 矢量原生清晰的前景文本与图标 (不在 renderEffect 内部)
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxHeight().wrapContentWidth(),
                 contentAlignment = Alignment.Center,
                 content = content
             )
