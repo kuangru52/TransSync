@@ -504,6 +504,8 @@ fun TorrentListScreen(
                     altSpeedEnabled = altSpeedEnabled,
                     selectedCount = selectedIds.size,
                     drawerSlideRatio = drawerSlideRatio,
+                    backdropLayer = backdropLayer,
+                    boxPositionInRoot = boxPositionInRoot,
                     onMenuClick = {
                         if (!isLandscape) {
                             isDrawerOpen = !isDrawerOpen
