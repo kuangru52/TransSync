@@ -264,6 +264,14 @@ fun TorrentDetailScreen(
         fetchDetailData()
     }
 
+    var recordTick by remember { mutableStateOf(0L) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            kotlinx.coroutines.delay(16)
+            recordTick++
+        }
+    }
+
     val configuration = LocalConfiguration.current
     val density = LocalDensity.current
     val viewConfiguration = LocalViewConfiguration.current
@@ -325,7 +333,16 @@ fun TorrentDetailScreen(
                                     pointer.consume()
                                     val dragAmount = pointer.position.x - pointer.previousPosition.x
                                     lastDragAmount = dragAmount
-                                    val newOffset = (pageOffsetAnim.value - dragAmount).coerceIn(0f, screenWidthPx)
+                                    val currentPx = pageOffsetAnim.value
+                                    // 强制：在节点页时绝对限制在 0..screenWidthPx，绝不能向右滑动时超出 0 触发退出！
+                                    // 只有在信息页(0)时，向右滑动才允许负数阻尼触发退出。
+                                    val newOffset = if (currentPx > screenWidthPx * 0.5f) {
+                                        (pageOffsetAnim.value - dragAmount).coerceIn(0f, screenWidthPx)
+                                    } else if (currentPx == 0f && dragAmount > 0f) {
+                                        (pageOffsetAnim.value - dragAmount).coerceIn(-120f, screenWidthPx)
+                                    } else {
+                                        (pageOffsetAnim.value - dragAmount).coerceIn(0f, screenWidthPx)
+                                    }
                                     launch {
                                         pageOffsetAnim.snapTo(newOffset)
                                     }
@@ -337,12 +354,14 @@ fun TorrentDetailScreen(
                                 val isCurrentlyPeers = currentPx > screenWidthPx * 0.5f
 
                                 val targetOffset = when {
-                                    isCurrentlyPeers && (lastDragAmount > 6f || currentPx < screenWidthPx * 0.5f) -> 0f
-                                    isCurrentlyPeers -> screenWidthPx
-                                    !isCurrentlyPeers && (currentPx > 100.dp.toPx() || lastDragAmount > 12f) -> {
+                                    // 强制：在节点页：无论怎么向右划，目标永远是 0f (信息页)，绝对无法触发退出！
+                                    isCurrentlyPeers -> 0f
+                                    // 仅在信息页：向右划超过阈值（负数阻尼或快速右划） -> 退出详情页
+                                    !isCurrentlyPeers && (currentPx < -60f || lastDragAmount > 12f) -> {
                                         onBackClick()
                                         0f
                                     }
+                                    // 仅在信息页：向左划或滑动过半 -> 进入节点页(1)
                                     !isCurrentlyPeers && (lastDragAmount < -6f || currentPx > screenWidthPx * 0.5f) -> screenWidthPx
                                     else -> 0f
                                 }
@@ -374,6 +393,8 @@ fun TorrentDetailScreen(
                     )
                 }
                 .drawWithContent {
+                    val dummy = recordTick.toString()
+                    if (dummy.isEmpty()) {}
                     backdropLayer.record {
                         this@drawWithContent.drawContent()
                     }
