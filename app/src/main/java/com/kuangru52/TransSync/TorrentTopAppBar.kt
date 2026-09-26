@@ -8,7 +8,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -21,12 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -36,8 +29,8 @@ import androidx.compose.ui.unit.sp
 
 /**
  * 悬浮控制条组件：
- * - 采用 3 层严密物理图层架构：最上层文字与图标 100% 绝对清晰高对比度，中间层玻璃底框单独渲染凸透镜折射 Shader 与模糊！
- * - 开发者模式下，通过【下拉乌龟图标】手势弹出调参 Inspector 调优面板！
+ * - 保持用户喜爱的经典沉浸式毛玻璃胶囊外观（左侧菜单标题胶囊 + 右侧独立乌龟按键，多选模式下对应选择计数与操作卡片）
+ * - 完美叠加 Kyant0 AGSL 3D 凸透镜折射液态玻璃效果
  */
 @Composable
 fun FloatingTopControls(
@@ -63,16 +56,10 @@ fun FloatingTopControls(
     modifier: Modifier = Modifier,
     isDark: Boolean = isSystemInDarkTheme(),
 ) {
-    val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
     val menuRotation = drawerSlideRatio * 180f
-
-    val context = LocalContext.current
-    val haptic = LocalHapticFeedback.current
-    val isDeveloperMode = remember { SettingsManager.isDeveloperMode(context) }
-    var showTuningInspector by remember { mutableStateOf(false) }
 
     Row(
         modifier = modifier
@@ -82,7 +69,7 @@ fun FloatingTopControls(
         verticalAlignment = Alignment.Top,
     ) {
         if (selectedCount == 0) {
-            // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊
+            // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊 (100% 原版宽度与大小，叠加 Kyant0 液态玻璃)
             LiquidGlassTopSurface(
                 shape = RoundedCornerShape(100.dp),
                 border = BorderStroke(1.dp, barBorderColor),
@@ -91,7 +78,7 @@ fun FloatingTopControls(
                 onClick = onMenuClick,
                 modifier = Modifier
                     .wrapContentWidth()
-                    .height(44.dp)
+                    .height(44.dp),
             ) {
                 Row(
                     modifier = Modifier
@@ -129,24 +116,14 @@ fun FloatingTopControls(
                 }
             }
 
-            // 右侧 [乌龟] 独立悬浮按键 (支持开发者模式下拉调参)
+            // 右侧 [乌龟] 独立悬浮按键 (100% 原版大小与位置，叠加 Kyant0 液态玻璃)
             LiquidGlassTopSurface(
                 shape = CircleShape,
                 border = BorderStroke(1.dp, barBorderColor),
                 backdropLayer = backdropLayer,
                 boxPositionInRoot = boxPositionInRoot,
                 onClick = onTurtleClick,
-                modifier = Modifier
-                    .size(44.dp)
-                    .pointerInput(Unit) {
-                        detectVerticalDragGestures { change, dragAmount ->
-                            if (isDeveloperMode && dragAmount > 10f) {
-                                change.consume()
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                showTuningInspector = true
-                            }
-                        }
-                    }
+                modifier = Modifier.size(44.dp),
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -161,7 +138,7 @@ fun FloatingTopControls(
                 }
             }
         } else {
-            // 多选模式：左侧 [已选择 N 项] 悬浮胶囊
+            // 多选模式：左侧 [已选择 N 项] 悬浮胶囊 (100% 原版大小，叠加 Kyant0 液态玻璃)
             LiquidGlassTopSurface(
                 shape = RoundedCornerShape(100.dp),
                 border = BorderStroke(1.dp, barBorderColor),
@@ -170,7 +147,7 @@ fun FloatingTopControls(
                 onClick = onCloseSelection,
                 modifier = Modifier
                     .wrapContentWidth()
-                    .height(44.dp)
+                    .height(44.dp),
             ) {
                 Box(
                     modifier = Modifier
@@ -189,7 +166,7 @@ fun FloatingTopControls(
                 }
             }
 
-            // 右侧融合扩展悬浮胶囊卡片
+            // 右侧融合扩展悬浮胶囊卡片 (叠加 Kyant0 液态玻璃)
             MultiSelectRightCapsule(
                 selectedCount = selectedCount,
                 backdropLayer = backdropLayer,
@@ -264,17 +241,7 @@ fun MultiSelectRightCapsule(
                 horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onSelectAll
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                IconButton(onClick = onSelectAll, modifier = Modifier.size(40.dp)) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_select_all),
                         contentDescription = "全选",
@@ -283,17 +250,7 @@ fun MultiSelectRightCapsule(
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = onDeleteSelected
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                IconButton(onClick = onDeleteSelected, modifier = Modifier.size(40.dp)) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_delete),
                         contentDescription = "删除",
@@ -302,17 +259,7 @@ fun MultiSelectRightCapsule(
                     )
                 }
 
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(CircleShape)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { isExpanded = !isExpanded }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
+                IconButton(onClick = { isExpanded = !isExpanded }, modifier = Modifier.size(40.dp)) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_more_vert),
                         contentDescription = "更多操作",
@@ -386,133 +333,14 @@ fun getFilterTitleText(filter: String): String {
         "Active" -> stringResource(R.string.nav_active)
         "Inactive" -> stringResource(R.string.nav_inactive)
         "Error" -> stringResource(R.string.nav_error)
-        else -> if (filter.startsWith("tracker:")) filter.substringAfter("tracker:") else stringResource(R.string.nav_all)
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(name = "常规模式 - 浅色", showBackground = true)
-@Composable
-fun FloatingTopControls_Normal_Light_Preview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFF0F2F5))
-                .padding(12.dp),
-        ) {
-            FloatingTopControls(
-                titleText = "全部任务",
-                sizeText = "71.1 TB",
-                altSpeedEnabled = false,
-                selectedCount = 0,
-                onMenuClick = {},
-                onTurtleClick = {},
-                onCloseSelection = {},
-                onSelectAll = {},
-                onDeleteSelected = {},
-                onStartSelected = {},
-                onStopSelected = {},
-                onRenameSelected = {},
-                onSetLocationSelected = {},
-                onSetHrSelected = {},
-                onVerifySelected = {},
-                onReannounceSelected = {},
-                isDark = false,
-            )
-        }
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(name = "常规模式 - 深色 (龟速高亮)", showBackground = true)
-@Composable
-fun FloatingTopControls_Normal_Dark_Preview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF161F29))
-                .padding(12.dp),
-        ) {
-            FloatingTopControls(
-                titleText = "正在下载",
-                sizeText = "12.4 GB",
-                altSpeedEnabled = true,
-                selectedCount = 0,
-                onMenuClick = {},
-                onTurtleClick = {},
-                onCloseSelection = {},
-                onSelectAll = {},
-                onDeleteSelected = {},
-                onStartSelected = {},
-                onStopSelected = {},
-                onRenameSelected = {},
-                onSetLocationSelected = {},
-                onSetHrSelected = {},
-                onVerifySelected = {},
-                onReannounceSelected = {},
-                isDark = true,
-            )
-        }
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(name = "多选模式 - 浅色", showBackground = true)
-@Composable
-fun FloatingTopControls_MultiSelect_Light_Preview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFF0F2F5))
-                .padding(12.dp),
-        ) {
-            FloatingTopControls(
-                titleText = "全部任务",
-                sizeText = "71.1 TB",
-                altSpeedEnabled = false,
-                selectedCount = 3,
-                onMenuClick = {},
-                onTurtleClick = {},
-                onCloseSelection = {},
-                onSelectAll = {},
-                onDeleteSelected = {},
-                onStartSelected = {},
-                onStopSelected = {},
-                onRenameSelected = {},
-                onSetLocationSelected = {},
-                onSetHrSelected = {},
-                onVerifySelected = {},
-                onReannounceSelected = {},
-                isDark = false,
-            )
-        }
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(name = "多选模式 - 展开三个点下拉菜单", showBackground = true)
-@Composable
-fun MultiSelectRightCapsule_Expanded_Preview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF161F29))
-                .padding(12.dp),
-            contentAlignment = Alignment.TopEnd,
-        ) {
-            MultiSelectRightCapsule(
-                selectedCount = 1,
-                onSelectAll = {},
-                onDeleteSelected = {},
-                onStartSelected = {},
-                onStopSelected = {},
-                onRenameSelected = {},
-                onSetLocationSelected = {},
-                onSetHrSelected = {},
-                onVerifySelected = {},
-                onReannounceSelected = {},
-                isDark = true,
-            )
+        else -> {
+            if (filter.startsWith("tracker:")) {
+                filter.substringAfter("tracker:")
+            } else if (filter.startsWith("label:")) {
+                filter.substringAfter("label:")
+            } else {
+                stringResource(R.string.nav_all)
+            }
         }
     }
 }
