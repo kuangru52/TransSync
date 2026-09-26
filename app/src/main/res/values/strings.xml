@@ -48,7 +48,7 @@
     <string name="navigation_drawer_open">打开导航抽屉</string>
     <string name="navigation_drawer_close">关闭导航抽屉</string>
     <string name="cd_open_file">打开种子文件</string>
-    <string name="selected_count">已选择 %d 个</string>
+    <string name="selected_count">已选择 %d ↑</string>
     <string name="free_space_label">可用空间: %s</string>
     <string name="delete_confirm_msg">确定要删除选中的 %d 个种子吗？</string>
     <string name="count_bracket">[%s]</string>

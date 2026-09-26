@@ -89,7 +89,7 @@ fun FloatingTopControls(
         verticalAlignment = Alignment.Top,
     ) {
         if (selectedCount == 0) {
-            // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊 (100% 保持原版尺寸与布局)
+            // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊 (100% 保持原版包裹宽度与布局，叠加 Kyant0 液态玻璃)
             Surface(
                 onClick = onMenuClick,
                 shape = RoundedCornerShape(100.dp),
@@ -102,7 +102,8 @@ fun FloatingTopControls(
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxHeight()
+                        .wrapContentWidth()
                         .clip(RoundedCornerShape(100.dp))
                         .graphicsLayer {
                             clip = true
@@ -180,7 +181,7 @@ fun FloatingTopControls(
                 }
             }
 
-            // 右侧 [乌龟] 独立悬浮按键 (100% 保持原版大小与位置)
+            // 右侧 [乌龟] 独立悬浮按键 (100% 保持原版 44dp 圆形尺寸与位置，叠加 Kyant0 液态玻璃)
             Surface(
                 onClick = onTurtleClick,
                 shape = CircleShape,
@@ -241,7 +242,7 @@ fun FloatingTopControls(
                 }
             }
         } else {
-            // 多选模式：左侧 [已选择 N 项] 悬浮胶囊
+            // 多选模式：左侧 [已选择 N 项] 悬浮胶囊 (100% 保持原版尺寸与布局，叠加 Kyant0 液态玻璃)
             Surface(
                 onClick = onCloseSelection,
                 shape = RoundedCornerShape(100.dp),
@@ -254,7 +255,8 @@ fun FloatingTopControls(
             ) {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
+                        .fillMaxHeight()
+                        .wrapContentWidth()
                         .clip(RoundedCornerShape(100.dp))
                         .graphicsLayer {
                             clip = true
@@ -313,7 +315,7 @@ fun FloatingTopControls(
                 }
             }
 
-            // 右侧融合扩展悬浮胶囊卡片
+            // 右侧融合扩展悬浮胶囊卡片 (100% 保持原版尺寸与布局，叠加 Kyant0 液态玻璃)
             MultiSelectRightCapsule(
                 selectedCount = selectedCount,
                 backdropLayer = backdropLayer,
