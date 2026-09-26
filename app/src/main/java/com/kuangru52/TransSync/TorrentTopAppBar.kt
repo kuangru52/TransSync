@@ -24,9 +24,12 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -40,7 +43,7 @@ import androidx.compose.ui.unit.sp
 /**
  * 悬浮控制条组件：
  * - 采用 3 层物理图层隔离架构：最下层渲染 3D AGSL 凸透镜折射与模糊，最上层前景文本与图标 100% 绝对清晰！
- * - 保持用户喜爱的经典原版布局与精确尺寸（左侧菜单标题胶囊 + 右侧独立乌龟按键，多选模式对应选择计数与操作卡片）
+ * - 核心修正：使用 translate(-positionInRoot) 锚定屏幕绝对坐标，确保三点下拉等浮窗精准透出当前所挡住的真正列表内容，而不是最顶部的列表初始项；参数为 0 时 100% 完全透明无深色遮罩。
  * - 开发者模式下，通过【下拉乌龟图标】手势调出顶栏液态玻璃调参 Inspector 调优面板！
  */
 @Composable
@@ -67,7 +70,6 @@ fun FloatingTopControls(
     modifier: Modifier = Modifier,
     isDark: Boolean = isSystemInDarkTheme(),
 ) {
-    val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
@@ -90,6 +92,9 @@ fun FloatingTopControls(
 
     var liveTopGlassParams by remember(isDark) { mutableStateOf(SettingsManager.getTopBarGlassParams(context, isDark)) }
 
+    var leftCapsulePosInRoot by remember { mutableStateOf(Offset.Zero) }
+    var turtlePosInRoot by remember { mutableStateOf(Offset.Zero) }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -107,7 +112,10 @@ fun FloatingTopControls(
                 shadowElevation = 8.dp,
                 modifier = Modifier
                     .wrapContentWidth()
-                    .height(44.dp),
+                    .height(44.dp)
+                    .onGloballyPositioned { coordinates ->
+                        leftCapsulePosInRoot = coordinates.positionInRoot()
+                    },
             ) {
                 Box(
                     modifier = Modifier
@@ -152,10 +160,14 @@ fun FloatingTopControls(
                             .drawBehind {
                                 if (backdropLayer != null) {
                                     try {
-                                        drawLayer(backdropLayer)
+                                        translate(left = -leftCapsulePosInRoot.x, top = -leftCapsulePosInRoot.y) {
+                                            drawLayer(backdropLayer)
+                                        }
                                     } catch (_: Exception) {}
                                 }
-                                drawRect(color = barBgColor)
+                                if (liveTopGlassParams.whitePoint > 0f) {
+                                    drawRect(color = Color.White.copy(alpha = (liveTopGlassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
+                                }
                             }
                     )
 
@@ -206,6 +218,9 @@ fun FloatingTopControls(
                 shadowElevation = 8.dp,
                 modifier = Modifier
                     .size(44.dp)
+                    .onGloballyPositioned { coordinates ->
+                        turtlePosInRoot = coordinates.positionInRoot()
+                    }
                     .pointerInput(Unit) {
                         detectVerticalDragGestures { change, dragAmount ->
                             if (isDeveloperMode && dragAmount > 10f) {
@@ -257,10 +272,14 @@ fun FloatingTopControls(
                             .drawBehind {
                                 if (backdropLayer != null) {
                                     try {
-                                        drawLayer(backdropLayer)
+                                        translate(left = -turtlePosInRoot.x, top = -turtlePosInRoot.y) {
+                                            drawLayer(backdropLayer)
+                                        }
                                     } catch (_: Exception) {}
                                 }
-                                drawRect(color = barBgColor)
+                                if (liveTopGlassParams.whitePoint > 0f) {
+                                    drawRect(color = Color.White.copy(alpha = (liveTopGlassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
+                                }
                             }
                     )
 
@@ -283,7 +302,10 @@ fun FloatingTopControls(
                 shadowElevation = 8.dp,
                 modifier = Modifier
                     .wrapContentWidth()
-                    .height(44.dp),
+                    .height(44.dp)
+                    .onGloballyPositioned { coordinates ->
+                        leftCapsulePosInRoot = coordinates.positionInRoot()
+                    },
             ) {
                 Box(
                     modifier = Modifier
@@ -327,10 +349,14 @@ fun FloatingTopControls(
                             .drawBehind {
                                 if (backdropLayer != null) {
                                     try {
-                                        drawLayer(backdropLayer)
+                                        translate(left = -leftCapsulePosInRoot.x, top = -leftCapsulePosInRoot.y) {
+                                            drawLayer(backdropLayer)
+                                        }
                                     } catch (_: Exception) {}
                                 }
-                                drawRect(color = barBgColor)
+                                if (liveTopGlassParams.whitePoint > 0f) {
+                                    drawRect(color = Color.White.copy(alpha = (liveTopGlassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
+                                }
                             }
                     )
 
@@ -418,7 +444,6 @@ fun MultiSelectRightCapsule(
 ) {
     var isExpanded by remember { mutableStateOf(value = false) }
 
-    val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
@@ -433,6 +458,8 @@ fun MultiSelectRightCapsule(
     }
 
     val topGlassParams = remember(isDark) { SettingsManager.getTopBarGlassParams(context, isDark) }
+
+    var capsulePosInRoot by remember { mutableStateOf(Offset.Zero) }
 
     BackHandler(enabled = isExpanded) {
         isExpanded = false
@@ -449,7 +476,11 @@ fun MultiSelectRightCapsule(
         color = Color.Transparent,
         border = BorderStroke(1.dp, barBorderColor),
         shadowElevation = 8.dp,
-        modifier = Modifier.wrapContentSize(),
+        modifier = Modifier
+            .wrapContentSize()
+            .onGloballyPositioned { coordinates ->
+                capsulePosInRoot = coordinates.positionInRoot()
+            },
     ) {
         Box(
             modifier = Modifier
@@ -457,7 +488,7 @@ fun MultiSelectRightCapsule(
                 .clip(RoundedCornerShape(cardCornerRadius)),
             contentAlignment = Alignment.Center
         ) {
-            // 1. 底层：独占 renderEffect 凸透镜 Shader 渲染层
+            // 1. 底层：独占 renderEffect 凸透镜 Shader 渲染层 (锚定屏幕绝对坐标，精准透出下方被遮挡的真实列表内容)
             Box(
                 modifier = Modifier
                     .matchParentSize()
@@ -494,10 +525,14 @@ fun MultiSelectRightCapsule(
                     .drawBehind {
                         if (backdropLayer != null) {
                             try {
-                                drawLayer(backdropLayer)
+                                translate(left = -capsulePosInRoot.x, top = -capsulePosInRoot.y) {
+                                    drawLayer(backdropLayer)
+                                }
                             } catch (_: Exception) {}
                         }
-                        drawRect(color = barBgColor)
+                        if (topGlassParams.whitePoint > 0f) {
+                            drawRect(color = Color.White.copy(alpha = (topGlassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
+                        }
                     }
             )
 
