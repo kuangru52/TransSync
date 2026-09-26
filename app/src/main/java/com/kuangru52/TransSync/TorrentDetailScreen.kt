@@ -367,11 +367,12 @@ fun TorrentDetailScreen(
                                 val isCurrentlyPeers = currentPx > screenWidthPx * 0.5f
 
                                 val targetOffset = when {
-                                    // 强制：在节点页：无论怎么向右划，目标永远是 0f (信息页)，绝对无法触发退出！
-                                    isCurrentlyPeers -> 0f
-                                    // 仅在信息页：向右划超过阈值（currentPx < -80f 或快速右划） -> 触发滑出屏幕并退出详情页
+                                    // 在节点页(1)：只有当向右划（滑动过半或向右划动距离大）时，才回到信息页(0)；否则（向左划或原地不动）保持在节点页(1)！
+                                    isCurrentlyPeers && (currentPx < screenWidthPx * 0.5f || lastDragAmount > 6f) -> 0f
+                                    isCurrentlyPeers -> screenWidthPx
+                                    // 仅在信息页(0)：向右划超过阈值（currentPx < -80f 或快速右划） -> 触发滑出屏幕并退出详情页
                                     !isCurrentlyPeers && (currentPx < -80f || lastDragAmount > 12f) -> -screenWidthPx
-                                    // 仅在信息页：向左划或滑动过半 -> 进入节点页(1)
+                                    // 仅在信息页(0)：向左划或滑动过半 -> 进入节点页(1)
                                     !isCurrentlyPeers && (lastDragAmount < -6f || currentPx > screenWidthPx * 0.5f) -> screenWidthPx
                                     else -> 0f
                                 }
