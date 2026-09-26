@@ -462,7 +462,7 @@ fun LiquidGlassTopSurface(
             )
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.wrapContentSize(),
             contentAlignment = Alignment.Center
         ) {
             // 1. 底层：独占 renderEffect 凸透镜 Shader 渲染层 (锚定屏幕绝对坐标，精准透出下方真实的列表/壁纸内容)
