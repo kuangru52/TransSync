@@ -291,6 +291,9 @@ object SettingsManager {
         )
     }
 
+    private val _topBarGlassParamsVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
+    val topBarGlassParamsVersion: kotlinx.coroutines.flow.StateFlow<Int> = _topBarGlassParamsVersion
+
     fun saveTopBarGlassParams(context: Context, params: GlassParams) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit {
             putFloat(KEY_TOPBAR_REFRACTION, params.refraction)
@@ -300,6 +303,7 @@ object SettingsManager {
             putFloat(KEY_TOPBAR_CONTRAST, params.contrast)
             putFloat(KEY_TOPBAR_WHITE_POINT, params.whitePoint)
         }
+        _topBarGlassParamsVersion.value++
     }
 
     fun getDialogGlassParams(context: Context, isDark: Boolean): GlassParams {
