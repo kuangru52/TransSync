@@ -801,6 +801,7 @@ fun SettingsScreen(
             SettingsFloatingTopBar(
                 onBackClick = onBackClick,
                 backSwipeRatio = backSwipeRatio,
+                backdropLayer = backdropLayer,
                 isDark = isDark,
                 modifier = Modifier.align(Alignment.TopStart)
             )
@@ -1499,10 +1500,10 @@ fun AddCustomTrackerDialog(
 fun SettingsFloatingTopBar(
     onBackClick: () -> Unit,
     backSwipeRatio: Float = 0f,
+    backdropLayer: GraphicsLayer? = null,
     isDark: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier,
 ) {
-    val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
@@ -1515,12 +1516,11 @@ fun SettingsFloatingTopBar(
             .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 4.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
-        Surface(
-            onClick = onBackClick,
+        LiquidGlassTopSurface(
             shape = RoundedCornerShape(100.dp),
-            color = barBgColor,
             border = BorderStroke(1.dp, barBorderColor),
-            shadowElevation = 8.dp,
+            backdropLayer = backdropLayer,
+            onClick = onBackClick,
             modifier = Modifier
                 .wrapContentWidth()
                 .height(44.dp),

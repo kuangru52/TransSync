@@ -471,6 +471,18 @@ fun MultiSelectRightCapsule(
         label = "cornerRadius",
     )
 
+    val topRowSpacing by animateDpAsState(
+        targetValue = if (isExpanded) 12.dp else 6.dp,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "topRowSpacing",
+    )
+
+    val topRowPaddingHorizontal by animateDpAsState(
+        targetValue = if (isExpanded) 12.dp else 6.dp,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "topRowPaddingHorizontal",
+    )
+
     Surface(
         shape = RoundedCornerShape(cardCornerRadius),
         color = Color.Transparent,
@@ -542,31 +554,36 @@ fun MultiSelectRightCapsule(
                     .width(IntrinsicSize.Max)
                     .animateContentSize(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)),
             ) {
-                // 顶行按键组 (间距 6dp, 按键尺寸 40dp)
+                // 顶行按键组 (点击三点展开时，全选与删除图标向左平滑移动扩宽卡片，收起时平滑复位)
                 Row(
                     modifier = Modifier
                         .height(44.dp)
                         .fillMaxWidth()
-                        .padding(horizontal = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                        .padding(horizontal = topRowPaddingHorizontal),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    IconButton(onClick = onSelectAll, modifier = Modifier.size(40.dp)) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_select_all),
-                            contentDescription = "全选",
-                            tint = textColor,
-                            modifier = Modifier.size(20.dp),
-                        )
-                    }
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(topRowSpacing),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        IconButton(onClick = onSelectAll, modifier = Modifier.size(40.dp)) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_select_all),
+                                contentDescription = "全选",
+                                tint = textColor,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
 
-                    IconButton(onClick = onDeleteSelected, modifier = Modifier.size(40.dp)) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_delete),
-                            contentDescription = "删除",
-                            tint = Color(0xFFFF5252),
-                            modifier = Modifier.size(20.dp),
-                        )
+                        IconButton(onClick = onDeleteSelected, modifier = Modifier.size(40.dp)) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_delete),
+                                contentDescription = "删除",
+                                tint = Color(0xFFFF5252),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                     }
 
                     IconButton(onClick = { isExpanded = !isExpanded }, modifier = Modifier.size(40.dp)) {
