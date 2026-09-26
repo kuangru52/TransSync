@@ -89,7 +89,9 @@ fun FloatingTopControls(
                 backdropLayer = backdropLayer,
                 boxPositionInRoot = boxPositionInRoot,
                 onClick = onMenuClick,
-                modifier = Modifier.height(44.dp)
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .height(44.dp)
             ) {
                 Row(
                     modifier = Modifier
@@ -160,13 +162,15 @@ fun FloatingTopControls(
             }
         } else {
             // 多选模式：左侧 [已选择 N 项] 悬浮胶囊
-            Surface(
-                onClick = onCloseSelection,
+            LiquidGlassTopSurface(
                 shape = RoundedCornerShape(100.dp),
-                color = barBgColor,
                 border = BorderStroke(1.dp, barBorderColor),
-                shadowElevation = 8.dp,
-                modifier = Modifier.height(44.dp),
+                backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
+                onClick = onCloseSelection,
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .height(44.dp)
             ) {
                 Box(
                     modifier = Modifier
@@ -188,6 +192,8 @@ fun FloatingTopControls(
             // 右侧融合扩展悬浮胶囊卡片
             MultiSelectRightCapsule(
                 selectedCount = selectedCount,
+                backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
                 onSelectAll = onSelectAll,
                 onDeleteSelected = onDeleteSelected,
                 onStartSelected = onStartSelected,
@@ -209,6 +215,8 @@ fun FloatingTopControls(
 @Composable
 fun MultiSelectRightCapsule(
     selectedCount: Int,
+    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onSelectAll: () -> Unit,
     onDeleteSelected: () -> Unit,
     onStartSelected: () -> Unit,
@@ -222,7 +230,6 @@ fun MultiSelectRightCapsule(
 ) {
     var isExpanded by remember { mutableStateOf(value = false) }
 
-    val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
@@ -236,11 +243,11 @@ fun MultiSelectRightCapsule(
         label = "cornerRadius",
     )
 
-    Surface(
+    LiquidGlassTopSurface(
         shape = RoundedCornerShape(cardCornerRadius),
-        color = barBgColor,
         border = BorderStroke(1.dp, barBorderColor),
-        shadowElevation = 0.dp,
+        backdropLayer = backdropLayer,
+        boxPositionInRoot = boxPositionInRoot,
         modifier = Modifier.wrapContentSize(),
     ) {
         Column(

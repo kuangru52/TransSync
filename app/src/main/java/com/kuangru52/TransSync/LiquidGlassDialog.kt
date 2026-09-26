@@ -453,13 +453,15 @@ fun LiquidGlassTopSurface(
         shadowElevation = 0.dp,
         modifier = modifier
             .onGloballyPositioned { coordinates ->
-                val loc = IntArray(2)
-                surfaceView.getLocationOnScreen(loc)
-                val offsetInWindow = coordinates.positionInWindow()
-                surfaceAbsolutePosition = Offset(
-                    x = loc[0].toFloat() + offsetInWindow.x,
-                    y = loc[1].toFloat() + offsetInWindow.y,
-                )
+                try {
+                    val loc = IntArray(2)
+                    surfaceView.getLocationOnScreen(loc)
+                    val offsetInWindow = coordinates.positionInWindow()
+                    surfaceAbsolutePosition = Offset(
+                        x = loc[0].toFloat() + offsetInWindow.x,
+                        y = loc[1].toFloat() + offsetInWindow.y,
+                    )
+                } catch (_: Exception) {}
             }
             .clip(shape)
             .then(
