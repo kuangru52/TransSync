@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -296,7 +297,8 @@ fun TorrentDetailScreen(
         modifier = modifier
             .fillMaxSize()
             .graphicsLayer {
-                translationX = -pageOffsetAnim.value
+                val px = pageOffsetAnim.value
+                translationX = if (px < 0f) -px else 0f
             }
             .pointerInput(Unit) {
                 coroutineScope {
@@ -379,6 +381,11 @@ fun TorrentDetailScreen(
                 }
             }
     ) {
+        if (pageOffsetAnim.value < 0f) {
+            val alpha = (-pageOffsetAnim.value / screenWidthPx).coerceIn(0f, 0.6f)
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = alpha)))
+        }
+
         // 1. 被 backdropLayer 离屏录制的底图采样层 (包含全局唯一壁纸 + 信息页 + 节点页超宽画布)
         val detailView = LocalView.current
         Box(
@@ -411,7 +418,8 @@ fun TorrentDetailScreen(
                     .fillMaxHeight()
                     .wrapContentWidth(align = Alignment.Start, unbounded = true)
                     .graphicsLayer {
-                        translationX = -pageOffsetAnim.value
+                        val px = pageOffsetAnim.value
+                        translationX = if (px < 0f) 0f else -px
                     }
             ) {
                 // 左侧 Page 0: 信息页 (TorrentInfoScreen)
