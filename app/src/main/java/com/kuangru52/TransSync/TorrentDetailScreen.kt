@@ -455,11 +455,15 @@ fun TorrentDetailScreen(
         }
 
         // 2. 顶层悬浮控制栏 (不在 backdropLayer 内部录制，彻底防止 RenderNode 递归绘制崩溃)
-        val tabSlideRatio = (pageOffsetAnim.value / screenWidthPx).coerceIn(0f, 1f)
+        val backSwipeRatio = if (pageOffsetAnim.value < 0f) {
+            (-pageOffsetAnim.value / 120f).coerceIn(0f, 1f)
+        } else {
+            0f
+        }
 
         DetailFloatingTopBar(
             currentPage = currentPage,
-            backSwipeRatio = tabSlideRatio,
+            backSwipeRatio = backSwipeRatio,
             onTabSelected = { index ->
                 scope.launch {
                     pageOffsetAnim.animateTo(
