@@ -1,13 +1,13 @@
 package com.kuangru52.transsync
 
+import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -16,7 +16,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -26,8 +34,8 @@ import androidx.compose.ui.unit.sp
 
 /**
  * 悬浮控制条组件：
- * - 采用 3 层严密物理图层架构：最上层文字与图标 100% 绝对清晰高对比度，中间层玻璃底框单独渲染凸透镜折射 Shader 与模糊！
- * - 开发者模式下，通过【下拉乌龟图标】手势弹出调参 Inspector 调优面板！
+ * - 100% 保持用户喜爱的经典原版布局与精确尺寸（左侧菜单标题胶囊 + 右侧独立乌龟按键，多选模式对应选择计数与操作卡片）
+ * - 内部融入 Kyant0 AGSL 3D 凸透镜折射液态玻璃 Shader 与毛玻璃采样
  */
 @Composable
 fun FloatingTopControls(
@@ -36,6 +44,8 @@ fun FloatingTopControls(
     altSpeedEnabled: Boolean,
     selectedCount: Int,
     drawerSlideRatio: Float = 0f,
+    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onMenuClick: () -> Unit,
     onTurtleClick: () -> Unit,
     onCloseSelection: () -> Unit,
@@ -57,6 +67,19 @@ fun FloatingTopControls(
 
     val menuRotation = drawerSlideRatio * 180f
 
+    val context = LocalContext.current
+    val density = LocalDensity.current
+
+    val cachedShader = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
+            } catch (_: Exception) { null }
+        } else null
+    }
+
+    val topGlassParams = remember(isDark) { SettingsManager.getTopBarGlassParams(context, isDark) }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -65,56 +88,107 @@ fun FloatingTopControls(
         verticalAlignment = Alignment.Top,
     ) {
         if (selectedCount == 0) {
-            // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊
+            // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊 (100% 保持原版尺寸与布局)
             Surface(
                 onClick = onMenuClick,
                 shape = RoundedCornerShape(100.dp),
-                color = barBgColor,
+                color = Color.Transparent,
                 border = BorderStroke(1.dp, barBorderColor),
                 shadowElevation = 8.dp,
-                modifier = Modifier.height(44.dp),
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .height(44.dp),
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_menu),
-                        contentDescription = "打开菜单",
-                        tint = textColor,
+                    // Kyant0 AGSL 液态玻璃底图折射层
+                    Box(
                         modifier = Modifier
-                            .size(20.dp)
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(100.dp))
                             .graphicsLayer {
-                                rotationZ = menuRotation
-                            },
+                                clip = true
+                                shape = RoundedCornerShape(100.dp)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                        try {
+                                            val shader = cachedShader
+                                            shader.setFloatUniform("size", size.width, size.height)
+                                            shader.setFloatUniform("cornerRadius", with(density) { 100.dp.toPx() })
+                                            shader.setFloatUniform("refraction", with(density) { topGlassParams.refraction.dp.toPx() })
+                                            shader.setFloatUniform("refractionHeight", with(density) { topGlassParams.refractionHeight.dp.toPx() })
+                                            shader.setFloatUniform("saturationBoost", topGlassParams.saturationBoost)
+                                            shader.setFloatUniform("contrast", topGlassParams.contrast)
+                                            shader.setFloatUniform("whitePoint", topGlassParams.whitePoint)
+
+                                            val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                            val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                            val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                            renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                                        } catch (_: Exception) {
+                                            val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                            renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                        }
+                                    } else {
+                                        val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                    }
+                                }
+                            }
+                            .drawWithContent {
+                                if (backdropLayer != null) {
+                                    try {
+                                        drawLayer(backdropLayer)
+                                    } catch (_: Exception) {}
+                                }
+                                drawRect(color = barBgColor)
+                            }
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = titleText,
-                        style = TextStyle(
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor,
-                        ),
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "($sizeText)",
-                        style = TextStyle(
-                            fontSize = 13.sp,
-                            color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72),
-                        ),
-                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_menu),
+                            contentDescription = "打开菜单",
+                            tint = textColor,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .graphicsLayer {
+                                    rotationZ = menuRotation
+                                },
+                        )
+                        Spacer(modifier = Modifier.width(10.dp))
+                        Text(
+                            text = titleText,
+                            style = TextStyle(
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor,
+                            ),
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "($sizeText)",
+                            style = TextStyle(
+                                fontSize = 13.sp,
+                                color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72),
+                            ),
+                        )
+                    }
                 }
             }
 
-            // 右侧 [乌龟] 独立悬浮按键
+            // 右侧 [乌龟] 独立悬浮按键 (100% 保持原版 44dp 圆形尺寸与位置)
             Surface(
                 onClick = onTurtleClick,
                 shape = CircleShape,
-                color = barBgColor,
+                color = Color.Transparent,
                 border = BorderStroke(1.dp, barBorderColor),
                 shadowElevation = 8.dp,
                 modifier = Modifier.size(44.dp),
@@ -123,6 +197,49 @@ fun FloatingTopControls(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center,
                 ) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(CircleShape)
+                            .graphicsLayer {
+                                clip = true
+                                shape = CircleShape
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                        try {
+                                            val shader = cachedShader
+                                            shader.setFloatUniform("size", size.width, size.height)
+                                            shader.setFloatUniform("cornerRadius", with(density) { 22.dp.toPx() })
+                                            shader.setFloatUniform("refraction", with(density) { topGlassParams.refraction.dp.toPx() })
+                                            shader.setFloatUniform("refractionHeight", with(density) { topGlassParams.refractionHeight.dp.toPx() })
+                                            shader.setFloatUniform("saturationBoost", topGlassParams.saturationBoost)
+                                            shader.setFloatUniform("contrast", topGlassParams.contrast)
+                                            shader.setFloatUniform("whitePoint", topGlassParams.whitePoint)
+
+                                            val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                            val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                            val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                            renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                                        } catch (_: Exception) {
+                                            val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                            renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                        }
+                                    } else {
+                                        val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                    }
+                                }
+                            }
+                            .drawWithContent {
+                                if (backdropLayer != null) {
+                                    try {
+                                        drawLayer(backdropLayer)
+                                    } catch (_: Exception) {}
+                                }
+                                drawRect(color = barBgColor)
+                            }
+                    )
+
                     Icon(
                         painter = painterResource(id = if (altSpeedEnabled) R.drawable.ic_turtle else R.drawable.ic_turtle_outline),
                         contentDescription = "限速模式",
@@ -136,31 +253,83 @@ fun FloatingTopControls(
             Surface(
                 onClick = onCloseSelection,
                 shape = RoundedCornerShape(100.dp),
-                color = barBgColor,
+                color = Color.Transparent,
                 border = BorderStroke(1.dp, barBorderColor),
                 shadowElevation = 8.dp,
-                modifier = Modifier.height(44.dp),
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .height(44.dp),
             ) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .padding(horizontal = 18.dp),
-                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = stringResource(R.string.selected_count, selectedCount),
-                        style = TextStyle(
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = textColor,
-                        ),
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(100.dp))
+                            .graphicsLayer {
+                                clip = true
+                                shape = RoundedCornerShape(100.dp)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                        try {
+                                            val shader = cachedShader
+                                            shader.setFloatUniform("size", size.width, size.height)
+                                            shader.setFloatUniform("cornerRadius", with(density) { 100.dp.toPx() })
+                                            shader.setFloatUniform("refraction", with(density) { topGlassParams.refraction.dp.toPx() })
+                                            shader.setFloatUniform("refractionHeight", with(density) { topGlassParams.refractionHeight.dp.toPx() })
+                                            shader.setFloatUniform("saturationBoost", topGlassParams.saturationBoost)
+                                            shader.setFloatUniform("contrast", topGlassParams.contrast)
+                                            shader.setFloatUniform("whitePoint", topGlassParams.whitePoint)
+
+                                            val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                            val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                            val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                            renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                                        } catch (_: Exception) {
+                                            val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                            renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                        }
+                                    } else {
+                                        val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                    }
+                                }
+                            }
+                            .drawWithContent {
+                                if (backdropLayer != null) {
+                                    try {
+                                        drawLayer(backdropLayer)
+                                    } catch (_: Exception) {}
+                                }
+                                drawRect(color = barBgColor)
+                            }
                     )
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(horizontal = 18.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.selected_count, selectedCount),
+                            style = TextStyle(
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = textColor,
+                            ),
+                        )
+                    }
                 }
             }
 
             // 右侧融合扩展悬浮胶囊卡片
             MultiSelectRightCapsule(
                 selectedCount = selectedCount,
+                backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
                 onSelectAll = onSelectAll,
                 onDeleteSelected = onDeleteSelected,
                 onStartSelected = onStartSelected,
@@ -182,6 +351,8 @@ fun FloatingTopControls(
 @Composable
 fun MultiSelectRightCapsule(
     selectedCount: Int,
+    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onSelectAll: () -> Unit,
     onDeleteSelected: () -> Unit,
     onStartSelected: () -> Unit,
@@ -199,6 +370,18 @@ fun MultiSelectRightCapsule(
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val cachedShader = remember {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
+            } catch (_: Exception) { null }
+        } else null
+    }
+
+    val topGlassParams = remember(isDark) { SettingsManager.getTopBarGlassParams(context, isDark) }
+
     BackHandler(enabled = isExpanded) {
         isExpanded = false
     }
@@ -211,72 +394,120 @@ fun MultiSelectRightCapsule(
 
     Surface(
         shape = RoundedCornerShape(cardCornerRadius),
-        color = barBgColor,
+        color = Color.Transparent,
         border = BorderStroke(1.dp, barBorderColor),
         shadowElevation = 8.dp,
         modifier = Modifier.wrapContentSize(),
     ) {
-        Column(
-            modifier = Modifier
-                .width(IntrinsicSize.Max)
-                .animateContentSize(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)),
+        Box(
+            modifier = Modifier.wrapContentSize(),
+            contentAlignment = Alignment.Center
         ) {
-            // 顶行按键组 (间距 6dp, 按键尺寸 40dp)
-            Row(
+            Box(
                 modifier = Modifier
-                    .height(44.dp)
-                    .fillMaxWidth()
-                    .padding(horizontal = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
+                    .matchParentSize()
+                    .clip(RoundedCornerShape(cardCornerRadius))
+                    .graphicsLayer {
+                        clip = true
+                        shape = RoundedCornerShape(cardCornerRadius)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                try {
+                                    val shader = cachedShader
+                                    shader.setFloatUniform("size", size.width, size.height)
+                                    shader.setFloatUniform("cornerRadius", with(density) { cardCornerRadius.toPx() })
+                                    shader.setFloatUniform("refraction", with(density) { topGlassParams.refraction.dp.toPx() })
+                                    shader.setFloatUniform("refractionHeight", with(density) { topGlassParams.refractionHeight.dp.toPx() })
+                                    shader.setFloatUniform("saturationBoost", topGlassParams.saturationBoost)
+                                    shader.setFloatUniform("contrast", topGlassParams.contrast)
+                                    shader.setFloatUniform("whitePoint", topGlassParams.whitePoint)
+
+                                    val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                    val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                    val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                    renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                                } catch (_: Exception) {
+                                    val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                }
+                            } else {
+                                val blurPx = with(density) { topGlassParams.blurRadius.dp.toPx() }
+                                renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                            }
+                        }
+                    }
+                    .drawWithContent {
+                        if (backdropLayer != null) {
+                            try {
+                                drawLayer(backdropLayer)
+                            } catch (_: Exception) {}
+                        }
+                        drawRect(color = barBgColor)
+                    }
+            )
+
+            Column(
+                modifier = Modifier
+                    .width(IntrinsicSize.Max)
+                    .animateContentSize(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)),
             ) {
-                IconButton(onClick = onSelectAll, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_select_all),
-                        contentDescription = "全选",
-                        tint = textColor,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-
-                IconButton(onClick = onDeleteSelected, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_delete),
-                        contentDescription = "删除",
-                        tint = Color(0xFFFF5252),
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-
-                IconButton(onClick = { isExpanded = !isExpanded }, modifier = Modifier.size(40.dp)) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.ic_more_vert),
-                        contentDescription = "更多操作",
-                        tint = textColor,
-                        modifier = Modifier.size(20.dp),
-                    )
-                }
-            }
-
-            if (isExpanded) {
-                HorizontalDivider(color = barBorderColor, thickness = 1.dp, modifier = Modifier.fillMaxWidth())
-
-                Column(
+                // 顶行按键组 (间距 6dp, 按键尺寸 40dp)
+                Row(
                     modifier = Modifier
+                        .height(44.dp)
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(horizontal = 6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    FusedMenuItem(stringResource(R.string.menu_start), onStartSelected) { isExpanded = false }
-                    FusedMenuItem(stringResource(R.string.menu_pause), onStopSelected) { isExpanded = false }
-                    FusedMenuItem(
-                        text = stringResource(R.string.menu_rename),
-                        enabled = selectedCount == 1,
-                        onClick = onRenameSelected,
-                    ) { isExpanded = false }
-                    FusedMenuItem(stringResource(R.string.menu_set_location), onSetLocationSelected) { isExpanded = false }
-                    FusedMenuItem(stringResource(R.string.menu_set_hr), onSetHrSelected) { isExpanded = false }
-                    FusedMenuItem(stringResource(R.string.menu_verify), onVerifySelected) { isExpanded = false }
-                    FusedMenuItem(stringResource(R.string.menu_reannounce), onReannounceSelected) { isExpanded = false }
+                    IconButton(onClick = onSelectAll, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_select_all),
+                            contentDescription = "全选",
+                            tint = textColor,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+
+                    IconButton(onClick = onDeleteSelected, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_delete),
+                            contentDescription = "删除",
+                            tint = Color(0xFFFF5252),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+
+                    IconButton(onClick = { isExpanded = !isExpanded }, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_more_vert),
+                            contentDescription = "更多操作",
+                            tint = textColor,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+
+                if (isExpanded) {
+                    HorizontalDivider(color = barBorderColor, thickness = 1.dp, modifier = Modifier.fillMaxWidth())
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                    ) {
+                        FusedMenuItem(stringResource(R.string.menu_start), onStartSelected) { isExpanded = false }
+                        FusedMenuItem(stringResource(R.string.menu_pause), onStopSelected) { isExpanded = false }
+                        FusedMenuItem(
+                            text = stringResource(R.string.menu_rename),
+                            enabled = selectedCount == 1,
+                            onClick = onRenameSelected,
+                        ) { isExpanded = false }
+                        FusedMenuItem(stringResource(R.string.menu_set_location), onSetLocationSelected) { isExpanded = false }
+                        FusedMenuItem(stringResource(R.string.menu_set_hr), onSetHrSelected) { isExpanded = false }
+                        FusedMenuItem(stringResource(R.string.menu_verify), onVerifySelected) { isExpanded = false }
+                        FusedMenuItem(stringResource(R.string.menu_reannounce), onReannounceSelected) { isExpanded = false }
+                    }
                 }
             }
         }
@@ -322,133 +553,14 @@ fun getFilterTitleText(filter: String): String {
         "Active" -> stringResource(R.string.nav_active)
         "Inactive" -> stringResource(R.string.nav_inactive)
         "Error" -> stringResource(R.string.nav_error)
-        else -> if (filter.startsWith("tracker:")) filter.substringAfter("tracker:") else stringResource(R.string.nav_all)
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(name = "常规模式 - 浅色", showBackground = true)
-@Composable
-fun FloatingTopControls_Normal_Light_Preview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFF0F2F5))
-                .padding(12.dp),
-        ) {
-            FloatingTopControls(
-                titleText = "全部任务",
-                sizeText = "71.1 TB",
-                altSpeedEnabled = false,
-                selectedCount = 0,
-                onMenuClick = {},
-                onTurtleClick = {},
-                onCloseSelection = {},
-                onSelectAll = {},
-                onDeleteSelected = {},
-                onStartSelected = {},
-                onStopSelected = {},
-                onRenameSelected = {},
-                onSetLocationSelected = {},
-                onSetHrSelected = {},
-                onVerifySelected = {},
-                onReannounceSelected = {},
-                isDark = false,
-            )
-        }
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(name = "常规模式 - 深色 (龟速高亮)", showBackground = true)
-@Composable
-fun FloatingTopControls_Normal_Dark_Preview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF161F29))
-                .padding(12.dp),
-        ) {
-            FloatingTopControls(
-                titleText = "正在下载",
-                sizeText = "12.4 GB",
-                altSpeedEnabled = true,
-                selectedCount = 0,
-                onMenuClick = {},
-                onTurtleClick = {},
-                onCloseSelection = {},
-                onSelectAll = {},
-                onDeleteSelected = {},
-                onStartSelected = {},
-                onStopSelected = {},
-                onRenameSelected = {},
-                onSetLocationSelected = {},
-                onSetHrSelected = {},
-                onVerifySelected = {},
-                onReannounceSelected = {},
-                isDark = true,
-            )
-        }
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(name = "多选模式 - 浅色", showBackground = true)
-@Composable
-fun FloatingTopControls_MultiSelect_Light_Preview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFFF0F2F5))
-                .padding(12.dp),
-        ) {
-            FloatingTopControls(
-                titleText = "全部任务",
-                sizeText = "71.1 TB",
-                altSpeedEnabled = false,
-                selectedCount = 3,
-                onMenuClick = {},
-                onTurtleClick = {},
-                onCloseSelection = {},
-                onSelectAll = {},
-                onDeleteSelected = {},
-                onStartSelected = {},
-                onStopSelected = {},
-                onRenameSelected = {},
-                onSetLocationSelected = {},
-                onSetHrSelected = {},
-                onVerifySelected = {},
-                onReannounceSelected = {},
-                isDark = false,
-            )
-        }
-    }
-}
-
-@androidx.compose.ui.tooling.preview.Preview(name = "多选模式 - 展开三个点下拉菜单", showBackground = true)
-@Composable
-fun MultiSelectRightCapsule_Expanded_Preview() {
-    MaterialTheme {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(Color(0xFF161F29))
-                .padding(12.dp),
-            contentAlignment = Alignment.TopEnd,
-        ) {
-            MultiSelectRightCapsule(
-                selectedCount = 1,
-                onSelectAll = {},
-                onDeleteSelected = {},
-                onStartSelected = {},
-                onStopSelected = {},
-                onRenameSelected = {},
-                onSetLocationSelected = {},
-                onSetHrSelected = {},
-                onVerifySelected = {},
-                onReannounceSelected = {},
-                isDark = true,
-            )
+        else -> {
+            if (filter.startsWith("tracker:")) {
+                filter.substringAfter("tracker:")
+            } else if (filter.startsWith("label:")) {
+                filter.substringAfter("label:")
+            } else {
+                stringResource(R.string.nav_all)
+            }
         }
     }
 }
