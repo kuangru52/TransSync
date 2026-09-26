@@ -8,7 +8,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -17,8 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -29,8 +26,8 @@ import androidx.compose.ui.unit.sp
 
 /**
  * 悬浮控制条组件：
- * - 保持用户喜爱的经典沉浸式毛玻璃胶囊外观（左侧菜单标题胶囊 + 右侧独立乌龟按键，多选模式下对应选择计数与操作卡片）
- * - 完美叠加 Kyant0 AGSL 3D 凸透镜折射液态玻璃效果
+ * - 采用 3 层严密物理图层架构：最上层文字与图标 100% 绝对清晰高对比度，中间层玻璃底框单独渲染凸透镜折射 Shader 与模糊！
+ * - 开发者模式下，通过【下拉乌龟图标】手势弹出调参 Inspector 调优面板！
  */
 @Composable
 fun FloatingTopControls(
@@ -39,8 +36,6 @@ fun FloatingTopControls(
     altSpeedEnabled: Boolean,
     selectedCount: Int,
     drawerSlideRatio: Float = 0f,
-    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
-    boxPositionInRoot: Offset = Offset.Zero,
     onMenuClick: () -> Unit,
     onTurtleClick: () -> Unit,
     onCloseSelection: () -> Unit,
@@ -56,6 +51,7 @@ fun FloatingTopControls(
     modifier: Modifier = Modifier,
     isDark: Boolean = isSystemInDarkTheme(),
 ) {
+    val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
@@ -69,16 +65,14 @@ fun FloatingTopControls(
         verticalAlignment = Alignment.Top,
     ) {
         if (selectedCount == 0) {
-            // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊 (100% 原版宽度与大小，叠加 Kyant0 液态玻璃)
-            LiquidGlassTopSurface(
-                shape = RoundedCornerShape(100.dp),
-                border = BorderStroke(1.dp, barBorderColor),
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
+            // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊
+            Surface(
                 onClick = onMenuClick,
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .height(44.dp),
+                shape = RoundedCornerShape(100.dp),
+                color = barBgColor,
+                border = BorderStroke(1.dp, barBorderColor),
+                shadowElevation = 8.dp,
+                modifier = Modifier.height(44.dp),
             ) {
                 Row(
                     modifier = Modifier
@@ -116,13 +110,13 @@ fun FloatingTopControls(
                 }
             }
 
-            // 右侧 [乌龟] 独立悬浮按键 (100% 原版大小与位置，叠加 Kyant0 液态玻璃)
-            LiquidGlassTopSurface(
-                shape = CircleShape,
-                border = BorderStroke(1.dp, barBorderColor),
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
+            // 右侧 [乌龟] 独立悬浮按键
+            Surface(
                 onClick = onTurtleClick,
+                shape = CircleShape,
+                color = barBgColor,
+                border = BorderStroke(1.dp, barBorderColor),
+                shadowElevation = 8.dp,
                 modifier = Modifier.size(44.dp),
             ) {
                 Box(
@@ -138,16 +132,14 @@ fun FloatingTopControls(
                 }
             }
         } else {
-            // 多选模式：左侧 [已选择 N 项] 悬浮胶囊 (100% 原版大小，叠加 Kyant0 液态玻璃)
-            LiquidGlassTopSurface(
-                shape = RoundedCornerShape(100.dp),
-                border = BorderStroke(1.dp, barBorderColor),
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
+            // 多选模式：左侧 [已选择 N 项] 悬浮胶囊
+            Surface(
                 onClick = onCloseSelection,
-                modifier = Modifier
-                    .wrapContentWidth()
-                    .height(44.dp),
+                shape = RoundedCornerShape(100.dp),
+                color = barBgColor,
+                border = BorderStroke(1.dp, barBorderColor),
+                shadowElevation = 8.dp,
+                modifier = Modifier.height(44.dp),
             ) {
                 Box(
                     modifier = Modifier
@@ -166,11 +158,9 @@ fun FloatingTopControls(
                 }
             }
 
-            // 右侧融合扩展悬浮胶囊卡片 (叠加 Kyant0 液态玻璃)
+            // 右侧融合扩展悬浮胶囊卡片
             MultiSelectRightCapsule(
                 selectedCount = selectedCount,
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
                 onSelectAll = onSelectAll,
                 onDeleteSelected = onDeleteSelected,
                 onStartSelected = onStartSelected,
@@ -192,8 +182,6 @@ fun FloatingTopControls(
 @Composable
 fun MultiSelectRightCapsule(
     selectedCount: Int,
-    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
-    boxPositionInRoot: Offset = Offset.Zero,
     onSelectAll: () -> Unit,
     onDeleteSelected: () -> Unit,
     onStartSelected: () -> Unit,
@@ -207,6 +195,7 @@ fun MultiSelectRightCapsule(
 ) {
     var isExpanded by remember { mutableStateOf(value = false) }
 
+    val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
@@ -220,11 +209,11 @@ fun MultiSelectRightCapsule(
         label = "cornerRadius",
     )
 
-    LiquidGlassTopSurface(
+    Surface(
         shape = RoundedCornerShape(cardCornerRadius),
+        color = barBgColor,
         border = BorderStroke(1.dp, barBorderColor),
-        backdropLayer = backdropLayer,
-        boxPositionInRoot = boxPositionInRoot,
+        shadowElevation = 8.dp,
         modifier = Modifier.wrapContentSize(),
     ) {
         Column(
@@ -333,14 +322,133 @@ fun getFilterTitleText(filter: String): String {
         "Active" -> stringResource(R.string.nav_active)
         "Inactive" -> stringResource(R.string.nav_inactive)
         "Error" -> stringResource(R.string.nav_error)
-        else -> {
-            if (filter.startsWith("tracker:")) {
-                filter.substringAfter("tracker:")
-            } else if (filter.startsWith("label:")) {
-                filter.substringAfter("label:")
-            } else {
-                stringResource(R.string.nav_all)
-            }
+        else -> if (filter.startsWith("tracker:")) filter.substringAfter("tracker:") else stringResource(R.string.nav_all)
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "常规模式 - 浅色", showBackground = true)
+@Composable
+fun FloatingTopControls_Normal_Light_Preview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFF0F2F5))
+                .padding(12.dp),
+        ) {
+            FloatingTopControls(
+                titleText = "全部任务",
+                sizeText = "71.1 TB",
+                altSpeedEnabled = false,
+                selectedCount = 0,
+                onMenuClick = {},
+                onTurtleClick = {},
+                onCloseSelection = {},
+                onSelectAll = {},
+                onDeleteSelected = {},
+                onStartSelected = {},
+                onStopSelected = {},
+                onRenameSelected = {},
+                onSetLocationSelected = {},
+                onSetHrSelected = {},
+                onVerifySelected = {},
+                onReannounceSelected = {},
+                isDark = false,
+            )
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "常规模式 - 深色 (龟速高亮)", showBackground = true)
+@Composable
+fun FloatingTopControls_Normal_Dark_Preview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF161F29))
+                .padding(12.dp),
+        ) {
+            FloatingTopControls(
+                titleText = "正在下载",
+                sizeText = "12.4 GB",
+                altSpeedEnabled = true,
+                selectedCount = 0,
+                onMenuClick = {},
+                onTurtleClick = {},
+                onCloseSelection = {},
+                onSelectAll = {},
+                onDeleteSelected = {},
+                onStartSelected = {},
+                onStopSelected = {},
+                onRenameSelected = {},
+                onSetLocationSelected = {},
+                onSetHrSelected = {},
+                onVerifySelected = {},
+                onReannounceSelected = {},
+                isDark = true,
+            )
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "多选模式 - 浅色", showBackground = true)
+@Composable
+fun FloatingTopControls_MultiSelect_Light_Preview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFF0F2F5))
+                .padding(12.dp),
+        ) {
+            FloatingTopControls(
+                titleText = "全部任务",
+                sizeText = "71.1 TB",
+                altSpeedEnabled = false,
+                selectedCount = 3,
+                onMenuClick = {},
+                onTurtleClick = {},
+                onCloseSelection = {},
+                onSelectAll = {},
+                onDeleteSelected = {},
+                onStartSelected = {},
+                onStopSelected = {},
+                onRenameSelected = {},
+                onSetLocationSelected = {},
+                onSetHrSelected = {},
+                onVerifySelected = {},
+                onReannounceSelected = {},
+                isDark = false,
+            )
+        }
+    }
+}
+
+@androidx.compose.ui.tooling.preview.Preview(name = "多选模式 - 展开三个点下拉菜单", showBackground = true)
+@Composable
+fun MultiSelectRightCapsule_Expanded_Preview() {
+    MaterialTheme {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFF161F29))
+                .padding(12.dp),
+            contentAlignment = Alignment.TopEnd,
+        ) {
+            MultiSelectRightCapsule(
+                selectedCount = 1,
+                onSelectAll = {},
+                onDeleteSelected = {},
+                onStartSelected = {},
+                onStopSelected = {},
+                onRenameSelected = {},
+                onSetLocationSelected = {},
+                onSetHrSelected = {},
+                onVerifySelected = {},
+                onReannounceSelected = {},
+                isDark = true,
+            )
         }
     }
 }
