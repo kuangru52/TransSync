@@ -209,16 +209,6 @@ fun SettingsScreen(
                     y = loc[1].toFloat() + offsetInWindow.y,
                 )
             }
-            .drawWithContent {
-                if (backdropLayer != null) {
-                    try {
-                        backdropLayer.record {
-                            this@drawWithContent.drawContent()
-                        }
-                    } catch (_: Exception) {}
-                }
-                drawContent()
-            }
             .graphicsLayer {
                 translationX = animatedSwipeOffset
             }
@@ -811,8 +801,6 @@ fun SettingsScreen(
             SettingsFloatingTopBar(
                 onBackClick = onBackClick,
                 backSwipeRatio = backSwipeRatio,
-                backdropLayer = backdropLayer,
-                boxPositionInRoot = settingsViewLocation,
                 isDark = isDark,
                 modifier = Modifier.align(Alignment.TopStart)
             )
@@ -1511,11 +1499,10 @@ fun AddCustomTrackerDialog(
 fun SettingsFloatingTopBar(
     onBackClick: () -> Unit,
     backSwipeRatio: Float = 0f,
-    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
-    boxPositionInRoot: Offset = Offset.Zero,
     isDark: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier,
 ) {
+    val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
@@ -1528,14 +1515,15 @@ fun SettingsFloatingTopBar(
             .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 4.dp),
         contentAlignment = Alignment.CenterStart,
     ) {
-        // 左侧 44dp 圆形悬浮返回按钮 + 设置标题胶囊 (采用统一 3D 液态玻璃效果)
-        LiquidGlassTopSurface(
-            shape = RoundedCornerShape(100.dp),
-            border = BorderStroke(1.dp, barBorderColor),
-            backdropLayer = backdropLayer,
-            boxPositionInRoot = boxPositionInRoot,
+        Surface(
             onClick = onBackClick,
-            modifier = Modifier.height(44.dp),
+            shape = RoundedCornerShape(100.dp),
+            color = barBgColor,
+            border = BorderStroke(1.dp, barBorderColor),
+            shadowElevation = 8.dp,
+            modifier = Modifier
+                .wrapContentWidth()
+                .height(44.dp),
         ) {
             Row(
                 modifier = Modifier
