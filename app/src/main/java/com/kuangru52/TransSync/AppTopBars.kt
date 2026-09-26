@@ -1,8 +1,13 @@
 package com.kuangru52.transsync
 
 import android.os.Build
+import androidx.activity.compose.BackHandler
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -16,11 +21,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -32,11 +47,11 @@ import androidx.compose.ui.unit.sp
  * ============================================================================
  * 全应用统一顶部悬浮控制栏组件库 (AppTopBars.kt)
  * - 规范统一所有顶栏元素：
- *   1. 设置页面：[← 设置]
- *   2. 主页常规模式：[三横 菜单 + 全部任务]、[乌龟图标按键]
- *   3. 主页多选模式：[已选择 N 个]、右侧 [全选 / 删除 / 三点] 融合扩展卡片及展开下拉菜单
- *   4. 详情/节点页面：[← 返回] 按键、[信息 / 节点] 分段选项卡胶囊
- * - 统一共享 3D AGSL 凸透镜液态玻璃效果、响应式调参绑定、与 3 层物理图层高清隔离架构！
+ *   1. 设置页面：[← 设置] (`SettingsTopBar`)
+ *   2. 主页常规模式：[三横 菜单 + 全部任务]、[乌龟图标按键] (`FloatingTopControls`)
+ *   3. 主页多选模式：[已选择 N 个]、右侧 [全选 / 删除 / 三点] 融合扩展卡片及展开下拉菜单 (`MultiSelectRightCapsule`)
+ *   4. 详情/节点页面：[← 返回] 按键、[信息 / 节点] 分段选项卡胶囊 (`DetailTopBar`)
+ * - 统一共享 3D AGSL 凸透镜液态玻璃效果、响应式调参绑定、绝对屏幕坐标锚定、与 3 层物理图层高清隔离架构！
  * ============================================================================
  */
 
@@ -46,6 +61,7 @@ fun AppTopBarSurface(
     border: BorderStroke?,
     modifier: Modifier = Modifier,
     shadowElevation: Dp = 8.dp,
+    backdropLayer: GraphicsLayer? = null,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
@@ -57,6 +73,8 @@ fun AppTopBarSurface(
     val glassParams = remember(isDark, topBarVersion) { SettingsManager.getTopBarGlassParams(context, isDark) }
 
     val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
+
+    var posInRoot by remember { mutableStateOf(Offset.Zero) }
 
     val cachedShader = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -72,6 +90,9 @@ fun AppTopBarSurface(
         border = border,
         shadowElevation = shadowElevation,
         modifier = modifier
+            .onGloballyPositioned { coordinates ->
+                posInRoot = coordinates.positionInRoot()
+            }
             .clip(shape)
             .then(
                 if (onClick != null) {
@@ -84,13 +105,13 @@ fun AppTopBarSurface(
             )
     ) {
         Box(
-            modifier = Modifier.wrapContentSize(),
+            modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
             // 1. 底层：独占 renderEffect 凸透镜 Shader 渲染层
             Box(
                 modifier = Modifier
-                    .matchParentSize()
+                    .fillMaxSize()
                     .graphicsLayer {
                         clip = true
                         this.shape = shape
@@ -126,6 +147,13 @@ fun AppTopBarSurface(
                         }
                     }
                     .drawBehind {
+                        if (backdropLayer != null) {
+                            try {
+                                translate(left = -posInRoot.x, top = -posInRoot.y) {
+                                    drawLayer(backdropLayer)
+                                }
+                            } catch (_: Exception) {}
+                        }
                         drawRect(color = barBgColor)
                         if (glassParams.whitePoint > 0f) {
                             drawRect(color = Color.White.copy(alpha = (glassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
@@ -150,6 +178,7 @@ fun AppTopBarSurface(
 fun SettingsTopBar(
     onBackClick: () -> Unit,
     backSwipeRatio: Float = 0f,
+    backdropLayer: GraphicsLayer? = null,
     isDark: Boolean = isSystemInDarkTheme(),
     modifier: Modifier = Modifier,
 ) {
@@ -167,6 +196,7 @@ fun SettingsTopBar(
         AppTopBarSurface(
             shape = RoundedCornerShape(100.dp),
             border = BorderStroke(1.dp, barBorderColor),
+            backdropLayer = backdropLayer,
             onClick = onBackClick,
             modifier = Modifier
                 .wrapContentWidth()
@@ -201,12 +231,363 @@ fun SettingsTopBar(
 }
 
 /**
+ * 2 & 3. 主页常规与多选模式悬浮控制条
+ */
+@Composable
+fun FloatingTopControls(
+    titleText: String,
+    sizeText: String,
+    altSpeedEnabled: Boolean,
+    selectedCount: Int,
+    drawerSlideRatio: Float = 0f,
+    backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
+    onMenuClick: () -> Unit,
+    onTurtleClick: () -> Unit,
+    onCloseSelection: () -> Unit,
+    onSelectAll: () -> Unit,
+    onDeleteSelected: () -> Unit,
+    onStartSelected: () -> Unit,
+    onStopSelected: () -> Unit,
+    onRenameSelected: () -> Unit,
+    onSetLocationSelected: () -> Unit,
+    onSetHrSelected: () -> Unit,
+    onVerifySelected: () -> Unit,
+    onReannounceSelected: () -> Unit,
+    modifier: Modifier = Modifier,
+    isDark: Boolean = isSystemInDarkTheme(),
+) {
+    val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
+    val textColor = if (isDark) Color.White else Color(0xFF2D3436)
+
+    val menuRotation = drawerSlideRatio * 180f
+
+    val context = LocalContext.current
+    val haptic = LocalHapticFeedback.current
+
+    val isDeveloperMode = remember { SettingsManager.isDeveloperMode(context) }
+    var showTuningInspector by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.Top,
+    ) {
+        if (selectedCount == 0) {
+            // 常规模式：左侧 [三横 菜单 + 标题] 悬浮胶囊
+            AppTopBarSurface(
+                shape = RoundedCornerShape(100.dp),
+                border = BorderStroke(1.dp, barBorderColor),
+                backdropLayer = backdropLayer,
+                onClick = onMenuClick,
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .height(44.dp),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_menu),
+                        contentDescription = "打开菜单",
+                        tint = textColor,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .graphicsLayer {
+                                rotationZ = menuRotation
+                            },
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = titleText,
+                        style = TextStyle(
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor,
+                        ),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "($sizeText)",
+                        style = TextStyle(
+                            fontSize = 13.sp,
+                            color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72),
+                        ),
+                    )
+                }
+            }
+
+            // 右侧 [乌龟] 独立悬浮按键
+            AppTopBarSurface(
+                shape = CircleShape,
+                border = BorderStroke(1.dp, barBorderColor),
+                backdropLayer = backdropLayer,
+                onClick = onTurtleClick,
+                modifier = Modifier
+                    .size(44.dp)
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures { change, dragAmount ->
+                            if (isDeveloperMode && dragAmount > 10f) {
+                                change.consume()
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                showTuningInspector = true
+                            }
+                        }
+                    },
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(id = if (altSpeedEnabled) R.drawable.ic_turtle else R.drawable.ic_turtle_outline),
+                        contentDescription = "限速模式",
+                        tint = if (altSpeedEnabled) Color(0xFFF9A825) else textColor,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
+        } else {
+            // 多选模式：左侧 [已选择 N 项] 悬浮胶囊
+            AppTopBarSurface(
+                shape = RoundedCornerShape(100.dp),
+                border = BorderStroke(1.dp, barBorderColor),
+                backdropLayer = backdropLayer,
+                onClick = onCloseSelection,
+                modifier = Modifier
+                    .wrapContentWidth()
+                    .height(44.dp),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(horizontal = 18.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = stringResource(R.string.selected_count, selectedCount),
+                        style = TextStyle(
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = textColor,
+                        ),
+                    )
+                }
+            }
+
+            // 右侧融合扩展悬浮胶囊卡片
+            MultiSelectRightCapsule(
+                selectedCount = selectedCount,
+                backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
+                onSelectAll = onSelectAll,
+                onDeleteSelected = onDeleteSelected,
+                onStartSelected = onStartSelected,
+                onStopSelected = onStopSelected,
+                onRenameSelected = onRenameSelected,
+                onSetLocationSelected = onSetLocationSelected,
+                onSetHrSelected = onSetHrSelected,
+                onVerifySelected = onVerifySelected,
+                onReannounceSelected = onReannounceSelected,
+                isDark = isDark,
+            )
+        }
+    }
+
+    // 开发者模式下通过【下拉乌龟图标】调出顶栏液态玻璃 Inspector 调参窗口
+    if (showTuningInspector && isDeveloperMode) {
+        val glassParams = SettingsManager.getTopBarGlassParams(context, isDark)
+        var liveParams by remember(isDark, glassParams) { mutableStateOf(glassParams) }
+        LiquidGlassTuningInspector(
+            refractionDp = liveParams.refraction,
+            refractionHeightDp = liveParams.refractionHeight,
+            blurRadiusDp = liveParams.blurRadius,
+            saturationBoost = liveParams.saturationBoost,
+            contrast = liveParams.contrast,
+            whitePoint = liveParams.whitePoint,
+            onRefractionChange = { liveParams = liveParams.copy(refraction = it); SettingsManager.saveTopBarGlassParams(context, liveParams) },
+            onRefractionHeightChange = { liveParams = liveParams.copy(refractionHeight = it); SettingsManager.saveTopBarGlassParams(context, liveParams) },
+            onBlurRadiusChange = { liveParams = liveParams.copy(blurRadius = it); SettingsManager.saveTopBarGlassParams(context, liveParams) },
+            onSaturationBoostChange = { liveParams = liveParams.copy(saturationBoost = it); SettingsManager.saveTopBarGlassParams(context, liveParams) },
+            onContrastChange = { liveParams = liveParams.copy(contrast = it); SettingsManager.saveTopBarGlassParams(context, liveParams) },
+            onWhitePointChange = { liveParams = liveParams.copy(whitePoint = it); SettingsManager.saveTopBarGlassParams(context, liveParams) },
+            onReset = {
+                val defParams = GlassParams(if (isDark) -25f else 25f, 12f, 20f, 1.5f, 0.15f, 0.10f)
+                liveParams = defParams
+                SettingsManager.saveTopBarGlassParams(context, defParams)
+            },
+            onSave = { showTuningInspector = false },
+            onDismiss = { showTuningInspector = false }
+        )
+    }
+}
+
+/**
+ * 主页多选模式右侧融合扩展悬浮胶囊卡片
+ */
+@Composable
+fun MultiSelectRightCapsule(
+    selectedCount: Int,
+    backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
+    onSelectAll: () -> Unit,
+    onDeleteSelected: () -> Unit,
+    onStartSelected: () -> Unit,
+    onStopSelected: () -> Unit,
+    onRenameSelected: () -> Unit,
+    onSetLocationSelected: () -> Unit,
+    onSetHrSelected: () -> Unit,
+    onVerifySelected: () -> Unit,
+    onReannounceSelected: () -> Unit,
+    isDark: Boolean = isSystemInDarkTheme(),
+) {
+    var isExpanded by remember { mutableStateOf(value = false) }
+
+    val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
+    val textColor = if (isDark) Color.White else Color(0xFF2D3436)
+
+    BackHandler(enabled = isExpanded) {
+        isExpanded = false
+    }
+
+    val cardCornerRadius by animateDpAsState(
+        targetValue = if (isExpanded) 18.dp else 100.dp,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "cornerRadius",
+    )
+
+    val topRowSpacing by animateDpAsState(
+        targetValue = if (isExpanded) 12.dp else 6.dp,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "topRowSpacing",
+    )
+
+    val topRowPaddingHorizontal by animateDpAsState(
+        targetValue = if (isExpanded) 12.dp else 6.dp,
+        animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f),
+        label = "topRowPaddingHorizontal",
+    )
+
+    AppTopBarSurface(
+        shape = RoundedCornerShape(cardCornerRadius),
+        border = BorderStroke(1.dp, barBorderColor),
+        backdropLayer = backdropLayer,
+        modifier = Modifier.wrapContentSize(),
+    ) {
+        Column(
+            modifier = Modifier
+                .width(IntrinsicSize.Max)
+                .animateContentSize(animationSpec = spring(dampingRatio = 0.75f, stiffness = 300f)),
+        ) {
+            Row(
+                modifier = Modifier
+                    .height(44.dp)
+                    .fillMaxWidth()
+                    .padding(horizontal = topRowPaddingHorizontal),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(topRowSpacing),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(onClick = onSelectAll, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_select_all),
+                            contentDescription = "全选",
+                            tint = textColor,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+
+                    IconButton(onClick = onDeleteSelected, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_delete),
+                            contentDescription = "删除",
+                            tint = Color(0xFFFF5252),
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+
+                IconButton(onClick = { isExpanded = !isExpanded }, modifier = Modifier.size(40.dp)) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_more_vert),
+                        contentDescription = "更多操作",
+                        tint = textColor,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+
+            if (isExpanded) {
+                HorizontalDivider(color = barBorderColor, thickness = 1.dp, modifier = Modifier.fillMaxWidth())
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                ) {
+                    FusedMenuItem(stringResource(R.string.menu_start), onStartSelected) { isExpanded = false }
+                    FusedMenuItem(stringResource(R.string.menu_pause), onStopSelected) { isExpanded = false }
+                    FusedMenuItem(
+                        text = stringResource(R.string.menu_rename),
+                        enabled = selectedCount == 1,
+                        onClick = onRenameSelected,
+                    ) { isExpanded = false }
+                    FusedMenuItem(stringResource(R.string.menu_set_location), onSetLocationSelected) { isExpanded = false }
+                    FusedMenuItem(stringResource(R.string.menu_set_hr), onSetHrSelected) { isExpanded = false }
+                    FusedMenuItem(stringResource(R.string.menu_verify), onVerifySelected) { isExpanded = false }
+                    FusedMenuItem(stringResource(R.string.menu_reannounce), onReannounceSelected) { isExpanded = false }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FusedMenuItem(
+    text: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    onClose: () -> Unit,
+) {
+    val isDark = isSystemInDarkTheme()
+    val textColor = if (enabled) (if (isDark) Color.White else Color(0xFF2D3436)) else (if (isDark) Color(0xFF636E72) else Color(0xFFB0BEC5))
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(42.dp)
+            .clickable(enabled = enabled) {
+                onClose()
+                onClick()
+            }
+            .padding(horizontal = 14.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            text = text,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = textColor,
+        )
+    }
+}
+
+/**
  * 4. 详情/节点页面顶栏：[← 返回] 按键、[信息 / 节点] 分段选项卡胶囊
  */
 @Composable
 fun DetailTopBar(
     currentPage: Int,
     backSwipeRatio: Float = 0f,
+    backdropLayer: GraphicsLayer? = null,
     onTabSelected: (Int) -> Unit,
     onBackClick: () -> Unit,
     isDark: Boolean = isSystemInDarkTheme(),
@@ -226,6 +607,7 @@ fun DetailTopBar(
         AppTopBarSurface(
             shape = CircleShape,
             border = BorderStroke(1.dp, barBorderColor),
+            backdropLayer = backdropLayer,
             onClick = onBackClick,
             modifier = Modifier
                 .size(44.dp)
@@ -255,6 +637,7 @@ fun DetailTopBar(
         AppTopBarSurface(
             shape = RoundedCornerShape(100.dp),
             border = BorderStroke(1.dp, barBorderColor),
+            backdropLayer = backdropLayer,
             modifier = Modifier
                 .height(44.dp)
                 .width(180.dp)
@@ -292,6 +675,27 @@ fun DetailTopBar(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun getFilterTitleText(filter: String): String {
+    return when (filter) {
+        "Downloading" -> stringResource(R.string.nav_downloading)
+        "Seeding" -> stringResource(R.string.nav_seeding)
+        "Paused" -> stringResource(R.string.nav_paused)
+        "Active" -> stringResource(R.string.nav_active)
+        "Inactive" -> stringResource(R.string.nav_inactive)
+        "Error" -> stringResource(R.string.nav_error)
+        else -> {
+            if (filter.startsWith("tracker:")) {
+                filter.substringAfter("tracker:")
+            } else if (filter.startsWith("label:")) {
+                filter.substringAfter("label:")
+            } else {
+                stringResource(R.string.nav_all)
             }
         }
     }
