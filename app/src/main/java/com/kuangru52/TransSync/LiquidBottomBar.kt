@@ -81,13 +81,9 @@ fun LiquidBottomBar(
     val dlSpeed by viewModel.totalDownloadSpeed.observeAsState("0 B/s")
     val ulSpeed by viewModel.totalUploadSpeed.observeAsState("0 B/s")
 
-    val density = LocalDensity.current
-    val navBottomPx = WindowInsets.navigationBars.getBottom(density)
-    val navBottomDp = with(density) { navBottomPx.toDp() }.coerceAtMost(32.dp)
-
     Box(
         modifier = modifier
-            .padding(bottom = navBottomDp + 16.dp)
+            .padding(bottom = 16.dp)
     ) {
         LiquidBottomBarContent(
             dlSpeed = dlSpeed,
@@ -482,13 +478,6 @@ fun LiquidGlassTuningInspector(
                     .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
                     .width(230.dp)
                     .wrapContentHeight()
-                    .pointerInput(Unit) {
-                        detectDragGestures { change, dragAmount ->
-                            change.consume()
-                            offsetX += dragAmount.x
-                            offsetY += dragAmount.y
-                        }
-                    }
                     .shadow(
                         elevation = 16.dp,
                         shape = RoundedCornerShape(18.dp)
@@ -504,7 +493,15 @@ fun LiquidGlassTuningInspector(
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .pointerInput(Unit) {
+                                detectDragGestures { change, dragAmount ->
+                                    change.consume()
+                                    offsetX += dragAmount.x
+                                    offsetY += dragAmount.y
+                                }
+                            },
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
