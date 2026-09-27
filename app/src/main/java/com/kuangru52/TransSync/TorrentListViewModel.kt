@@ -90,6 +90,7 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
         applyFilterAndSearch()
     }
 
+    @Suppress("unused")
     fun switchServer(server: ServerConfig) {
         pendingStatusLocks.clear()
         activeTorrentsLastSeen.clear()
@@ -123,7 +124,8 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
             val qbitService = QBittorrentClient.getService(effectiveUrl)
 
             val fetchQbitData = {
-                qbitService.getTorrentsInfo("all").enqueue(object : Callback<List<QbitTorrentInfo>> {
+                qbitService.getTorrentsInfo("all")
+                    .enqueue(object : Callback<List<QbitTorrentInfo>> {
                     override fun onResponse(call: Call<List<QbitTorrentInfo>>, response: Response<List<QbitTorrentInfo>>) {
                         _isLoading.value = false
                         if (response.isSuccessful) {
@@ -252,7 +254,7 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
                     if (currentTime < expireTime) {
                         val isServerStatusMatching = when (lockedStatus) {
                             0 -> torrent.status == 0
-                            4 -> (torrent.status == 3 || torrent.status == 4 || torrent.status == 5 || torrent.status == 6)
+                            4 -> ((torrent.status == 3) || (torrent.status == 4) || (torrent.status == 5) || (torrent.status == 6))
                             else -> torrent.status == lockedStatus
                         }
                         if (isServerStatusMatching) {
