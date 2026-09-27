@@ -400,7 +400,7 @@ object SettingsManager {
 
     fun getWallpaperMode(context: Context): String {
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-            .getString(KEY_WALLPAPER_MODE, "none") ?: "none"
+            .getString(KEY_WALLPAPER_MODE, "bing") ?: "bing"
     }
 
     fun setWallpaperMode(context: Context, mode: String) {

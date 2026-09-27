@@ -235,7 +235,7 @@ fun TorrentItemCard(
                     progressPromille = torrent.displayProgress,
                     statusColor = statusColor,
                     isDark = isDark,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }
@@ -254,7 +254,7 @@ private fun WaterPipeProgressBar(
     progressPromille: Int,
     statusColor: Color,
     isDark: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val fraction = (progressPromille / 1000f).coerceIn(0f, 1f)
     val inactiveColor = if (isDark) Color(0x33FFFFFF) else Color(0x22000000)
@@ -264,7 +264,7 @@ private fun WaterPipeProgressBar(
         modifier = modifier
             .fillMaxWidth()
             .height(18.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         // 左侧较粗的激活水管
         if (fraction > 0f) {
@@ -273,6 +273,7 @@ private fun WaterPipeProgressBar(
                     .weight(fraction.coerceAtLeast(0.001f))
                     .height(3.5.dp)
                     .background(statusColor, RoundedCornerShape(topStart = 100.dp, bottomStart = 100.dp))
+                    .offset(x = 1.dp),
             )
         }
 
@@ -283,7 +284,7 @@ private fun WaterPipeProgressBar(
                 .height(15.dp)
                 .background(statusColor, RoundedCornerShape(100.dp))
                 .padding(horizontal = 6.dp),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Text(
                 text = percentText,
@@ -304,6 +305,7 @@ private fun WaterPipeProgressBar(
                     .weight((1f - fraction).coerceAtLeast(0.001f))
                     .height(1.5.dp)
                     .background(inactiveColor, RoundedCornerShape(topEnd = 100.dp, bottomEnd = 100.dp))
+                    .offset(x = (-1).dp)
             )
         }
     }
