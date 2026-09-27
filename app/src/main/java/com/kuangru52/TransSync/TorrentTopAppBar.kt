@@ -25,16 +25,22 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -42,12 +48,8 @@ import androidx.compose.ui.unit.sp
 /**
  * ============================================================================
  * 全应用统一顶部悬浮控制栏组件库 (TorrentTopAppBar.kt)
- * - 规范统一所有顶栏元素：
- *   1. 设置页面：[← 设置] (`SettingsTopBar`)
- *   2. 主页常规模式：[三横 菜单 + 全部任务]、[乌龟图标按键] (`FloatingTopControls`)
- *   3. 主页多选模式：[已选择 N 个]、右侧 [全选 / 删除 / 三点] 融合扩展卡片及展开下拉菜单 (`MultiSelectRightCapsule`)
- *   4. 详情/节点页面：[← 返回] 按键、[信息 / 节点] 分段选项卡胶囊 (`DetailTopBar`)
- * - 统一共享 3D AGSL 凸透镜液态玻璃效果、响应式调参绑定、与 3 层物理图层高清隔离架构！
+ * - 严密的 3 层物理图层架构：底层 3D AGSL 凸透镜折射 Shader + 中层 Surface 轮廓阴影 + 顶层 100% 绝对清晰的前景文本与图标！
+ * - 完美支持常规模式、多选模式（含平滑滑动的操作按钮与完全重合的下拉菜单）、设置页顶栏与详情页顶栏。
  * ============================================================================
  */
 
@@ -64,14 +66,17 @@ fun TopBarGlassSurface(
     val context = LocalContext.current
     val density = LocalDensity.current
     val isDark = isSystemInDarkTheme()
+    val isInspection = LocalInspectionMode.current
 
     val topBarVersion by SettingsManager.topBarGlassParamsVersion.collectAsState()
     val glassParams = remember(isDark, topBarVersion) { SettingsManager.getTopBarGlassParams(context, isDark) }
 
     val barBgColor = if (isDark) Color(0x99141D26) else Color(0xA6FFFFFF)
 
+    var posInRoot by remember { mutableStateOf(Offset.Zero) }
+
     val cachedShader = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             try {
                 android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
             } catch (_: Exception) { null }
@@ -84,6 +89,9 @@ fun TopBarGlassSurface(
         border = border,
         shadowElevation = shadowElevation,
         modifier = modifier
+            .onGloballyPositioned { coordinates ->
+                posInRoot = coordinates.positionInRoot()
+            }
             .clip(shape)
             .then(
                 if (onClick != null) {
@@ -96,17 +104,18 @@ fun TopBarGlassSurface(
             )
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.wrapContentSize(),
             contentAlignment = Alignment.Center
         ) {
-            // 1. 底层：独占 renderEffect 凸透镜 Shader 渲染层 + 磨砂玻璃背板 tint
+            // 1. 底层 (Bottom Layer)：独占 renderEffect 凸透镜 Shader 渲染层 + 磨砂玻璃背板 tint (只模糊/折射背景，绝对不触及上层文字图标)
             Box(
                 modifier = Modifier
                     .matchParentSize()
+                    .clip(shape)
                     .graphicsLayer {
                         clip = true
                         this.shape = shape
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
                                 try {
                                     val shader = cachedShader
@@ -138,6 +147,13 @@ fun TopBarGlassSurface(
                         }
                     }
                     .drawBehind {
+                        if (backdropLayer != null) {
+                            try {
+                                translate(left = -posInRoot.x, top = -posInRoot.y) {
+                                    drawLayer(backdropLayer)
+                                }
+                            } catch (_: Exception) {}
+                        }
                         drawRect(color = barBgColor)
                         if (glassParams.whitePoint > 0f) {
                             drawRect(color = Color.White.copy(alpha = (glassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
@@ -145,9 +161,9 @@ fun TopBarGlassSurface(
                     }
             )
 
-            // 2. 最上层：100% 矢量原生清晰的前景文本与图标
+            // 2. 最上层 (Top Foreground Layer)：100% 矢量原生清晰的前景文本与图标 (独立于底层 Shader，绝对清晰不模糊)
             Box(
-                modifier = Modifier.fillMaxHeight().wrapContentWidth(),
+                modifier = Modifier.wrapContentSize(),
                 contentAlignment = Alignment.Center,
                 content = content
             )
@@ -180,6 +196,7 @@ fun SettingsTopBar(
         TopBarGlassSurface(
             shape = RoundedCornerShape(100.dp),
             border = BorderStroke(1.dp, barBorderColor),
+            backdropLayer = backdropLayer,
             onClick = onBackClick,
             modifier = Modifier
                 .wrapContentWidth()
@@ -263,6 +280,7 @@ fun FloatingTopControls(
             TopBarGlassSurface(
                 shape = RoundedCornerShape(100.dp),
                 border = BorderStroke(1.dp, barBorderColor),
+                backdropLayer = backdropLayer,
                 onClick = onMenuClick,
                 modifier = Modifier
                     .wrapContentWidth()
@@ -307,6 +325,7 @@ fun FloatingTopControls(
             TopBarGlassSurface(
                 shape = CircleShape,
                 border = BorderStroke(1.dp, barBorderColor),
+                backdropLayer = backdropLayer,
                 onClick = onTurtleClick,
                 modifier = Modifier
                     .size(44.dp)
@@ -336,6 +355,7 @@ fun FloatingTopControls(
             TopBarGlassSurface(
                 shape = RoundedCornerShape(100.dp),
                 border = BorderStroke(1.dp, barBorderColor),
+                backdropLayer = backdropLayer,
                 onClick = onCloseSelection,
                 modifier = Modifier
                     .wrapContentWidth()
@@ -404,7 +424,7 @@ fun FloatingTopControls(
 }
 
 /**
- * 主页多选模式右侧融合扩展悬浮胶囊卡片
+ * 主页多选模式右侧融合扩展悬浮胶囊卡片（特效与下拉菜单窗口 100% 重合）
  */
 @Composable
 fun MultiSelectRightCapsule(
@@ -452,6 +472,7 @@ fun MultiSelectRightCapsule(
     TopBarGlassSurface(
         shape = RoundedCornerShape(cardCornerRadius),
         border = BorderStroke(1.dp, barBorderColor),
+        backdropLayer = backdropLayer,
         modifier = Modifier.wrapContentSize(),
     ) {
         Column(
@@ -582,6 +603,7 @@ fun DetailTopBar(
         TopBarGlassSurface(
             shape = CircleShape,
             border = BorderStroke(1.dp, barBorderColor),
+            backdropLayer = backdropLayer,
             onClick = onBackClick,
             modifier = Modifier
                 .size(44.dp)
@@ -611,11 +633,11 @@ fun DetailTopBar(
         TopBarGlassSurface(
             shape = RoundedCornerShape(100.dp),
             border = BorderStroke(1.dp, barBorderColor),
+            backdropLayer = backdropLayer,
             modifier = Modifier
                 .height(44.dp)
                 .width(180.dp)
                 .align(Alignment.Center),
-            backdropLayer = backdropLayer,
         ) {
             Row(
                 modifier = Modifier
@@ -644,7 +666,7 @@ fun DetailTopBar(
                                 text = title,
                                 fontSize = 14.5.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else textColor,
+                                color = if (isDark) Color.White else Color(0xFF2D3436),
                             )
                         }
                     }
@@ -671,6 +693,94 @@ fun getFilterTitleText(filter: String): String {
             } else {
                 stringResource(R.string.nav_all)
             }
+        }
+    }
+}
+
+// ============================================================================
+// Safe Compose Previews for TorrentTopAppBar states (LayoutLib Crash-Free)
+// ============================================================================
+
+@Preview(name = "常规模式 - 浅色模式", showBackground = true)
+@Composable
+fun FloatingTopControls_Normal_Light_Preview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxWidth().height(60.dp), color = Color(0xFFF0F2F5)) {
+            FloatingTopControls(
+                titleText = "全部任务",
+                sizeText = "58.5 GB",
+                altSpeedEnabled = false,
+                selectedCount = 0,
+                onMenuClick = {},
+                onTurtleClick = {},
+                onCloseSelection = {},
+                onSelectAll = {},
+                onDeleteSelected = {},
+                onStartSelected = {},
+                onStopSelected = {},
+                onRenameSelected = {},
+                onSetLocationSelected = {},
+                onSetHrSelected = {},
+                onVerifySelected = {},
+                onReannounceSelected = {},
+                isDark = false
+            )
+        }
+    }
+}
+
+@Preview(name = "多选模式 - 深色模式", showBackground = true)
+@Composable
+fun FloatingTopControls_MultiSelect_Dark_Preview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxWidth().height(120.dp), color = Color(0xFF161F29)) {
+            FloatingTopControls(
+                titleText = "全部任务",
+                sizeText = "58.5 GB",
+                altSpeedEnabled = true,
+                selectedCount = 3,
+                onMenuClick = {},
+                onTurtleClick = {},
+                onCloseSelection = {},
+                onSelectAll = {},
+                onDeleteSelected = {},
+                onStartSelected = {},
+                onStopSelected = {},
+                onRenameSelected = {},
+                onSetLocationSelected = {},
+                onSetHrSelected = {},
+                onVerifySelected = {},
+                onReannounceSelected = {},
+                isDark = true
+            )
+        }
+    }
+}
+
+@Preview(name = "SettingsTopBar Preview", showBackground = true)
+@Composable
+fun SettingsTopBar_Preview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxWidth().height(60.dp), color = Color(0xFFF0F2F5)) {
+            SettingsTopBar(
+                onBackClick = {},
+                isDark = false
+            )
+        }
+    }
+}
+
+@Preview(name = "DetailTopBar Preview", showBackground = true)
+@Composable
+fun DetailTopBar_Preview() {
+    MaterialTheme {
+        Surface(modifier = Modifier.fillMaxWidth().height(60.dp), color = Color(0xFF161F29)) {
+            DetailTopBar(
+                currentPage = 0,
+                onTabSelected = {},
+                onBackClick = {},
+                isDark = true
+            )
         }
     }
 }
