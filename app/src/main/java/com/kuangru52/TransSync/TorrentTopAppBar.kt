@@ -529,8 +529,6 @@ fun MultiSelectRightCapsule(
             }
 
             if (isExpanded) {
-                HorizontalDivider(color = barBorderColor, thickness = 1.dp, modifier = Modifier.fillMaxWidth())
-
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
