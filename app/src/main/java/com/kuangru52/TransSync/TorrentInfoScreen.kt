@@ -166,7 +166,7 @@ fun TorrentInfoScreen(
                 CircularProgressIndicator(color = accentColor)
             }
         } else {
-            val torrent: Torrent = activeTorrent ?: (torrent ?: return)
+            val torrent = activeTorrent
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
