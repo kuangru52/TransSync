@@ -294,7 +294,7 @@ private fun WaterPipeProgressBar(
                     fontWeight = FontWeight.ExtraBold,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
                     color = Color.White,
-                )
+                ),
             )
         }
 
@@ -305,7 +305,7 @@ private fun WaterPipeProgressBar(
                     .weight((1f - fraction).coerceAtLeast(0.001f))
                     .height(1.5.dp)
                     .background(inactiveColor, RoundedCornerShape(topEnd = 100.dp, bottomEnd = 100.dp))
-                    .offset(x = (-1).dp)
+                    .offset(x = (-1).dp),
             )
         }
     }

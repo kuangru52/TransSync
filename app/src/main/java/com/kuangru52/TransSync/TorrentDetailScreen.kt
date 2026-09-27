@@ -118,7 +118,8 @@ fun TorrentDetailScreen(
                                         override fun onFailure(c: retrofit2.Call<QbitPeersResponse>, t: Throwable) {}
                                     })
 
-                                    qbitService.getTorrentTrackers(targetHash).enqueue(object : retrofit2.Callback<List<QbitTrackerItem>> {
+                                    qbitService.getTorrentTrackers(targetHash)
+                                        .enqueue(object : retrofit2.Callback<List<QbitTrackerItem>> {
                                         override fun onResponse(c: retrofit2.Call<List<QbitTrackerItem>>, r: retrofit2.Response<List<QbitTrackerItem>>) {
                                             if (r.isSuccessful) {
                                                 val trackersList = r.body() ?: emptyList()
@@ -202,7 +203,7 @@ fun TorrentDetailScreen(
                     qbitService.reannounceTorrents(targetHash.ifEmpty { "all" }).enqueue(object : retrofit2.Callback<String> {
                         override fun onResponse(call: retrofit2.Call<String>, response: retrofit2.Response<String>) {
                             isPeersRefreshing = false
-                            if (response.isSuccessful || response.code() == 200) {
+                            if ((response.isSuccessful) || (response.code() == 200)) {
                                 android.widget.Toast.makeText(context, R.string.msg_reannounce_success, android.widget.Toast.LENGTH_SHORT).show()
                                 fetchDetailData()
                             } else {

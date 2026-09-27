@@ -60,7 +60,7 @@ object WallpaperManager {
                 val jsonStr = response.body?.string() ?: return@withContext null
                 val jsonObj = JSONObject(jsonStr)
                 val images = jsonObj.optJSONArray("images")
-                if (images != null && images.length() > 0) {
+                if ((images != null) && (images.length() > 0)) {
                     val urlPath = images.getJSONObject(0).optString("url")
                     if (urlPath.isNotBlank()) {
                         val fullUrl = if (urlPath.startsWith("http")) urlPath else "$BING_HOST$urlPath"
@@ -87,7 +87,7 @@ object WallpaperManager {
         try {
             if (mode == "bing") {
                 val bingFile = getBingWallpaperFile(context)
-                if (bingFile != null && bingFile.exists()) {
+                if ((bingFile != null) && (bingFile.exists())) {
                     return@withContext BitmapFactory.decodeFile(bingFile.absolutePath)?.asImageBitmap()
                 }
             } else if (mode == "local" && localUris.isNotEmpty()) {

@@ -106,7 +106,7 @@ fun TopBarGlassSurface(
                         indication = null,
                         onClick = onClick,
                     )
-                } else Modifier
+                } else Modifier,
             )
     ) {
         Box(
@@ -122,7 +122,7 @@ fun TopBarGlassSurface(
                         .graphicsLayer {
                             clip = true
                             this.shape = shape
-                            if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            if (!isInspection && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)) {
                                 if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
                                     try {
                                         cachedShader.setFloatUniform("size", size.width, size.height)
@@ -423,8 +423,7 @@ fun FloatingTopControls(
                 SettingsManager.saveTopBarGlassParams(context, defParams)
             },
             onSave = { showTuningInspector = false },
-            onDismiss = { showTuningInspector = false },
-        )
+        ) { showTuningInspector = false }
     }
 }
 

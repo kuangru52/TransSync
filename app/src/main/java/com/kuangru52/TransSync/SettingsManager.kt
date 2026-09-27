@@ -246,6 +246,7 @@ object SettingsManager {
     }
 
     // --- 全局 GlassParams 数据类集中管理 ---
+    @Suppress("unused")
     fun getSpeedbarGlassParams(context: Context, isDark: Boolean): GlassParams {
         return GlassParams(
             refraction = getSpeedbarRefraction(context, isDark),
@@ -257,6 +258,7 @@ object SettingsManager {
         )
     }
 
+    @Suppress("unused")
     fun saveSpeedbarGlassParams(context: Context, params: GlassParams) {
         setSpeedbarRefraction(context, params.refraction)
         setSpeedbarHeight(context, params.refractionHeight)
@@ -306,6 +308,7 @@ object SettingsManager {
         _topBarGlassParamsVersion.value++
     }
 
+    @Suppress("unused")
     fun getDialogGlassParams(context: Context, isDark: Boolean): GlassParams {
         return GlassParams(
             refraction = getDialogRefraction(context, isDark),
@@ -317,6 +320,7 @@ object SettingsManager {
         )
     }
 
+    @Suppress("unused")
     fun saveDialogGlassParams(context: Context, params: GlassParams) {
         setDialogRefraction(context, params.refraction)
         setDialogHeight(context, params.refractionHeight)

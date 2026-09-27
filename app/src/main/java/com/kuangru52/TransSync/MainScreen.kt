@@ -525,7 +525,7 @@ fun MainScreen(
 
 private fun formatServerUrl(inputUrl: String, clientType: String): String {
     var url = inputUrl.trim()
-    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+    if ((!url.startsWith("http://")) && (!url.startsWith("https://"))) {
         url = if (url.startsWith("192.168.") || url.startsWith("10.") || url.startsWith("172.") || url.startsWith("127.0.0.1") || url.startsWith("localhost")) {
             "http://$url"
         } else {
