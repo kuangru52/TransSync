@@ -192,7 +192,7 @@ fun SettingsScreen(
     val cardBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
     val secondaryTextColor = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
-    val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
+    val accentColor = if (isDark) Color(0xFF42A5F5) else Color(0xFF40C4FF)
 
     val settingsView = LocalView.current
     var settingsViewLocation by remember { mutableStateOf(Offset.Zero) }
