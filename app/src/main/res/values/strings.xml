@@ -165,7 +165,16 @@
     <string name="btn_cancel">取消</string>
     <string name="btn_backup">备份</string>
     <string name="btn_restore">恢复</string>
-    <string name="tracker_dialog_placeholder">每行一个，例如www.google=Google</string>
+    <string name="tracker_dialog_placeholder">每行一个，例如www.google.com=Google</string>
     <string name="settings_title_developer">开发者模式</string>
     <string name="settings_desc_developer">开启后允许上滑网速条调节实时 Shader 调试参数</string>
+
+    <string name="cd_open_menu">打开菜单</string>
+    <string name="cd_alt_speed">限速模式</string>
+    <string name="menu_select_all">全选</string>
+    <string name="cd_more_options">更多操作</string>
+    <string name="cd_back">返回</string>
+    <string name="msg_alt_speed_off">已关闭备用带宽</string>
+    <string name="msg_alt_speed_on">已启用备用带宽</string>
+    <string name="msg_switching">切换中…</string>
 </resources>

@@ -302,7 +302,7 @@ fun FloatingTopControls(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_menu),
-                        contentDescription = "打开菜单",
+                        contentDescription = stringResource(R.string.cd_open_menu),
                         tint = textColor,
                         modifier = Modifier
                             .size(20.dp)
@@ -353,7 +353,7 @@ fun FloatingTopControls(
                 ) {
                     Icon(
                         painter = painterResource(id = if (altSpeedEnabled) R.drawable.ic_turtle else R.drawable.ic_turtle_outline),
-                        contentDescription = "限速模式",
+                        contentDescription = stringResource(R.string.cd_alt_speed),
                         tint = if (altSpeedEnabled) Color(0xFFF9A825) else textColor,
                         modifier = Modifier.size(22.dp),
                     )
@@ -504,7 +504,7 @@ fun MultiSelectRightCapsule(
                     IconButton(onClick = onSelectAll, modifier = Modifier.size(40.dp)) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_select_all),
-                            contentDescription = "全选",
+                            contentDescription = stringResource(R.string.menu_select_all),
                             tint = textColor,
                             modifier = Modifier.size(20.dp),
                         )
@@ -513,7 +513,7 @@ fun MultiSelectRightCapsule(
                     IconButton(onClick = onDeleteSelected, modifier = Modifier.size(40.dp)) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_delete),
-                            contentDescription = "删除",
+                            contentDescription = stringResource(R.string.btn_delete),
                             tint = Color(0xFFFF5252),
                             modifier = Modifier.size(20.dp),
                         )
@@ -523,7 +523,7 @@ fun MultiSelectRightCapsule(
                 IconButton(onClick = { isExpanded = !isExpanded }, modifier = Modifier.size(40.dp)) {
                     Icon(
                         painter = painterResource(id = R.drawable.ic_more_vert),
-                        contentDescription = "更多操作",
+                        contentDescription = stringResource(R.string.cd_more_options),
                         tint = textColor,
                         modifier = Modifier.size(20.dp),
                     )

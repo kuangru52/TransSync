@@ -152,4 +152,13 @@
     <string name="tracker_dialog_placeholder">One per line, e.g. www.google=Google</string>
     <string name="settings_title_developer">Developer Mode</string>
     <string name="settings_desc_developer">Enable to allow swiping up on speed bar for live UI shader tuning</string>
+
+    <string name="cd_open_menu">Open Menu</string>
+    <string name="cd_alt_speed">Alternative Speed</string>
+    <string name="menu_select_all">Select All</string>
+    <string name="cd_more_options">More Options</string>
+    <string name="cd_back">Back</string>
+    <string name="msg_alt_speed_off">Alternative speed disabled</string>
+    <string name="msg_alt_speed_on">Alternative speed enabled</string>
+    <string name="msg_switching">Switching...</string>
 </resources>

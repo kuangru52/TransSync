@@ -511,7 +511,10 @@ fun TorrentListScreen(
                             isDrawerOpen = !isDrawerOpen
                         }
                     },
-                    onTurtleClick = { viewModel.toggleAltSpeedLimits(rpcUrl, user, pass) },
+                    onTurtleClick = {
+                        Toast.makeText(context, if (altSpeedEnabled) context.getString(R.string.msg_alt_speed_off) else context.getString(R.string.msg_alt_speed_on), Toast.LENGTH_SHORT).show()
+                        viewModel.toggleAltSpeedLimits(rpcUrl, user, pass)
+                    },
                     onCloseSelection = { selectedIds = emptySet() },
                     onSelectAll = { selectedIds = torrents.map { it.id }.toSet() },
                     onDeleteSelected = {
@@ -570,7 +573,7 @@ fun TorrentListScreen(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .navigationBarsPadding()
-                        .padding(end = 24.dp, bottom = 10.dp)
+                        .padding(end = 24.dp, bottom = 28.dp)
                 ) {
                     LiquidGlassFab(
                         onClick = {

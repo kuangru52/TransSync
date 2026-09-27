@@ -191,9 +191,9 @@ fun DrawerFilterContent(
                     Surface(
                         onClick = {
                             if (!isActive) {
+                                Toast.makeText(context, "切换中…", Toast.LENGTH_SHORT).show()
                                 if (!isInspection) {
                                     ServerManager.setActiveServer(context, server.id)
-                                    Toast.makeText(context, "正在重启应用以生效 ${server.alias}...", Toast.LENGTH_SHORT).show()
                                     AppRestartUtils.restartApp(context)
                                 }
                                 activeServerId = server.id
