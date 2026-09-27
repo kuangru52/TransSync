@@ -142,7 +142,7 @@ fun SettingsScreen(
             if (internalPaths.isNotEmpty()) {
                 localWallpaperUris = internalPaths
                 SettingsManager.setLocalWallpaperUris(context, internalPaths)
-                Toast.makeText(context, "已成功保存 ${internalPaths.size} 张本地壁纸", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.msg_saved_wallpapers, internalPaths.size), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -522,7 +522,7 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.height(14.dp))
 
                             Text(
-                                text = "应用外观主题",
+                                text = stringResource(R.string.settings_title_theme),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = secondaryTextColor
@@ -545,7 +545,7 @@ fun SettingsScreen(
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = "背景壁纸模式",
+                                text = stringResource(R.string.label_wallpaper_mode),
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Medium,
                                 color = secondaryTextColor
@@ -554,9 +554,9 @@ fun SettingsScreen(
 
                             CompactSegmentedGroup(
                                 options = listOf(
-                                    "无壁纸" to "none",
-                                    "每日 Bing" to "bing",
-                                    "本地轮播" to "local"
+                                    stringResource(R.string.wallpaper_none) to "none",
+                                    stringResource(R.string.wallpaper_bing) to "bing",
+                                    stringResource(R.string.wallpaper_local) to "local"
                                 ),
                                 selectedKey = currentWallpaperMode,
                                 onOptionSelected = { mode ->
@@ -577,11 +577,11 @@ fun SettingsScreen(
                                         shape = RoundedCornerShape(100.dp),
                                         modifier = Modifier.height(36.dp)
                                     ) {
-                                        Text("选择本地图片", fontSize = 12.5.sp, color = primaryTextColor)
+                                        Text(stringResource(R.string.btn_select_local_images), fontSize = 12.5.sp, color = primaryTextColor)
                                     }
 
                                     Text(
-                                        text = if (localWallpaperUris.isNotEmpty()) "已选择 ${localWallpaperUris.size} 张 (每1小时轮播)" else "未选择图片",
+                                        text = if (localWallpaperUris.isNotEmpty()) stringResource(R.string.local_wallpaper_selected, localWallpaperUris.size) else stringResource(R.string.msg_no_images_selected),
                                         fontSize = 11.5.sp,
                                         color = secondaryTextColor
                                     )
@@ -596,7 +596,7 @@ fun SettingsScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Text(
-                                        text = "壁纸高斯模糊度",
+                                        text = stringResource(R.string.label_wallpaper_blur),
                                         fontSize = 13.sp,
                                         fontWeight = FontWeight.Medium,
                                         color = secondaryTextColor
@@ -787,9 +787,9 @@ fun SettingsScreen(
                                 isDeveloperMode = newDevMode
                                 SettingsManager.setDeveloperMode(context, newDevMode)
                                 if (newDevMode) {
-                                    Toast.makeText(context, "已进入开发者模式", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.msg_dev_mode_on), Toast.LENGTH_SHORT).show()
                                 } else {
-                                    Toast.makeText(context, "已退出开发者模式", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.msg_dev_mode_off), Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }

@@ -177,4 +177,16 @@
     <string name="msg_alt_speed_off">已关闭备用带宽</string>
     <string name="msg_alt_speed_on">已启用备用带宽</string>
     <string name="msg_switching">切换中…</string>
+
+    <string name="btn_select_local_images">选择本地图片</string>
+    <string name="msg_no_images_selected">未选择图片</string>
+    <string name="label_wallpaper_blur">壁纸高斯模糊度</string>
+    <string name="wallpaper_none">无壁纸</string>
+    <string name="wallpaper_bing">每日 Bing</string>
+    <string name="wallpaper_local">本地轮播</string>
+    <string name="msg_saved_wallpapers">已成功保存 %d 张本地壁纸</string>
+    <string name="msg_dev_mode_on">已进入开发者模式</string>
+    <string name="msg_dev_mode_off">已退出开发者模式</string>
+    <string name="label_wallpaper_mode">背景壁纸模式</string>
+    <string name="local_wallpaper_selected">已选择 %1$d 张 (每1小时轮播)</string>
 </resources>

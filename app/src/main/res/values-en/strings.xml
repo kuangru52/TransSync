@@ -161,4 +161,16 @@
     <string name="msg_alt_speed_off">Alternative speed disabled</string>
     <string name="msg_alt_speed_on">Alternative speed enabled</string>
     <string name="msg_switching">Switching...</string>
+
+    <string name="btn_select_local_images">Select Local Images</string>
+    <string name="msg_no_images_selected">No Images Selected</string>
+    <string name="label_wallpaper_blur">Wallpaper Blur</string>
+    <string name="wallpaper_none">No Wallpaper</string>
+    <string name="wallpaper_bing">Bing Daily</string>
+    <string name="wallpaper_local">Local Rotation</string>
+    <string name="msg_saved_wallpapers">Successfully saved %d local wallpapers</string>
+    <string name="msg_dev_mode_on">Developer mode enabled</string>
+    <string name="msg_dev_mode_off">Developer mode disabled</string>
+    <string name="label_wallpaper_mode">Wallpaper Mode</string>
+    <string name="local_wallpaper_selected">Selected %1$d (hourly rotation)</string>
 </resources>
