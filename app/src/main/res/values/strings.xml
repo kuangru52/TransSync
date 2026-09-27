@@ -50,7 +50,6 @@
     <string name="msg_copied_to_clipboard">已复制到剪贴板</string>
     <string name="msg_notification_denied">通知权限被拒绝。您将无法收到下载完成提醒。</string>
     <string name="msg_fill_all_fields">请填写所有字段</string>
-    <string name="msg_insecure_http">不允许使用不安全的 HTTP。请使用 HTTPS。</string>
     <string name="msg_login_failed">登录失败: %1$d</string>
     <string name="msg_error_with_msg">错误: %1$s</string>
     <string name="msg_local_file_selected">已选择本地文件</string>

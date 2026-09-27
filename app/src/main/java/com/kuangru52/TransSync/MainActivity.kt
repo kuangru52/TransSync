@@ -100,12 +100,12 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (host.startsWith("http://")) {
-            Toast.makeText(this, R.string.msg_insecure_http, Toast.LENGTH_LONG).show()
-            return
-        }
         if (!host.startsWith("https://") && !host.startsWith("http://")) {
-            host = "https://$host"
+            host = if (host.startsWith("192.168.") || host.startsWith("10.") || host.startsWith("172.") || host.startsWith("127.0.0.1") || host.startsWith("localhost")) {
+                "http://$host"
+            } else {
+                "https://$host"
+            }
         }
 
         val rpcUrl = if (clientTypeInput == ServerConfig.CLIENT_TRANSMISSION) {
