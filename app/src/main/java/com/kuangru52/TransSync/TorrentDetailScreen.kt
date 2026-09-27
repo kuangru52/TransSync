@@ -5,32 +5,20 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
@@ -43,10 +31,7 @@ import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalViewConfiguration
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.launch
 
 /**
  * 100% 纯 Compose 版本的 TorrentDetailScreen 种子详情外壳容器界面：
@@ -79,7 +64,7 @@ fun TorrentDetailScreen(
 
     val isInspection = LocalInspectionMode.current
     val graphicsContext = LocalGraphicsContext.current
-    val backdropLayer = remember(torrentId, pagerState.currentPage, isInspection) {
+    val backdropLayer = remember(torrentId, pagerState.currentPage, isInspection, graphicsContext) {
         if (!isInspection) {
             try {
                 graphicsContext.createGraphicsLayer()
@@ -100,7 +85,7 @@ fun TorrentDetailScreen(
 
     // 状态拉取函数
     val fetchDetailData = {
-        if (torrentId != -1 && rpcUrl.isNotEmpty()) {
+        if ((torrentId != -1) && rpcUrl.isNotEmpty()) {
             val (effUrl, effUser, effPass) = DialogUtils.getEffectiveCredentials(context, rpcUrl, user, pass)
             val activeServer = ServerManager.getActiveServer(context)
 
@@ -118,7 +103,8 @@ fun TorrentDetailScreen(
                                     val targetHash = targetQbit.hash
 
                                     // 开启拉取 qBittorrent 关联文件、Tracker 与 Peers 节点信息
-                                    qbitService.getTorrentPeers(targetHash).enqueue(object : retrofit2.Callback<QbitPeersResponse> {
+                                    qbitService.getTorrentPeers(targetHash)
+                                        .enqueue(object : retrofit2.Callback<QbitPeersResponse> {
                                         override fun onResponse(c: retrofit2.Call<QbitPeersResponse>, r: retrofit2.Response<QbitPeersResponse>) {
                                             if (r.isSuccessful) {
                                                 val peersMap = r.body()?.peers ?: emptyMap()
@@ -274,7 +260,7 @@ fun TorrentDetailScreen(
     var recordTick by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(16L)
+            kotlinx.coroutines.delay(16)
             recordTick++
         }
     }
@@ -408,9 +394,7 @@ fun TorrentDetailScreen(
                     )
                 }
                 .drawWithContent {
-                    val dummy = recordTick.toString()
-                    if (dummy.isEmpty()) {}
-                    if (backdropLayer != null) {
+                    if (recordTick >= 0L && backdropLayer != null) {
                         try {
                             backdropLayer.record {
                                 this@drawWithContent.drawContent()
