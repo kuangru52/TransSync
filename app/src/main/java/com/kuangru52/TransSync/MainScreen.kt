@@ -179,7 +179,8 @@ fun MainScreen(
                 }
             } else {
                 val service = TransmissionClient.getService(formattedUrl, u, p)
-                service.rpc(formattedUrl, null, RpcRequest("session-get")).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+                service.rpc(formattedUrl, null, RpcRequest("session-get"))
+                    .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                     override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                         isTestingConnection = false
                         if ((response.isSuccessful) || (response.code() == 409)) {

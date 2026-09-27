@@ -293,7 +293,7 @@ private fun WaterPipeProgressBar(
                     lineHeight = 10.sp,
                     fontWeight = FontWeight.ExtraBold,
                     platformStyle = PlatformTextStyle(includeFontPadding = false),
-                    color = Color.White
+                    color = Color.White,
                 )
             )
         }

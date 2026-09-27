@@ -2,6 +2,7 @@ package com.kuangru52.transsync
 
 import android.graphics.Shader
 import android.os.Build
+import kotlin.time.Duration.Companion.milliseconds
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -167,7 +168,7 @@ fun LiquidGlassDialog(
         LaunchedEffect(dialogInstanceId, backdropLayer) {
             if (backdropLayer != null) {
                 // 等待 16ms (1 帧)，确保主界面先完成对最新背景视效的图形录制
-                kotlinx.coroutines.delay(16L)
+                kotlinx.coroutines.delay(16.milliseconds)
                 try {
                     backdropBitmap = backdropLayer.toImageBitmap()
                 } catch (e: Exception) {

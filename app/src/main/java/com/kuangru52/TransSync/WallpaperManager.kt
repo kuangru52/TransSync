@@ -50,7 +50,7 @@ object WallpaperManager {
             val dateStr = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
             val targetFile = File(cacheDir, "bing_$dateStr.jpg")
 
-            if (targetFile.exists() && targetFile.length() > 0L) {
+            if ((targetFile.exists()) && (targetFile.length() > 0L)) {
                 return@withContext targetFile
             }
 
@@ -98,8 +98,8 @@ object WallpaperManager {
 
                 // 1. 优先尝试解译应用私有目录文件路径
                 if (uriStr.startsWith("/")) {
-                    val file = java.io.File(uriStr)
-                    if (file.exists() && file.length() > 0L) {
+                    val file = File(uriStr)
+                    if ((file.exists()) && (file.length() > 0L)) {
                         val bitmap = BitmapFactory.decodeFile(file.absolutePath)
                         if (bitmap != null) return@withContext bitmap.asImageBitmap()
                     }
@@ -140,7 +140,7 @@ fun WallpaperBackground(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(baseColor)
+                .background(baseColor),
         )
         return
     }
@@ -162,9 +162,7 @@ fun WallpaperBackground(
         LaunchedEffect(mode, localUris, SettingsManager.wallpaperStateVersion) {
             if (mode != "none") {
                 val loaded = WallpaperManager.loadCurrentWallpaperBitmap(context, mode, localUris)
-                if (loaded != null) {
-                    wallpaperBitmap = loaded
-                }
+                loaded?.let { wallpaperBitmap = it }
             } else {
                 wallpaperBitmap = null
             }

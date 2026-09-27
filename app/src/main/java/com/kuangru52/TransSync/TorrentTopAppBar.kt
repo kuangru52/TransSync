@@ -86,7 +86,7 @@ fun TopBarGlassSurface(
         } else null
     }
 
-    val hasGlassEffect = (glassParams.refraction != 0f || glassParams.blurRadius > 0f || glassParams.whitePoint > 0f)
+    val hasGlassEffect = ((glassParams.refraction != 0f) || (glassParams.blurRadius > 0f) || (glassParams.whitePoint > 0f))
 
     // Layer 2 (Middle): Surface Container
     Surface(
@@ -111,7 +111,7 @@ fun TopBarGlassSurface(
     ) {
         Box(
             modifier = Modifier.wrapContentSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             // Layer 1 (Bottom): Background Shader & Frosted Glass Tint (Only affects background, NEVER touches foreground content)
             if (hasGlassEffect) {
@@ -272,7 +272,7 @@ fun FloatingTopControls(
     val haptic = LocalHapticFeedback.current
 
     val isDeveloperMode = remember { SettingsManager.isDeveloperMode(context) }
-    var showTuningInspector by remember { mutableStateOf(false) }
+    var showTuningInspector by remember { mutableStateOf(value = false) }
 
     Row(
         modifier = modifier
@@ -423,7 +423,7 @@ fun FloatingTopControls(
                 SettingsManager.saveTopBarGlassParams(context, defParams)
             },
             onSave = { showTuningInspector = false },
-            onDismiss = { showTuningInspector = false }
+            onDismiss = { showTuningInspector = false },
         )
     }
 }

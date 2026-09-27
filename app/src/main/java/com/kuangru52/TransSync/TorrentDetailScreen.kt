@@ -1,5 +1,7 @@
 package com.kuangru52.transsync
 
+import kotlin.time.Duration.Companion.milliseconds
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.spring
@@ -188,7 +190,7 @@ fun TorrentDetailScreen(
     // 重新汇报节点函数
     val reannouncePeers = {
         val (effUrl, effUser, effPass) = DialogUtils.getEffectiveCredentials(context, rpcUrl, user, pass)
-        if (torrentId != -1 && effUrl.isNotEmpty()) {
+        if ((torrentId != -1) && (effUrl.isNotEmpty())) {
             val activeServer = ServerManager.getActiveServer(context)
 
             if (activeServer?.clientType == ServerConfig.CLIENT_QBITTORRENT) {
@@ -260,7 +262,7 @@ fun TorrentDetailScreen(
     var recordTick by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(16L)
+            kotlinx.coroutines.delay(16.milliseconds)
             recordTick++
         }
     }
