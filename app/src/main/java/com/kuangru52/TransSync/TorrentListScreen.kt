@@ -570,7 +570,7 @@ fun TorrentListScreen(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .navigationBarsPadding()
-                        .padding(end = 24.dp, bottom = 16.dp)
+                        .padding(end = 24.dp, bottom = 10.dp)
                 ) {
                     LiquidGlassFab(
                         onClick = {
