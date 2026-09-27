@@ -2,7 +2,6 @@ package com.kuangru52.transsync
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -74,9 +73,6 @@ fun TorrentDetailScreen(
         onPageSelected(pagerState.currentPage)
     }
 
-    val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
-    val topBarBgColor = if (isDark) Color(0xFF161F29) else Color(0xFF455A64)
-
     var torrentInfoState by remember { mutableStateOf<Torrent?>(null) }
     var peersState by remember { mutableStateOf<List<Peer>>(emptyList()) }
     var isPeersRefreshing by remember { mutableStateOf(value = false) }
@@ -100,7 +96,6 @@ fun TorrentDetailScreen(
         }
     }
 
-    val detailView = LocalView.current
     var detailViewLocation by remember { mutableStateOf(Offset.Zero) }
 
     // 状态拉取函数
@@ -276,10 +271,10 @@ fun TorrentDetailScreen(
         fetchDetailData()
     }
 
-    var recordTick by remember { mutableStateOf(0L) }
+    var recordTick by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(16)
+            kotlinx.coroutines.delay(16L)
             recordTick++
         }
     }
