@@ -72,7 +72,7 @@ fun MainScreen(
     var isTestingConnection by remember { mutableStateOf(value = false) }
 
     val avatarPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
         uri?.let { selectedUri ->
             try {
@@ -138,37 +138,42 @@ fun MainScreen(
             if (clientTypeInput == ServerConfig.CLIENT_QBITTORRENT) {
                 val qbitService = QBittorrentClient.getService(formattedUrl)
                 val performTransferCheck = {
-                    qbitService.getTransferInfo().enqueue(object : Callback<QbitTransferInfo> {
-                        override fun onResponse(call: Call<QbitTransferInfo>, response: Response<QbitTransferInfo>) {
-                            isTestingConnection = false
-                            if ((response.isSuccessful) || (response.code() == 200)) {
-                                Toast.makeText(context, "连接成功！qBittorrent Web API 握手正常", Toast.LENGTH_SHORT).show()
-                            } else {
-                                Toast.makeText(context, "连接失败，HTTP 响应码: ${response.code()}", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                        override fun onFailure(call: Call<QbitTransferInfo>, t: Throwable) {
-                            isTestingConnection = false
-                            Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-                        }
-                    })
+                    qbitService.getTransferInfo()
+                        .enqueue(
+                            object : Callback<QbitTransferInfo> {
+                                override fun onResponse(call: Call<QbitTransferInfo>, response: Response<QbitTransferInfo>) {
+                                    isTestingConnection = false
+                                    if ((response.isSuccessful) || (response.code() == 200)) {
+                                        Toast.makeText(context, "连接成功！qBittorrent Web API 握手正常", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "连接失败，HTTP 响应码: ${response.code()}", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                                override fun onFailure(call: Call<QbitTransferInfo>, t: Throwable) {
+                                    isTestingConnection = false
+                                    Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                        )
                 }
 
                 if (u.isNotEmpty() || p.isNotEmpty()) {
-                    qbitService.login(u, p).enqueue(object : Callback<String> {
-                        override fun onResponse(call: Call<String>, response: Response<String>) {
-                            if ((response.isSuccessful) || (response.code() == 200)) {
-                                performTransferCheck()
-                            } else {
-                                isTestingConnection = false
-                                Toast.makeText(context, "qBittorrent 登录失败 (HTTP ${response.code()})，请检查账号密码", Toast.LENGTH_SHORT).show()
+                    qbitService.login(u, p).enqueue(
+                        object : Callback<String> {
+                            override fun onResponse(call: Call<String>, response: Response<String>) {
+                                if ((response.isSuccessful) || (response.code() == 200)) {
+                                    performTransferCheck()
+                                } else {
+                                    isTestingConnection = false
+                                    Toast.makeText(context, "qBittorrent 登录失败 (HTTP ${response.code()})，请检查账号密码", Toast.LENGTH_SHORT).show()
+                                }
                             }
-                        }
-                        override fun onFailure(call: Call<String>, t: Throwable) {
-                            isTestingConnection = false
-                            Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
-                        }
-                    })
+                            override fun onFailure(call: Call<String>, t: Throwable) {
+                                isTestingConnection = false
+                                Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    )
                 } else {
                     performTransferCheck()
                 }

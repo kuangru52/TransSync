@@ -260,7 +260,7 @@ fun TorrentDetailScreen(
     var recordTick by remember { mutableLongStateOf(0L) }
     LaunchedEffect(Unit) {
         while (true) {
-            kotlinx.coroutines.delay(16)
+            kotlinx.coroutines.delay(16L)
             recordTick++
         }
     }

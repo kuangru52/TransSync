@@ -167,7 +167,7 @@ fun LiquidGlassDialog(
         LaunchedEffect(dialogInstanceId, backdropLayer) {
             if (backdropLayer != null) {
                 // 等待 16ms (1 帧)，确保主界面先完成对最新背景视效的图形录制
-                kotlinx.coroutines.delay(16)
+                kotlinx.coroutines.delay(16L)
                 try {
                     backdropBitmap = backdropLayer.toImageBitmap()
                 } catch (e: Exception) {
