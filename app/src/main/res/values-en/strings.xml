@@ -173,4 +173,14 @@
     <string name="msg_dev_mode_off">Developer mode disabled</string>
     <string name="label_wallpaper_mode">Wallpaper Mode</string>
     <string name="local_wallpaper_selected">Selected %1$d (hourly rotation)</string>
+
+    <string name="settings_title_theme_wallpaper">Theme &amp; Wallpaper</string>
+    <string name="msg_restore_ini_only">Only .ini format tracker backup files can be restored</string>
+    <string name="msg_restore_success">Restored successfully, added %1$d new mappings</string>
+    <string name="msg_restore_exists">Mappings in backup already exist</string>
+    <string name="msg_restore_no_valid">No valid tracker mappings found in ini file</string>
+    <string name="msg_restore_read_failed">Failed to read ini file</string>
+    <string name="msg_tracker_mappings_saved">Tracker mappings saved successfully</string>
+    <string name="msg_backup_success">Backed up to: %1$s</string>
+    <string name="msg_backup_failed">Backup failed</string>
 </resources>

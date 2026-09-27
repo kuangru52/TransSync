@@ -505,7 +505,7 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "主题与壁纸",
+                                text = stringResource(R.string.settings_title_theme_wallpaper),
                                 fontSize = 15.5.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = primaryTextColor
@@ -1384,7 +1384,7 @@ fun AddCustomTrackerDialog(
                 }
 
                 if (!fileName.lowercase().endsWith(".ini")) {
-                    Toast.makeText(context, "只能恢复 .ini 格式的 Tracker 备份文件", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.msg_restore_ini_only), Toast.LENGTH_SHORT).show()
                     return@rememberLauncherForActivityResult
                 }
 
@@ -1422,15 +1422,15 @@ fun AddCustomTrackerDialog(
                         append(newLines.joinToString("\n"))
                     }
                     inputText = combinedText
-                    Toast.makeText(context, "增量恢复成功，已新增 $addedCount 条映射", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.msg_restore_success, addedCount), Toast.LENGTH_SHORT).show()
                 } else if (existingLines.isNotEmpty()) {
-                    Toast.makeText(context, "备份文件中的映射已存在，无需重复恢复", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.msg_restore_exists), Toast.LENGTH_SHORT).show()
                 } else {
-                    Toast.makeText(context, "未能在 ini 文件中找到有效的 Tracker 映射", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.msg_restore_no_valid), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(context, "读取 ini 文件失败", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.msg_restore_read_failed), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -1443,7 +1443,7 @@ fun AddCustomTrackerDialog(
         onDismissRequest = onDismiss,
         backdropLayer = backdropLayer,
         boxPositionInRoot = boxPositionInRoot,
-        title = "自定义 Tracker 映射",
+        title = stringResource(R.string.settings_title_custom_trackers),
         confirmButtonText = stringResource(R.string.btn_save),
         confirmButtonColor = accentColor,
         onConfirm = {
@@ -1462,7 +1462,7 @@ fun AddCustomTrackerDialog(
                 }
             }
             onSave(updatedMap)
-            Toast.makeText(context, "Tracker 映射保存成功", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, context.getString(R.string.msg_tracker_mappings_saved), Toast.LENGTH_SHORT).show()
         },
         bottomLeftContent = {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1470,9 +1470,9 @@ fun AddCustomTrackerDialog(
                     onClick = {
                         val savedPath = backupTrackersToDownloads(context, inputText)
                         if (savedPath != null) {
-                            Toast.makeText(context, "已备份至: $savedPath", Toast.LENGTH_LONG).show()
+                            Toast.makeText(context, context.getString(R.string.msg_backup_success, savedPath), Toast.LENGTH_LONG).show()
                         } else {
-                            Toast.makeText(context, "备份失败", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, context.getString(R.string.msg_backup_failed), Toast.LENGTH_SHORT).show()
                         }
                     },
                     shape = RoundedCornerShape(100.dp),
