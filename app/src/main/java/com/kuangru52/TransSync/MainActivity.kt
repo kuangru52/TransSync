@@ -2,7 +2,6 @@ package com.kuangru52.transsync
 
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -15,7 +14,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.IntentCompat
-import androidx.core.graphics.toColorInt
 import androidx.core.view.WindowInsetsControllerCompat
 import retrofit2.Call
 import retrofit2.Callback

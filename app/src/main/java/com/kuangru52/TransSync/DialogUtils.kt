@@ -40,7 +40,8 @@ object DialogUtils {
 
         if (activeServer?.clientType == ServerConfig.CLIENT_QBITTORRENT) {
             val qbitService = QBittorrentClient.getService(effUrl)
-            qbitService.renameTorrent(torrentHash, newName).enqueue(object : Callback<String> {
+            qbitService.renameTorrent(torrentHash, newName)
+                .enqueue(object : Callback<String> {
                 override fun onResponse(call: Call<String>, response: Response<String>) {
                     if (response.isSuccessful) onSuccess() else Toast.makeText(context, context.getString(R.string.msg_update_failed, response.code()), Toast.LENGTH_SHORT).show()
                 }
@@ -82,7 +83,7 @@ object DialogUtils {
 
         if (activeServer?.clientType == ServerConfig.CLIENT_QBITTORRENT) {
             val qbitService = QBittorrentClient.getService(effUrl)
-            val hashesStr = torrentHashes.filter { it.isNotEmpty() }.joinToString("|")
+            val hashesStr = torrentHashes.asSequence().filter { it.isNotEmpty() }.joinToString("|")
             qbitService.deleteTorrents(hashesStr, deleteData).enqueue(object : Callback<String> {
                 override fun onResponse(call: Call<String>, response: Response<String>) {
                     if (response.isSuccessful) onSuccess() else Toast.makeText(context, context.getString(R.string.msg_update_failed, response.code()), Toast.LENGTH_SHORT).show()
@@ -188,7 +189,7 @@ object DialogUtils {
                 if (hrTag.isNotEmpty()) {
                     qbitService.addTags(hashesStr, hrTag).enqueue(object : Callback<String> {
                         override fun onResponse(call: Call<String>, response: Response<String>) {
-                            if (response.isSuccessful || response.code() == 200) {
+                            if ((response.isSuccessful) || (response.code() == 200)) {
                                 Toast.makeText(context, R.string.msg_hr_set_success, Toast.LENGTH_SHORT).show()
                                 onSuccess()
                             } else {
@@ -219,7 +220,7 @@ object DialogUtils {
         val service = TransmissionClient.getService(effUrl, effUser, effPass)
         val hrLabel = if (hours > 0) "HR:$hours" else null
         val args = mutableMapOf<String, Any>("ids" to torrentIds)
-        args["labels"] = if (hrLabel != null) listOf(hrLabel) else emptyList()
+        args["labels"] = hrLabel?.let { listOf(it) } ?: emptyList<String>()
 
         service.rpc(effUrl, null, RpcRequest("torrent-set", args)).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
             override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
@@ -264,7 +265,7 @@ object DialogUtils {
                 val builder = MultipartBody.Builder().setType(MultipartBody.FORM)
                 if (url.isNotEmpty()) builder.addFormDataPart("urls", url)
                 if (downloadDir.isNotEmpty()) builder.addFormDataPart("savepath", downloadDir)
-                if (hrLabel != null) builder.addFormDataPart("tags", hrLabel)
+                hrLabel?.let { builder.addFormDataPart("tags", it) }
                 builder.addFormDataPart("autoTMM", "false")
 
                 if (fileUri != null) {

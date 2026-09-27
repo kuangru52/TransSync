@@ -59,9 +59,9 @@ fun TorrentInfoScreen(
     user: String,
     pass: String,
     onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
     backdropLayer: GraphicsLayer? = null,
     boxPositionInRoot: Offset = Offset.Zero,
-    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
@@ -166,13 +166,13 @@ fun TorrentInfoScreen(
                 CircularProgressIndicator(color = accentColor)
             }
         } else {
-            val torrent = activeTorrent
+            val torrent: Torrent = activeTorrent ?: (torrent ?: return)
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 12.dp),
                 contentPadding = PaddingValues(top = 64.dp, bottom = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 // 1. 卡片 1: 种子名称与 1:1 复刻原版的递归树状文件结构
                 item {

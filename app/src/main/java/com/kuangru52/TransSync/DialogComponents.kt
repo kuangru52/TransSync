@@ -45,7 +45,7 @@ fun RenameTorrentDialog(
         title = stringResource(R.string.dialog_rename_title),
         confirmButtonText = stringResource(R.string.btn_confirm),
         confirmButtonColor = Color(0xFF1D88E3),
-        isConfirmEnabled = newNameInput.isNotBlank() && newNameInput != targetTorrent.name,
+        isConfirmEnabled = (newNameInput.isNotBlank() && newNameInput != targetTorrent.name),
         onConfirm = {
             val nameToSave = newNameInput.trim()
             onDismiss()
@@ -99,7 +99,7 @@ fun SetLocationDialog(
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
     var locationInput by remember(torrents) { mutableStateOf(torrents.firstOrNull()?.downloadDir ?: "") }
-    var moveData by remember { mutableStateOf(true) }
+    var moveData by remember { mutableStateOf(value = true) }
     var freeSpaceText by remember { mutableStateOf("") }
 
     val allDirs = remember(ServerManager.serversVersion, torrents) { DownloadDirManager.getAllDirs(context, torrents) }
@@ -252,8 +252,7 @@ fun SetHrDialog(
             trailingIcon = {
                 QuickHrSlidingSelector(
                     selectedDay = hrDaysInput,
-                    onDaySelected = { hrDaysInput = it },
-                )
+                ) { hrDaysInput = it }
             },
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF),
