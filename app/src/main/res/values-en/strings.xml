@@ -1,10 +1,5 @@
 <resources>
     <string name="app_name">TransSync</string>
-    <string name="login_title">Transmission Login</string>
-    <string name="host_hint">Server Address (e.g. https://domain:port)</string>
-    <string name="username_hint">Username</string>
-    <string name="password_hint">Password</string>
-    <string name="login_button">Login</string>
 
     <string name="nav_all">All Torrents</string>
     <string name="nav_downloading">Downloading</string>
@@ -40,12 +35,9 @@
 
     <string name="time_today">Today&#160;&#160;&#160;%s</string>
     <string name="time_yesterday">Yesterday&#160;&#160;&#160;%s</string>
-    <string name="state_not_finished">Unfinished</string>
-    <string name="state_none">None</string>
     <string name="dialog_edit_tracker_title">Edit Trackers</string>
     <string name="dialog_save">Save</string>
     <string name="dialog_cancel">Cancel</string>
-    <string name="msg_fetch_tracker_failed">Failed to fetch trackers</string>
     <string name="msg_tracker_updated">Trackers updated</string>
     <string name="msg_location_updated">Location updated</string>
     <string name="msg_hr_set_success">H&amp;R requirement set</string>
@@ -56,8 +48,6 @@
     <string name="unit_minute">%dm</string>
     <string name="peer_progress">Progress: %s</string>
 
-    <string name="navigation_drawer_open">Open navigation drawer</string>
-    <string name="navigation_drawer_close">Close navigation drawer</string>
     <string name="cd_open_file">Open torrent file</string>
     <string name="selected_count">Selected: %d</string>
     <string name="free_space_label">Free Space: %s</string>
@@ -65,16 +55,10 @@
     <string name="count_bracket">[%s]</string>
     <string name="tracker_count_format">%1$s  %2$d</string>
     <string name="msg_exit_press_again">Press back again to exit</string>
-    <string name="msg_select_only_one">Please select only one item</string>
     <string name="msg_torrent_added_success">Torrent added successfully</string>
     <string name="msg_reannounce_success">Reannounced to trackers, searching for peers...</string>
     <string name="msg_copied_to_clipboard">Copied to clipboard</string>
-    <string name="msg_notification_denied">Notification permission denied.</string>
-    <string name="msg_fill_all_fields">Please fill in all fields</string>
-    <string name="msg_insecure_http">Insecure HTTP is not allowed. Please use HTTPS.</string>
     <string name="msg_login_failed">Login failed: %1$d</string>
-    <string name="msg_error_with_msg">Error: %1$s</string>
-    <string name="msg_local_file_selected">Local file selected</string>
 
     <string name="hint_new_name">New Name</string>
     <string name="dialog_add_torrent_title">Add Torrent</string>
@@ -97,8 +81,6 @@
     <string name="search_results">Search Results</string>
     <string name="label_hr">H&amp;R (Days)</string>
     <string name="hr_none">0</string>
-    <string name="hr_3_days">3</string>
-    <string name="hr_5_days">5</string>
     <string name="hr_tag">H&amp;R</string>
     <string name="hr_tag_prefix">H&amp;R</string>
     <string name="hr_met">H&amp;R Passed</string>
@@ -106,24 +88,9 @@
     <string name="tab_info">Info</string>
     <string name="tab_peers">Peers</string>
 
-    <string name="btn_feedback">About</string>
-    <string name="feedback_thanks">Thank you for using TransSync!</string>
-    <string name="feedback_tips_title">Tips</string>
-    <string name="feedback_tips_content">• HTTPS connection is recommended for security.\n• Supports sharing magnet links or .torrent files to add.</string>
-    <string name="feedback_telegram_title">Telegram Group</string>
-    <string name="feedback_telegram_desc">Join our Telegram group for updates and support.</string>
-    <string name="feedback_github_title">GitHub Repository</string>
-    <string name="feedback_github_desc">Check out our open-source code and star the repository!</string>
-    <string name="feedback_version_info">Version</string>
-
-    <string name="notif_download_finished_title">%1$d torrent(s) finished downloading</string>
-    <string name="notif_hr_finished_title">%1$d torrent(s) H&amp;R requirement met</string>
-
     <!-- Settings Page Strings -->
-    <string name="settings_title_server">Server Configurations</string>
     <string name="settings_title_theme">Appearance Theme</string>
     <string name="settings_title_language">Language</string>
-    <string name="settings_title_privacy">Privacy Mode</string>
     <string name="settings_title_custom_trackers">Custom Tracker Mappings</string>
 
     <string name="settings_theme_system">System</string>
@@ -136,8 +103,6 @@
 
     <string name="dialog_edit_server_title">Edit Server</string>
     <string name="dialog_add_server_title">Add Server</string>
-    <string name="dialog_delete_server_title">Confirm Delete Server</string>
-    <string name="dialog_delete_server_text">Are you sure you want to delete server "%s"?</string>
     <string name="label_client_type">Client Type</string>
     <string name="label_alias">Alias</string>
     <string name="label_address">Address</string>
