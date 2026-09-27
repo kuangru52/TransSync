@@ -83,16 +83,67 @@ fun TopBarGlassSurface(
         } else null
     }
 
+    val hasGlassEffect = (glassParams.refraction != 0f || glassParams.blurRadius > 0f || glassParams.whitePoint > 0f)
+
     Surface(
         shape = shape,
         color = Color.Transparent,
-        border = border,
-        shadowElevation = shadowElevation,
+        border = if (hasGlassEffect) border else null,
+        shadowElevation = if (hasGlassEffect) shadowElevation else 0.dp,
         modifier = modifier
             .onGloballyPositioned { coordinates ->
                 posInRoot = coordinates.positionInRoot()
             }
             .clip(shape)
+            .graphicsLayer {
+                clip = true
+                this.shape = shape
+                if (hasGlassEffect && !isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                        try {
+                            val shader = cachedShader
+                            shader.setFloatUniform("size", size.width, size.height)
+                            val radiusPx = if (shape == CircleShape) {
+                                (minOf(size.width, size.height) / 2f)
+                            } else {
+                                with(density) { 100.dp.toPx() }
+                            }
+                            shader.setFloatUniform("cornerRadius", radiusPx)
+                            shader.setFloatUniform("refraction", with(density) { glassParams.refraction.dp.toPx() })
+                            shader.setFloatUniform("refractionHeight", with(density) { glassParams.refractionHeight.dp.toPx() })
+                            shader.setFloatUniform("saturationBoost", glassParams.saturationBoost)
+                            shader.setFloatUniform("contrast", glassParams.contrast)
+                            shader.setFloatUniform("whitePoint", glassParams.whitePoint)
+
+                            val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                            val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
+                            val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                            renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                        } catch (_: Exception) {
+                            val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
+                            renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                        }
+                    } else {
+                        val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
+                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                    }
+                }
+            }
+            .drawBehind {
+                if (hasGlassEffect) {
+                    if (backdropLayer != null) {
+                        try {
+                            translate(left = -posInRoot.x, top = -posInRoot.y) {
+                                drawLayer(backdropLayer)
+                            }
+                        } catch (_: Exception) {}
+                    }
+                    drawRect(color = barBgColor)
+                    if (glassParams.whitePoint > 0f) {
+                        drawRect(color = Color.White.copy(alpha = (glassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
+                    }
+                }
+            }
             .then(
                 if (onClick != null) {
                     Modifier.clickable(
@@ -105,69 +156,9 @@ fun TopBarGlassSurface(
     ) {
         Box(
             modifier = Modifier.wrapContentSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            // 1. 底层 (Bottom Layer)：独占 renderEffect 凸透镜 Shader 渲染层 + 磨砂玻璃背板 tint (只模糊/折射背景，绝对不触及上层文字图标)
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(shape)
-                    .graphicsLayer {
-                        clip = true
-                        this.shape = shape
-                        if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
-                                try {
-                                    val shader = cachedShader
-                                    shader.setFloatUniform("size", size.width, size.height)
-                                    val radiusPx = if (shape == CircleShape) {
-                                        (minOf(size.width, size.height) / 2f)
-                                    } else {
-                                        with(density) { 100.dp.toPx() }
-                                    }
-                                    shader.setFloatUniform("cornerRadius", radiusPx)
-                                    shader.setFloatUniform("refraction", with(density) { glassParams.refraction.dp.toPx() })
-                                    shader.setFloatUniform("refractionHeight", with(density) { glassParams.refractionHeight.dp.toPx() })
-                                    shader.setFloatUniform("saturationBoost", glassParams.saturationBoost)
-                                    shader.setFloatUniform("contrast", glassParams.contrast)
-                                    shader.setFloatUniform("whitePoint", glassParams.whitePoint)
-
-                                    val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
-                                    val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
-                                    val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
-                                    renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
-                                } catch (_: Exception) {
-                                    val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
-                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
-                                }
-                            } else {
-                                val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
-                                renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
-                            }
-                        }
-                    }
-                    .drawBehind {
-                        if (backdropLayer != null) {
-                            try {
-                                translate(left = -posInRoot.x, top = -posInRoot.y) {
-                                    drawLayer(backdropLayer)
-                                }
-                            } catch (_: Exception) {}
-                        }
-                        drawRect(color = barBgColor)
-                        if (glassParams.whitePoint > 0f) {
-                            drawRect(color = Color.White.copy(alpha = (glassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
-                        }
-                    }
-            )
-
-            // 2. 最上层 (Top Foreground Layer)：100% 矢量原生清晰的前景文本与图标 (独立于底层 Shader，绝对清晰不模糊)
-            Box(
-                modifier = Modifier.wrapContentSize(),
-                contentAlignment = Alignment.Center,
-                content = content
-            )
-        }
+            contentAlignment = Alignment.Center,
+            content = content
+        )
     }
 }
 
