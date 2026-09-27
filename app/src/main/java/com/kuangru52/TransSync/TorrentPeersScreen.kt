@@ -71,7 +71,7 @@ fun TorrentPeersScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 8.dp),
-                contentPadding = PaddingValues(top = 60.dp, bottom = 12.dp),
+                contentPadding = PaddingValues(top = 76.dp, bottom = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(

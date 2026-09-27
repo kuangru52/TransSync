@@ -279,7 +279,7 @@ fun SettingsScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
-                        .padding(start = 16.dp, end = 16.dp, top = 56.dp, bottom = 16.dp),
+                        .padding(start = 16.dp, end = 16.dp, top = 64.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                 // 【置于最顶端】1. 服务器连接配置卡片 (直接在卡片内呈现全量服务器管理与一键切换，默认展开，点击标题可折叠/展开)
