@@ -1569,7 +1569,7 @@ private fun CompactSegmentedGroup(
                             text = label,
                             fontSize = 13.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = if (isSelected) Color.White else textColor
+                            color = if (isSelected) (if (isDark) Color.White else Color(0xFF2D3436)) else textColor
                         )
                     }
                 }
