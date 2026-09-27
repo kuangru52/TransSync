@@ -50,7 +50,7 @@ fun TorrentPeersScreen(
                     color = if (isDark) Color(0xFF00B0FF) else Color(0xFF1D88E3),
                 )
             },
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
         ) {
         if (peers.isEmpty()) {
             Box(
