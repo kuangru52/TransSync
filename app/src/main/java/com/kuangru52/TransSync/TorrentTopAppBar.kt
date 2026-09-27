@@ -48,8 +48,10 @@ import androidx.compose.ui.unit.sp
 /**
  * ============================================================================
  * 全应用统一顶部悬浮控制栏组件库 (TorrentTopAppBar.kt)
- * - 严密的 3 层物理图层架构：底层 3D AGSL 凸透镜折射 Shader + 中层 Surface 轮廓阴影 + 顶层 100% 绝对清晰的前景文本与图标！
- * - 完美支持常规模式、多选模式（含平滑滑动的操作按钮与完全重合的下拉菜单）、设置页顶栏与详情页顶栏。
+ * - 严密的 3 层物理图层隔离架构：
+ *   1. 底层 (Bottom Layer): 3D AGSL 凸透镜折射 Shader 与毛玻璃采样层 (只模糊/折射背景)
+ *   2. 中层 (Middle Layer): Surface 容器承载轮廓边框与投影阴影
+ *   3. 顶层 (Top Layer): 100% 矢量原生清晰的前景文本与图标 (绝对清晰、零模糊)
  * ============================================================================
  */
 
@@ -85,6 +87,7 @@ fun TopBarGlassSurface(
 
     val hasGlassEffect = (glassParams.refraction != 0f || glassParams.blurRadius > 0f || glassParams.whitePoint > 0f)
 
+    // Layer 2 (Middle): Surface Container
     Surface(
         shape = shape,
         color = Color.Transparent,
@@ -95,55 +98,6 @@ fun TopBarGlassSurface(
                 posInRoot = coordinates.positionInRoot()
             }
             .clip(shape)
-            .graphicsLayer {
-                clip = true
-                this.shape = shape
-                if (hasGlassEffect && !isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
-                        try {
-                            val shader = cachedShader
-                            shader.setFloatUniform("size", size.width, size.height)
-                            val radiusPx = if (shape == CircleShape) {
-                                (minOf(size.width, size.height) / 2f)
-                            } else {
-                                with(density) { 100.dp.toPx() }
-                            }
-                            shader.setFloatUniform("cornerRadius", radiusPx)
-                            shader.setFloatUniform("refraction", with(density) { glassParams.refraction.dp.toPx() })
-                            shader.setFloatUniform("refractionHeight", with(density) { glassParams.refractionHeight.dp.toPx() })
-                            shader.setFloatUniform("saturationBoost", glassParams.saturationBoost)
-                            shader.setFloatUniform("contrast", glassParams.contrast)
-                            shader.setFloatUniform("whitePoint", glassParams.whitePoint)
-
-                            val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
-                            val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
-                            val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
-                            renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
-                        } catch (_: Exception) {
-                            val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
-                            renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
-                        }
-                    } else {
-                        val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
-                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
-                    }
-                }
-            }
-            .drawBehind {
-                if (hasGlassEffect) {
-                    if (backdropLayer != null) {
-                        try {
-                            translate(left = -posInRoot.x, top = -posInRoot.y) {
-                                drawLayer(backdropLayer)
-                            }
-                        } catch (_: Exception) {}
-                    }
-                    drawRect(color = barBgColor)
-                    if (glassParams.whitePoint > 0f) {
-                        drawRect(color = Color.White.copy(alpha = (glassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
-                    }
-                }
-            }
             .then(
                 if (onClick != null) {
                     Modifier.clickable(
@@ -156,9 +110,71 @@ fun TopBarGlassSurface(
     ) {
         Box(
             modifier = Modifier.wrapContentSize(),
-            contentAlignment = Alignment.Center,
-            content = content
-        )
+            contentAlignment = Alignment.Center
+        ) {
+            // Layer 1 (Bottom): Background Shader & Frosted Glass Tint (Only affects background, NEVER touches foreground content)
+            if (hasGlassEffect) {
+                Box(
+                    modifier = Modifier
+                        .matchParentSize()
+                        .clip(shape)
+                        .graphicsLayer {
+                            clip = true
+                            this.shape = shape
+                            if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                    try {
+                                        val shader = cachedShader
+                                        shader.setFloatUniform("size", size.width, size.height)
+                                        val radiusPx = if (shape == CircleShape) {
+                                            (minOf(size.width, size.height) / 2f)
+                                        } else {
+                                            with(density) { 100.dp.toPx() }
+                                        }
+                                        shader.setFloatUniform("cornerRadius", radiusPx)
+                                        shader.setFloatUniform("refraction", with(density) { glassParams.refraction.dp.toPx() })
+                                        shader.setFloatUniform("refractionHeight", with(density) { glassParams.refractionHeight.dp.toPx() })
+                                        shader.setFloatUniform("saturationBoost", glassParams.saturationBoost)
+                                        shader.setFloatUniform("contrast", glassParams.contrast)
+                                        shader.setFloatUniform("whitePoint", glassParams.whitePoint)
+
+                                        val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                        val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
+                                        val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                        renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
+                                    } catch (_: Exception) {
+                                        val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
+                                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                    }
+                                } else {
+                                    val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
+                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                }
+                            }
+                        }
+                        .drawBehind {
+                            if (backdropLayer != null) {
+                                try {
+                                    translate(left = -posInRoot.x, top = -posInRoot.y) {
+                                        drawLayer(backdropLayer)
+                                    }
+                                } catch (_: Exception) {}
+                            }
+                            drawRect(color = barBgColor)
+                            if (glassParams.whitePoint > 0f) {
+                                drawRect(color = Color.White.copy(alpha = (glassParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
+                            }
+                        }
+                )
+            }
+
+            // Layer 3 (Top): Crisp Foreground Content (100% Vector Sharp, High Contrast, Zero Blur)
+            Box(
+                modifier = Modifier.wrapContentSize(),
+                contentAlignment = Alignment.Center,
+                content = content
+            )
+        }
     }
 }
 
@@ -415,7 +431,7 @@ fun FloatingTopControls(
 }
 
 /**
- * 主页多选模式右侧融合扩展悬浮胶囊卡片（特效与下拉菜单窗口 100% 重合）
+ * 主页多选模式右侧融合扩展悬浮胶囊卡片
  */
 @Composable
 fun MultiSelectRightCapsule(
@@ -770,7 +786,7 @@ fun DetailTopBar_Preview() {
                 currentPage = 0,
                 onTabSelected = {},
                 onBackClick = {},
-                isDark = true
+                isDark = true,
             )
         }
     }
