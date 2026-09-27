@@ -481,11 +481,10 @@ fun TorrentDetailScreen(
             0f
         }
 
-        DetailFloatingTopBar(
+        DetailTopBar(
             currentPage = currentPage,
             backSwipeRatio = backSwipeRatio,
             backdropLayer = backdropLayer,
-            boxPositionInRoot = detailViewLocation,
             onTabSelected = { index ->
                 scope.launch {
                     pageOffsetAnim.animateTo(
@@ -500,107 +499,6 @@ fun TorrentDetailScreen(
                 .statusBarsPadding()
                 .align(Alignment.TopCenter)
         )
-    }
-}
-
-@Composable
-fun DetailFloatingTopBar(
-    currentPage: Int,
-    backSwipeRatio: Float = 0f,
-    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
-    boxPositionInRoot: Offset = Offset.Zero,
-    onTabSelected: (Int) -> Unit,
-    onBackClick: () -> Unit,
-    isDark: Boolean = isSystemInDarkTheme(),
-    modifier: Modifier = Modifier,
-) {
-    val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
-    val textColor = if (isDark) Color.White else Color(0xFF2D3436)
-
-    val arrowRotation = backSwipeRatio * 180f
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 4.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        // 1. 左侧 44dp 圆形悬浮返回按钮 (采用统一 3D 液态玻璃效果)
-        LiquidGlassTopSurface(
-            shape = CircleShape,
-            border = BorderStroke(1.dp, barBorderColor),
-            backdropLayer = backdropLayer,
-            boxPositionInRoot = boxPositionInRoot,
-            onClick = onBackClick,
-            modifier = Modifier
-                .size(44.dp)
-                .align(Alignment.CenterStart),
-        ) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "返回",
-                    tint = textColor,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .graphicsLayer {
-                            rotationZ = arrowRotation
-                        },
-                )
-            }
-        }
-
-        // 2. 中间 180dp 胶囊形悬浮 Tab 切换组 [信息 | 节点] (采用统一 3D 液态玻璃效果)
-        val activeBgColor = if (isDark) Color(0x44FFFFFF) else Color(0x55FFFFFF)
-        val activeBorderColor = if (isDark) Color(0xAAFFFFFF) else Color(0xCCFFFFFF)
-
-        LiquidGlassTopSurface(
-            shape = RoundedCornerShape(100.dp),
-            border = BorderStroke(1.dp, barBorderColor),
-            backdropLayer = backdropLayer,
-            boxPositionInRoot = boxPositionInRoot,
-            modifier = Modifier
-                .height(44.dp)
-                .width(180.dp)
-                .align(Alignment.Center),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(3.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                listOf("信息", "节点").forEachIndexed { index, title ->
-                    val isSelected = currentPage == index
-
-                    Surface(
-                        onClick = { onTabSelected(index) },
-                        shape = RoundedCornerShape(100.dp),
-                        color = if (isSelected) activeBgColor else Color.Transparent,
-                        border = if (isSelected) BorderStroke(1.dp, activeBorderColor) else null,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxHeight(),
-                    ) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = title,
-                                fontSize = 14.5.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                color = if (isSelected) Color.White else textColor,
-                            )
-                        }
-                    }
-                }
-            }
-        }
     }
 }
 

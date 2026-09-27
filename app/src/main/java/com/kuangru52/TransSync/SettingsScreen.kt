@@ -798,7 +798,7 @@ fun SettingsScreen(
 
             val backSwipeRatio = with(LocalDensity.current) { (animatedSwipeOffset / 120.dp.toPx()).coerceIn(0f, 1f) }
 
-            SettingsFloatingTopBar(
+            SettingsTopBar(
                 onBackClick = onBackClick,
                 backSwipeRatio = backSwipeRatio,
                 backdropLayer = backdropLayer,
@@ -1490,66 +1490,6 @@ fun AddCustomTrackerDialog(
                 unfocusedTextColor = primaryTextColor,
             ),
         )
-    }
-}
-
-/**
- * 设置页面悬浮控制顶栏组件
- */
-@Composable
-fun SettingsFloatingTopBar(
-    onBackClick: () -> Unit,
-    backSwipeRatio: Float = 0f,
-    backdropLayer: GraphicsLayer? = null,
-    isDark: Boolean = isSystemInDarkTheme(),
-    modifier: Modifier = Modifier,
-) {
-    val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
-    val textColor = if (isDark) Color.White else Color(0xFF2D3436)
-
-    val arrowRotation = backSwipeRatio * 180f
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 4.dp),
-        contentAlignment = Alignment.CenterStart,
-    ) {
-        LiquidGlassTopSurface(
-            shape = RoundedCornerShape(100.dp),
-            border = BorderStroke(1.dp, barBorderColor),
-            backdropLayer = backdropLayer,
-            onClick = onBackClick,
-            modifier = Modifier
-                .wrapContentWidth()
-                .height(44.dp),
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "返回",
-                    tint = textColor,
-                    modifier = Modifier
-                        .size(20.dp)
-                        .graphicsLayer {
-                            rotationZ = arrowRotation
-                        },
-                )
-                Spacer(modifier = Modifier.width(10.dp))
-                Text(
-                    text = stringResource(R.string.nav_settings),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = textColor,
-                )
-            }
-        }
     }
 }
 
