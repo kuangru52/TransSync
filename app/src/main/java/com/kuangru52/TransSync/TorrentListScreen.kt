@@ -7,7 +7,6 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,10 +27,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
@@ -58,7 +55,6 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -505,7 +501,6 @@ fun TorrentListScreen(
                     selectedCount = selectedIds.size,
                     drawerSlideRatio = drawerSlideRatio,
                     backdropLayer = backdropLayer,
-                    boxPositionInRoot = boxPositionInRoot,
                     onMenuClick = {
                         if (!isLandscape) {
                             isDrawerOpen = !isDrawerOpen
@@ -1268,16 +1263,15 @@ private fun LiquidGlassFab(
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
                                 try {
-                                    val shader = cachedShader
-                                    shader.setFloatUniform("size", size.width, size.height)
-                                    shader.setFloatUniform("cornerRadius", size.width * 0.5f)
-                                    shader.setFloatUniform("refraction", with(density) { refractionDp.dp.toPx() })
-                                    shader.setFloatUniform("refractionHeight", with(density) { refractionHeightDp.dp.toPx() })
-                                    shader.setFloatUniform("saturationBoost", saturationBoost)
-                                    shader.setFloatUniform("contrast", contrast)
-                                    shader.setFloatUniform("whitePoint", whitePoint)
+                                    cachedShader.setFloatUniform("size", size.width, size.height)
+                                    cachedShader.setFloatUniform("cornerRadius", size.width * 0.5f)
+                                    cachedShader.setFloatUniform("refraction", with(density) { refractionDp.dp.toPx() })
+                                    cachedShader.setFloatUniform("refractionHeight", with(density) { refractionHeightDp.dp.toPx() })
+                                    cachedShader.setFloatUniform("saturationBoost", saturationBoost)
+                                    cachedShader.setFloatUniform("contrast", contrast)
+                                    cachedShader.setFloatUniform("whitePoint", whitePoint)
 
-                                    val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                    val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(cachedShader, "content")
                                     val blurPx = with(density) { blurRadiusDp.dp.toPx() }
                                     val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
                                     renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()

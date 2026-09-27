@@ -50,6 +50,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -83,7 +84,7 @@ fun LiquidBottomBar(
 
     Box(
         modifier = modifier
-            .padding(bottom = 16.dp)
+            .padding(bottom = 16.dp),
     ) {
         LiquidBottomBarContent(
             dlSpeed = dlSpeed,
@@ -150,7 +151,7 @@ fun LiquidBottomBarContent(
     val interactionScale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1.0f,
         animationSpec = spring(dampingRatio = 0.75f, stiffness = 350f),
-        label = "scale"
+        label = "scale",
     )
 
     BackHandler(enabled = isSearchExpanded) {
@@ -174,7 +175,7 @@ fun LiquidBottomBarContent(
     val animatedTranslationY by animateFloatAsState(
         targetValue = imeTranslationYPx,
         animationSpec = spring(dampingRatio = 0.8f, stiffness = 350f),
-        label = "imeTranslationY"
+        label = "imeTranslationY",
     )
 
     Box(
@@ -193,7 +194,7 @@ fun LiquidBottomBarContent(
             .scale(interactionScale),
         shape = RoundedCornerShape(100.dp),
         color = Color.Transparent,
-        border = BorderStroke(1.dp, if (isDark) Color(0x44FFFFFF) else Color(0x66FFFFFF))
+        border = BorderStroke(1.dp, if (isDark) Color(0x44FFFFFF) else Color(0x66FFFFFF)),
     ) {
         Box(
             modifier = Modifier
@@ -208,7 +209,7 @@ fun LiquidBottomBarContent(
                         x = loc[0].toFloat() + offsetInWindow.x,
                         y = loc[1].toFloat() + offsetInWindow.y,
                     )
-                }
+                },
         ) {
             val localOffsetX = (barPositionInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
             val localOffsetY = (barPositionInRoot.y - boxPositionInRoot.y).coerceAtLeast(0f)
@@ -232,16 +233,15 @@ fun LiquidBottomBarContent(
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                             if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
                                 try {
-                                    val shader = cachedShader
-                                    shader.setFloatUniform("size", size.width, size.height)
-                                    shader.setFloatUniform("cornerRadius", with(density) { 100.dp.toPx() })
-                                    shader.setFloatUniform("refraction", with(density) { liveRefractionDp.dp.toPx() })
-                                    shader.setFloatUniform("refractionHeight", with(density) { liveRefractionHeightDp.dp.toPx() })
-                                    shader.setFloatUniform("saturationBoost", liveSaturationBoost)
-                                    shader.setFloatUniform("contrast", liveContrast)
-                                    shader.setFloatUniform("whitePoint", liveWhitePoint)
+                                    cachedShader.setFloatUniform("size", size.width, size.height)
+                                    cachedShader.setFloatUniform("cornerRadius", with(density) { 100.dp.toPx() })
+                                    cachedShader.setFloatUniform("refraction", with(density) { liveRefractionDp.dp.toPx() })
+                                    cachedShader.setFloatUniform("refractionHeight", with(density) { liveRefractionHeightDp.dp.toPx() })
+                                    cachedShader.setFloatUniform("saturationBoost", liveSaturationBoost)
+                                    cachedShader.setFloatUniform("contrast", liveContrast)
+                                    cachedShader.setFloatUniform("whitePoint", liveWhitePoint)
 
-                                    val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                    val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(cachedShader, "content")
 
                                     renderEffect = if (liveBlurRadiusDp > 0f) {
                                         val blurPx = with(density) { liveBlurRadiusDp.dp.toPx() }
@@ -268,13 +268,13 @@ fun LiquidBottomBarContent(
                         if (backdropLayer != null) {
                             translate(
                                 left = -localOffsetX,
-                                top = -localOffsetY
+                                top = -localOffsetY,
                             ) {
                                 drawLayer(backdropLayer)
                             }
                         }
                         drawRect(color = Color.Transparent)
-                    }
+                    },
             )
 
             val context = androidx.compose.ui.platform.LocalContext.current
@@ -295,7 +295,7 @@ fun LiquidBottomBarContent(
                                     }
                                 }
                             }
-                        } else Modifier
+                        } else Modifier,
                     )
                     .then(
                         if (!isSearchExpanded) {
@@ -310,10 +310,10 @@ fun LiquidBottomBarContent(
                                 onDoubleClick = {
                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                     onScrollToTop()
-                                }
+                                },
                             )
-                        } else Modifier
-                    )
+                        } else Modifier,
+                    ),
             )
 
             // 顶层 100% 绝对清晰的前景网速文字与搜索输入框
@@ -322,14 +322,14 @@ fun LiquidBottomBarContent(
                     .fillMaxHeight()
                     .then(if (isSearchExpanded) Modifier.fillMaxWidth() else Modifier.wrapContentWidth())
                     .padding(horizontal = 14.dp),
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 if (!isSearchExpanded) {
                     SpeedSection(dlSpeed, ulSpeed, isDark)
                 } else {
                     Row(
                         modifier = Modifier.fillMaxSize(),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
@@ -340,15 +340,14 @@ fun LiquidBottomBarContent(
                                 .clickable(
                                     interactionSource = interactionSource,
                                     indication = null,
-                                    onClick = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        isSearchExpanded = false
-                                        searchQuery = ""
-                                        onSearchQueryChange("")
-                                        focusManager.clearFocus()
-                                        onSearchToggle(false)
-                                    }
-                                )
+                                ) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    isSearchExpanded = false
+                                    searchQuery = ""
+                                    onSearchQueryChange("")
+                                    focusManager.clearFocus()
+                                    onSearchToggle(false)
+                                },
                         )
 
                         ActiveSearchField(
@@ -359,7 +358,7 @@ fun LiquidBottomBarContent(
                             },
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(start = 12.dp)
+                                .padding(start = 12.dp),
                         )
                     }
                 }
@@ -416,8 +415,7 @@ fun LiquidBottomBarContent(
                 android.widget.Toast.makeText(context, "网速条参数保存成功", android.widget.Toast.LENGTH_SHORT).show()
                 showTuningInspector = false
             },
-            onDismiss = { showTuningInspector = false },
-        )
+        ) { showTuningInspector = false }
     }
 }
 
@@ -459,7 +457,7 @@ fun LiquidGlassTuningInspector(
 
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
         val dialogWindow = (LocalView.current.parent as? DialogWindowProvider)?.window
         SideEffect {
@@ -471,7 +469,7 @@ fun LiquidGlassTuningInspector(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(top = 40.dp, start = 16.dp),
-            contentAlignment = Alignment.TopStart
+            contentAlignment = Alignment.TopStart,
         ) {
             Surface(
                 modifier = Modifier
@@ -480,17 +478,17 @@ fun LiquidGlassTuningInspector(
                     .wrapContentHeight()
                     .shadow(
                         elevation = 16.dp,
-                        shape = RoundedCornerShape(18.dp)
+                        shape = RoundedCornerShape(18.dp),
                     ),
                 shape = RoundedCornerShape(18.dp),
                 color = cardBgColor,
-                border = BorderStroke(1.dp, cardBorderColor)
+                border = BorderStroke(1.dp, cardBorderColor),
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     Row(
                         modifier = Modifier
@@ -503,7 +501,7 @@ fun LiquidGlassTuningInspector(
                                 }
                             },
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         TextButton(onClick = onReset, contentPadding = PaddingValues(0.dp), modifier = Modifier.height(28.dp)) {
                             Text("重置", color = Color(0xFFFF5252), fontSize = 12.sp, fontWeight = FontWeight.Bold)
@@ -546,7 +544,7 @@ private fun CompactTuningRow(
     valueText: String,
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
-    onValueChange: (Float) -> Unit
+    onValueChange: (Float) -> Unit,
 ) {
     val isDark = isSystemInDarkTheme()
     val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
@@ -556,7 +554,7 @@ private fun CompactTuningRow(
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(text = label, fontSize = 11.5.sp, color = primaryTextColor, fontWeight = FontWeight.Bold, modifier = Modifier.width(28.dp))
 
@@ -571,13 +569,13 @@ private fun CompactTuningRow(
                     modifier = Modifier.height(3.dp),
                     colors = SliderDefaults.colors(
                         activeTrackColor = accentColor,
-                        inactiveTrackColor = trackInactiveColor
-                    )
+                        inactiveTrackColor = trackInactiveColor,
+                    ),
                 )
             },
             modifier = Modifier
                 .weight(1f)
-                .height(20.dp)
+                .height(20.dp),
         )
 
         Text(text = valueText, fontSize = 11.sp, color = primaryTextColor, modifier = Modifier.width(36.dp), textAlign = TextAlign.End)
@@ -588,7 +586,7 @@ private fun CompactTuningRow(
 fun ActiveSearchField(
     query: String,
     onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val isDark = isSystemInDarkTheme()
     val uiColor = if (isDark) Color.White else Color.Black
@@ -610,25 +608,25 @@ fun ActiveSearchField(
         textStyle = TextStyle(
             color = uiColor,
             fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
         ),
         cursorBrush = SolidColor(uiColor),
         singleLine = true,
         decorationBox = { innerTextField ->
             Box(
                 contentAlignment = Alignment.CenterStart,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 if (query.isEmpty()) {
                     Text(
-                        text = "搜索种子...",
+                        text = stringResource(R.string.search_hint),
                         color = uiColor.copy(alpha = 0.5f),
-                        fontSize = 15.sp
+                        fontSize = 15.sp,
                     )
                 }
                 innerTextField()
             }
-        }
+        },
     )
 }
 
@@ -636,7 +634,7 @@ fun ActiveSearchField(
 fun SpeedSection(
     dlSpeed: String,
     ulSpeed: String,
-    isDark: Boolean = isSystemInDarkTheme()
+    isDark: Boolean = isSystemInDarkTheme(),
 ) {
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
 
@@ -645,17 +643,17 @@ fun SpeedSection(
             .wrapContentWidth()
             .padding(horizontal = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrow_down),
                 contentDescription = "下载",
                 tint = Color(0xFF00E676),
-                modifier = Modifier.size(15.dp)
+                modifier = Modifier.size(15.dp),
             )
             Text(
                 text = dlSpeed,
@@ -664,19 +662,19 @@ fun SpeedSection(
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 softWrap = false,
-                overflow = TextOverflow.Visible
+                overflow = TextOverflow.Visible,
             )
         }
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(3.dp)
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_arrow_up),
                 contentDescription = "上传",
                 tint = Color(0xFFFF5252),
-                modifier = Modifier.size(15.dp)
+                modifier = Modifier.size(15.dp),
             )
             Text(
                 text = ulSpeed,
@@ -685,7 +683,7 @@ fun SpeedSection(
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
                 softWrap = false,
-                overflow = TextOverflow.Visible
+                overflow = TextOverflow.Visible,
             )
         }
     }
@@ -726,8 +724,7 @@ fun LiquidGlassTuningInspector_Preview() {
                 onSaturationBoostChange = {},
                 onReset = {},
                 onSave = {},
-                onDismiss = {},
-            )
+            ) {}
         }
     }
 }

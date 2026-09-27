@@ -2,20 +2,15 @@ package com.kuangru52.transsync
 
 import android.graphics.Shader
 import android.os.Build
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,7 +26,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -173,7 +167,7 @@ fun LiquidGlassDialog(
         LaunchedEffect(dialogInstanceId, backdropLayer) {
             if (backdropLayer != null) {
                 // 等待 16ms (1 帧)，确保主界面先完成对最新背景视效的图形录制
-                kotlinx.coroutines.delay(16L)
+                kotlinx.coroutines.delay(16)
                 try {
                     backdropBitmap = backdropLayer.toImageBitmap()
                 } catch (e: Exception) {
@@ -407,124 +401,6 @@ fun LiquidGlassDialogPreview() {
             onConfirm = {},
         ) {
             Text("预览弹窗内容", fontSize = 14.sp)
-        }
-    }
-}
-
-/**
- * 统一的顶部控制条液态玻璃表面组件（乌龟图标、返回箭头、胶囊悬浮栏等）：
- * - 采用 Kyant0 AGSL 凸透镜折射 Shader 与实时模糊采样，实现全应用统一的 3D 液态玻璃透射视效！
- */
-@android.annotation.SuppressLint("NewApi")
-@Composable
-fun LiquidGlassTopSurface(
-    shape: androidx.compose.ui.graphics.Shape,
-    border: BorderStroke?,
-    modifier: Modifier = Modifier,
-    backdropLayer: androidx.compose.ui.graphics.layer.GraphicsLayer? = null,
-    boxPositionInRoot: Offset = Offset.Zero,
-    onClick: (() -> Unit)? = null,
-    content: @Composable BoxScope.() -> Unit
-) {
-    val context = LocalContext.current
-    val density = LocalDensity.current
-    val isDark = isSystemInDarkTheme()
-
-    val topBarVersion by SettingsManager.topBarGlassParamsVersion.collectAsState()
-    val initialParams = remember(isDark, topBarVersion) { SettingsManager.getTopBarGlassParams(context, isDark) }
-
-    val cachedShader = remember {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            try {
-                android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
-            } catch (_: Exception) { null }
-        } else null
-    }
-
-    var posInRoot by remember { mutableStateOf(Offset.Zero) }
-
-    Surface(
-        shape = shape,
-        color = Color.Transparent,
-        border = border,
-        shadowElevation = 0.dp,
-        modifier = modifier
-            .onGloballyPositioned { coordinates ->
-                posInRoot = coordinates.positionInRoot()
-            }
-            .clip(shape)
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = onClick
-                    )
-                } else Modifier
-            )
-    ) {
-        Box(
-            modifier = Modifier.wrapContentSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            // 1. 底层：独占 renderEffect 凸透镜 Shader 渲染层 (锚定屏幕绝对坐标，精准透出下方真实的列表/壁纸内容)
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .graphicsLayer {
-                        clip = true
-                        this.shape = shape
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
-                                try {
-                                    val shader = cachedShader
-                                    shader.setFloatUniform("size", size.width, size.height)
-                                    val radiusPx = if (shape == CircleShape) {
-                                        (minOf(size.width, size.height) / 2f)
-                                    } else {
-                                        with(density) { 100.dp.toPx() }
-                                    }
-                                    shader.setFloatUniform("cornerRadius", radiusPx)
-                                    shader.setFloatUniform("refraction", with(density) { initialParams.refraction.dp.toPx() })
-                                    shader.setFloatUniform("refractionHeight", with(density) { initialParams.refractionHeight.dp.toPx() })
-                                    shader.setFloatUniform("saturationBoost", initialParams.saturationBoost)
-                                    shader.setFloatUniform("contrast", initialParams.contrast)
-                                    shader.setFloatUniform("whitePoint", initialParams.whitePoint)
-
-                                    val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
-                                    val blurPx = with(density) { initialParams.blurRadius.dp.toPx() }
-                                    val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
-                                    renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
-                                } catch (_: Exception) {
-                                    val blurPx = with(density) { initialParams.blurRadius.dp.toPx() }
-                                    renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP).asComposeRenderEffect()
-                                }
-                            } else {
-                                val blurPx = with(density) { initialParams.blurRadius.dp.toPx() }
-                                renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP).asComposeRenderEffect()
-                            }
-                        }
-                    }
-                    .drawWithContent {
-                        if (backdropLayer != null) {
-                            try {
-                                translate(left = -posInRoot.x, top = -posInRoot.y) {
-                                    drawLayer(backdropLayer)
-                                }
-                            } catch (_: Exception) {}
-                        }
-                        if (initialParams.whitePoint > 0f) {
-                            drawRect(color = Color.White.copy(alpha = (initialParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
-                        }
-                    }
-            )
-
-            // 2. 最上层：100% 矢量原生清晰的前景文本与图标 (不在 renderEffect 内部)
-            Box(
-                modifier = Modifier.fillMaxHeight().wrapContentWidth(),
-                contentAlignment = Alignment.Center,
-                content = content
-            )
         }
     }
 }

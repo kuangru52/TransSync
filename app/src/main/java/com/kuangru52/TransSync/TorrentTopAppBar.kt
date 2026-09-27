@@ -64,7 +64,7 @@ fun TopBarGlassSurface(
     backdropLayer: GraphicsLayer? = null,
     cornerRadius: Dp = 100.dp,
     onClick: (() -> Unit)? = null,
-    content: @Composable BoxScope.() -> Unit
+    content: @Composable BoxScope.() -> Unit,
 ) {
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -79,7 +79,7 @@ fun TopBarGlassSurface(
     var posInRoot by remember { mutableStateOf(Offset.Zero) }
 
     val cachedShader = remember {
-        if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (!isInspection && (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)) {
             try {
                 android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
             } catch (_: Exception) { null }
@@ -104,7 +104,7 @@ fun TopBarGlassSurface(
                     Modifier.clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null,
-                        onClick = onClick
+                        onClick = onClick,
                     )
                 } else Modifier
             )
@@ -125,21 +125,20 @@ fun TopBarGlassSurface(
                             if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                                 if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
                                     try {
-                                        val shader = cachedShader
-                                        shader.setFloatUniform("size", size.width, size.height)
+                                        cachedShader.setFloatUniform("size", size.width, size.height)
                                         val radiusPx = if (shape == CircleShape) {
                                             (minOf(size.width, size.height) / 2f)
                                         } else {
                                             with(density) { cornerRadius.toPx() }
                                         }
-                                        shader.setFloatUniform("cornerRadius", radiusPx)
-                                        shader.setFloatUniform("refraction", with(density) { glassParams.refraction.dp.toPx() })
-                                        shader.setFloatUniform("refractionHeight", with(density) { glassParams.refractionHeight.dp.toPx() })
-                                        shader.setFloatUniform("saturationBoost", glassParams.saturationBoost)
-                                        shader.setFloatUniform("contrast", glassParams.contrast)
-                                        shader.setFloatUniform("whitePoint", glassParams.whitePoint)
+                                        cachedShader.setFloatUniform("cornerRadius", radiusPx)
+                                        cachedShader.setFloatUniform("refraction", with(density) { glassParams.refraction.dp.toPx() })
+                                        cachedShader.setFloatUniform("refractionHeight", with(density) { glassParams.refractionHeight.dp.toPx() })
+                                        cachedShader.setFloatUniform("saturationBoost", glassParams.saturationBoost)
+                                        cachedShader.setFloatUniform("contrast", glassParams.contrast)
+                                        cachedShader.setFloatUniform("whitePoint", glassParams.whitePoint)
 
-                                        val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(shader, "content")
+                                        val runtimeEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(cachedShader, "content")
                                         val blurPx = with(density) { glassParams.blurRadius.dp.toPx() }
                                         val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
                                         renderEffect = android.graphics.RenderEffect.createChainEffect(runtimeEffect, blurEffect).asComposeRenderEffect()
@@ -185,10 +184,10 @@ fun TopBarGlassSurface(
 @Composable
 fun SettingsTopBar(
     onBackClick: () -> Unit,
+    modifier: Modifier = Modifier,
     backSwipeRatio: Float = 0f,
     backdropLayer: GraphicsLayer? = null,
     isDark: Boolean = isSystemInDarkTheme(),
-    modifier: Modifier = Modifier,
 ) {
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)
@@ -247,9 +246,9 @@ fun FloatingTopControls(
     sizeText: String,
     altSpeedEnabled: Boolean,
     selectedCount: Int,
+    modifier: Modifier = Modifier,
     drawerSlideRatio: Float = 0f,
     backdropLayer: GraphicsLayer? = null,
-    boxPositionInRoot: Offset = Offset.Zero,
     onMenuClick: () -> Unit,
     onTurtleClick: () -> Unit,
     onCloseSelection: () -> Unit,
@@ -262,7 +261,6 @@ fun FloatingTopControls(
     onSetHrSelected: () -> Unit,
     onVerifySelected: () -> Unit,
     onReannounceSelected: () -> Unit,
-    modifier: Modifier = Modifier,
     isDark: Boolean = isSystemInDarkTheme(),
 ) {
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
@@ -389,7 +387,6 @@ fun FloatingTopControls(
             MultiSelectRightCapsule(
                 selectedCount = selectedCount,
                 backdropLayer = backdropLayer,
-                boxPositionInRoot = boxPositionInRoot,
                 onSelectAll = onSelectAll,
                 onDeleteSelected = onDeleteSelected,
                 onStartSelected = onStartSelected,
@@ -437,8 +434,8 @@ fun FloatingTopControls(
 @Composable
 fun MultiSelectRightCapsule(
     selectedCount: Int,
+    modifier: Modifier = Modifier,
     backdropLayer: GraphicsLayer? = null,
-    boxPositionInRoot: Offset = Offset.Zero,
     onSelectAll: () -> Unit,
     onDeleteSelected: () -> Unit,
     onStartSelected: () -> Unit,
@@ -482,7 +479,7 @@ fun MultiSelectRightCapsule(
         border = BorderStroke(1.dp, barBorderColor),
         backdropLayer = backdropLayer,
         cornerRadius = cardCornerRadius,
-        modifier = Modifier.wrapContentSize(),
+        modifier = modifier.wrapContentSize(),
     ) {
         Column(
             modifier = Modifier
@@ -589,12 +586,12 @@ private fun FusedMenuItem(
 @Composable
 fun DetailTopBar(
     currentPage: Int,
+    modifier: Modifier = Modifier,
     backSwipeRatio: Float = 0f,
     backdropLayer: GraphicsLayer? = null,
     onTabSelected: (Int) -> Unit,
     onBackClick: () -> Unit,
     isDark: Boolean = isSystemInDarkTheme(),
-    modifier: Modifier = Modifier,
 ) {
     val barBorderColor = if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)
     val textColor = if (isDark) Color.White else Color(0xFF2D3436)

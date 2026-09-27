@@ -110,10 +110,10 @@ fun DirectoryDropdownTextField(
                                     style = TextStyle(
                                         fontSize = 12.5.sp,
                                         lineHeight = 15.sp,
-                                        color = if (isDark) Color.White else Color(0xFF2D3436)
+                                        color = if (isDark) Color.White else Color(0xFF2D3436),
                                     ),
                                     maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             },
                             contentPadding = PaddingValues(horizontal = 14.dp, vertical = 2.dp),
@@ -121,7 +121,7 @@ fun DirectoryDropdownTextField(
                             onClick = {
                                 onValueChange(dir)
                                 isExpanded = false
-                            }
+                            },
                         )
                     }
                 }
@@ -138,7 +138,7 @@ fun DirectoryDropdownTextFieldPreview() {
             DirectoryDropdownTextField(
                 value = "/downloads/movies",
                 onValueChange = {},
-                allDirs = listOf("/downloads/movies", "/downloads/tv", "/downloads/music")
+                allDirs = listOf("/downloads/movies", "/downloads/tv", "/downloads/music"),
             )
         }
     }

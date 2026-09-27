@@ -16,7 +16,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -26,7 +25,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -41,11 +39,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.layout.ContentScale
@@ -62,10 +57,8 @@ import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlin.math.roundToInt
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -94,14 +87,14 @@ fun SettingsScreen(
     var isDeveloperMode by remember { mutableStateOf(SettingsManager.isDeveloperMode(context)) }
     var customTrackerMappings by remember { mutableStateOf(SettingsManager.getCustomTrackerMappings(context)) }
 
-    var isThemeExpanded by remember { mutableStateOf(true) }
-    var isLanguageExpanded by remember { mutableStateOf(false) }
+    var isThemeExpanded by remember { mutableStateOf(value = true) }
+    var isLanguageExpanded by remember { mutableStateOf(value = false) }
     var currentWallpaperMode by remember { mutableStateOf(SettingsManager.getWallpaperMode(context)) }
     var localWallpaperUris by remember { mutableStateOf(SettingsManager.getLocalWallpaperUris(context)) }
     var wallpaperBlur by remember { mutableFloatStateOf(SettingsManager.getWallpaperBlur(context)) }
 
     val multipleImagePickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetMultipleContents()
+        contract = ActivityResultContracts.GetMultipleContents(),
     ) { uris: List<Uri> ->
         if (uris.isNotEmpty()) {
             val internalPaths = mutableListOf<String>()
@@ -1325,7 +1318,7 @@ private fun backupTrackersToDownloads(context: Context, textContent: String): St
 
     try {
         // 2. MediaStore 备用方案：MIME_TYPE 指定为 application/octet-stream，防止系统 MediaProvider 自动追加 .txt
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val resolver = context.contentResolver
             val contentValues = android.content.ContentValues().apply {
                 put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, fileName)
@@ -1589,8 +1582,8 @@ private fun CompactSegmentedGroup(
 fun LiquidGlassSlider(
     value: Float,
     onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
     valueRange: ClosedFloatingPointRange<Float> = 0f..100f,
-    modifier: Modifier = Modifier
 ) {
     val isDark = isSystemInDarkTheme()
     val activeColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF0090FF)
@@ -1598,7 +1591,7 @@ fun LiquidGlassSlider(
 
     var sliderWidthPx by remember { mutableFloatStateOf(0f) }
     val normalizedValue = ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
-    val valueText = "${value.toInt()}"
+    val valueText = value.toInt().toString()
 
     Box(
         modifier = modifier
