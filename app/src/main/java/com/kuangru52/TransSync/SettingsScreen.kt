@@ -246,7 +246,22 @@ fun SettingsScreen(
                 drawContent()
             }
     ) {
-        WallpaperBackground()
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .drawWithContent {
+                    if (backdropLayer != null) {
+                        try {
+                            backdropLayer.record {
+                                this@drawWithContent.drawContent()
+                            }
+                        } catch (_: Exception) {}
+                    }
+                    drawContent()
+                }
+        ) {
+            WallpaperBackground()
+        }
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
