@@ -62,6 +62,7 @@ fun TopBarGlassSurface(
     modifier: Modifier = Modifier,
     shadowElevation: Dp = 8.dp,
     backdropLayer: GraphicsLayer? = null,
+    cornerRadius: Dp = 100.dp,
     onClick: (() -> Unit)? = null,
     content: @Composable BoxScope.() -> Unit
 ) {
@@ -129,7 +130,7 @@ fun TopBarGlassSurface(
                                         val radiusPx = if (shape == CircleShape) {
                                             (minOf(size.width, size.height) / 2f)
                                         } else {
-                                            with(density) { 100.dp.toPx() }
+                                            with(density) { cornerRadius.toPx() }
                                         }
                                         shader.setFloatUniform("cornerRadius", radiusPx)
                                         shader.setFloatUniform("refraction", with(density) { glassParams.refraction.dp.toPx() })
@@ -480,6 +481,7 @@ fun MultiSelectRightCapsule(
         shape = RoundedCornerShape(cardCornerRadius),
         border = BorderStroke(1.dp, barBorderColor),
         backdropLayer = backdropLayer,
+        cornerRadius = cardCornerRadius,
         modifier = Modifier.wrapContentSize(),
     ) {
         Column(
