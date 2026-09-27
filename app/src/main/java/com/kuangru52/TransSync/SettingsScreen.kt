@@ -94,7 +94,7 @@ fun SettingsScreen(
     var isDeveloperMode by remember { mutableStateOf(SettingsManager.isDeveloperMode(context)) }
     var customTrackerMappings by remember { mutableStateOf(SettingsManager.getCustomTrackerMappings(context)) }
 
-    var isThemeExpanded by remember { mutableStateOf(false) }
+    var isThemeExpanded by remember { mutableStateOf(true) }
     var isLanguageExpanded by remember { mutableStateOf(false) }
     var currentWallpaperMode by remember { mutableStateOf(SettingsManager.getWallpaperMode(context)) }
     var localWallpaperUris by remember { mutableStateOf(SettingsManager.getLocalWallpaperUris(context)) }
@@ -622,7 +622,73 @@ fun SettingsScreen(
                     }
                 }
 
-                // 3. 应用语言卡片 (折叠开合 + 语言切换)
+                // 3. 自定义 Tracker 映射卡片
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = cardBgColor,
+                    border = BorderStroke(1.dp, cardBorderColor)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_title_custom_trackers),
+                            fontSize = 15.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = primaryTextColor
+                        )
+                        IconButton(onClick = { showAddTrackerDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "编辑/添加",
+                                tint = accentColor,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+                }
+
+                // 4. 隐私与安全卡片 (隐私模式开关)
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(20.dp),
+                    color = cardBgColor,
+                    border = BorderStroke(1.dp, cardBorderColor)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_title_privacy),
+                            fontSize = 15.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = primaryTextColor
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Switch(
+                            checked = isPrivacyMode,
+                            onCheckedChange = { enabled ->
+                                isPrivacyMode = enabled
+                                SettingsManager.setPrivacyMode(context, enabled)
+                            },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = Color.White,
+                                checkedTrackColor = accentColor
+                            )
+                        )
+                    }
+                }
+
+                // 5. 应用语言卡片 (折叠开合 + 语言切换)
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(20.dp),
@@ -670,72 +736,6 @@ fun SettingsScreen(
                                     currentLanguage = lang
                                     SettingsManager.setLanguage(context, lang)
                                 }
-                            )
-                        }
-                    }
-                }
-
-                // 4. 隐私与安全卡片 (隐私模式开关)
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    color = cardBgColor,
-                    border = BorderStroke(1.dp, cardBorderColor)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.settings_title_privacy),
-                            fontSize = 15.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = primaryTextColor
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Switch(
-                            checked = isPrivacyMode,
-                            onCheckedChange = { enabled ->
-                                isPrivacyMode = enabled
-                                SettingsManager.setPrivacyMode(context, enabled)
-                            },
-                            colors = SwitchDefaults.colors(
-                                checkedThumbColor = Color.White,
-                                checkedTrackColor = accentColor
-                            )
-                        )
-                    }
-                }
-
-                // 5. 自定义 Tracker 映射卡片
-                Surface(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    color = cardBgColor,
-                    border = BorderStroke(1.dp, cardBorderColor)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.settings_title_custom_trackers),
-                            fontSize = 15.5.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = primaryTextColor
-                        )
-                        IconButton(onClick = { showAddTrackerDialog = true }) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "编辑/添加",
-                                tint = accentColor,
-                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
