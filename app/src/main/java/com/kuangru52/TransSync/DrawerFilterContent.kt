@@ -116,7 +116,17 @@ fun DrawerFilterContent(
         "Error" to stringResource(R.string.nav_error),
     )
 
-    val dividerGlowColor = Color.White.copy(alpha = 0.85f)
+    val unselectedTextColor = if (isDark) Color(0xDDFFFFFF) else Color(0xFF2D3436)
+    val selectedTextColor = if (isDark) Color.White else Color(0xFF1D88E3)
+    val selectedSurfaceColor = if (isDark) Color(0x44FFFFFF) else Color(0x22000000)
+    val selectedBorderColor = if (isDark) Color(0xB3FFFFFF) else Color(0x55000000)
+    val chipBgColor = if (isDark) Color(0x1AFFFFFF) else Color(0x1A000000)
+    val chipSelectedColor = if (isDark) Color(0x55FFFFFF) else Color(0x33000000)
+    val chipTextColor = if (isDark) Color(0xDDFFFFFF) else Color(0xFF2D3436)
+    val chipSelectedTextColor = if (isDark) Color.White else Color(0xFF1D88E3)
+    val chipBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
+    val chipSelectedBorderColor = if (isDark) Color(0xEEFFFFFF) else Color(0xAA000000)
+    val dividerGlowColor = if (isDark) Color.White.copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.15f)
 
     Column(
         modifier = Modifier
@@ -280,8 +290,8 @@ fun DrawerFilterContent(
                         .height(36.dp)
                         .padding(horizontal = 12.dp),
                     shape = RoundedCornerShape(100.dp),
-                    color = if (isSelected) Color(0x44FFFFFF) else Color.Transparent,
-                    border = if (isSelected) BorderStroke(1.dp, Color(0xB3FFFFFF)) else null,
+                    color = if (isSelected) selectedSurfaceColor else Color.Transparent,
+                    border = if (isSelected) BorderStroke(1.dp, selectedBorderColor) else null,
                 ) {
                     Row(
                         modifier = Modifier
@@ -294,7 +304,7 @@ fun DrawerFilterContent(
                             style = TextStyle(
                                 fontSize = 14.sp,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) Color.White else Color(0xDDFFFFFF)
+                                color = if (isSelected) selectedTextColor else unselectedTextColor
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -302,7 +312,7 @@ fun DrawerFilterContent(
                             text = "[$sizeText]",
                             style = TextStyle(
                                 fontSize = 12.sp,
-                                color = if (isSelected) Color.White.copy(alpha = 0.9f) else Color(0xAAFFFFFF)
+                                color = if (isSelected) selectedTextColor.copy(alpha = 0.9f) else unselectedTextColor.copy(alpha = 0.8f)
                             )
                         )
                     }
@@ -390,8 +400,8 @@ fun DrawerFilterContent(
                                 }
                             },
                             shape = RoundedCornerShape(100.dp),
-                            color = if (isChipSelected) Color(0x55FFFFFF) else Color(0x1AFFFFFF),
-                            border = BorderStroke(1.dp, if (isChipSelected) Color(0xEEFFFFFF) else Color(0x33FFFFFF)),
+                            color = if (isChipSelected) chipSelectedColor else chipBgColor,
+                            border = BorderStroke(1.dp, if (isChipSelected) chipSelectedBorderColor else chipBorderColor),
                             modifier = Modifier.height(32.dp)
                         ) {
                             Box(
@@ -408,7 +418,7 @@ fun DrawerFilterContent(
                                         fontSize = 12.sp,
                                         lineHeight = 12.sp,
                                         platformStyle = PlatformTextStyle(includeFontPadding = false),
-                                        color = if (isChipSelected) Color.White else Color(0xDDFFFFFF)
+                                        color = if (isChipSelected) chipSelectedTextColor else chipTextColor
                                     )
                                 )
                             }
