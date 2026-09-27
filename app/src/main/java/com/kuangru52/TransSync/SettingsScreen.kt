@@ -235,6 +235,16 @@ fun SettingsScreen(
                     }
                 )
             }
+            .drawWithContent {
+                if (backdropLayer != null) {
+                    try {
+                        backdropLayer.record {
+                            this@drawWithContent.drawContent()
+                        }
+                    } catch (_: Exception) {}
+                }
+                drawContent()
+            }
     ) {
         WallpaperBackground()
 
