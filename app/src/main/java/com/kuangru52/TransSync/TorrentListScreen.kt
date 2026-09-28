@@ -495,12 +495,14 @@ fun TorrentListScreen(
         ) {
             if (!isLandscape) {
                 Spacer(modifier = Modifier.width(drawerWidthDp))
+            } else {
+                Spacer(modifier = Modifier.width(281.dp))
             }
 
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .then(if (!isLandscape) Modifier.requiredWidth(configuration.screenWidthDp.dp) else Modifier.fillMaxWidth())
+                    .then(if (!isLandscape) Modifier.requiredWidth(configuration.screenWidthDp.dp) else Modifier.weight(1f))
             ) {
                 FloatingTopControls(
                     titleText = getFilterTitleText(currentFilter),
