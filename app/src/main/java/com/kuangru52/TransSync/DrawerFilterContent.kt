@@ -31,13 +31,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import android.os.Build
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.layer.GraphicsLayer
-import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
@@ -486,18 +483,6 @@ fun DrawerFilterContent(
                                                         renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
                                                     }
                                                 }
-                                            }
-                                            .drawWithContent {
-                                                if (backdropLayer != null) {
-                                                    try {
-                                                        val localOffsetX = (chipPosInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
-                                                        val localOffsetY = (chipPosInRoot.y - boxPositionInRoot.y).coerceAtLeast(0f)
-                                                        translate(left = -localOffsetX, top = -localOffsetY) {
-                                                            drawLayer(backdropLayer)
-                                                        }
-                                                    } catch (_: Exception) {}
-                                                }
-                                                drawContent()
                                             }
                                             .drawBehind {
                                                 if (isChipSelected) {
