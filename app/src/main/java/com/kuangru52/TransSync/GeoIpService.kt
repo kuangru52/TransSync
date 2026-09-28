@@ -47,7 +47,7 @@ object GeoIpService {
                 override fun onFailure(call: Call<IpApiResponse>, t: Throwable) {
                     callback(null)
                 }
-            }
+            },
         )
     }
 
