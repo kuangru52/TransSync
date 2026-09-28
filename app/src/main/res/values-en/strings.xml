@@ -148,4 +148,5 @@
     <string name="msg_tracker_mappings_saved">Tracker mappings saved successfully</string>
     <string name="msg_backup_success">Backed up to: %1$s</string>
     <string name="msg_backup_failed">Backup failed</string>
+    <string name="msg_server_deleted_returning">Server deleted, returning to login screen...</string>
 </resources>

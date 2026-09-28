@@ -865,7 +865,7 @@ fun SettingsScreen(
                 serverToDeleteTarget = null
 
                 if (remainingServers.isEmpty()) {
-                    Toast.makeText(context, context.getString(R.string.msg_switching), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.msg_server_deleted_returning), Toast.LENGTH_SHORT).show()
                     val intent = Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
