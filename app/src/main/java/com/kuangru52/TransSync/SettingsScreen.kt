@@ -90,6 +90,8 @@ fun SettingsScreen(
     var isPrivacyMode by remember { mutableStateOf(SettingsManager.isPrivacyMode(context)) }
     var isDeveloperMode by remember { mutableStateOf(SettingsManager.isDeveloperMode(context)) }
     var customTrackerMappings by remember { mutableStateOf(SettingsManager.getCustomTrackerMappings(context)) }
+    var updateInfoState by remember { mutableStateOf(UpdateCheckUtils.cachedUpdateInfo) }
+    var showSettingsUpdateDialogState by remember { mutableStateOf(value = false) }
 
     var isThemeExpanded by remember { mutableStateOf(value = true) }
     var isLanguageExpanded by remember { mutableStateOf(value = false) }
@@ -749,7 +751,6 @@ fun SettingsScreen(
 
                 var devModeTapCount by remember { mutableIntStateOf(0) }
                 var lastTapTimeMs by remember { mutableLongStateOf(0L) }
-                var updateInfoState by remember { mutableStateOf(UpdateCheckUtils.cachedUpdateInfo) }
 
                 LaunchedEffect(Unit) {
                     if (updateInfoState == null) {
@@ -796,7 +797,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.width(8.dp))
                         Surface(
                             onClick = {
-                                UpdateCheckUtils.openReleasesPage(context, updateInfoState?.releaseUrl ?: UpdateCheckUtils.GITHUB_RELEASES_URL)
+                                showSettingsUpdateDialogState = true
                             },
                             shape = RoundedCornerShape(100.dp),
                             color = Color(0xFFFF5252),
@@ -906,6 +907,15 @@ fun SettingsScreen(
                 showCreateServerDialog = false
             },
             onDismiss = { showCreateServerDialog = false }
+        )
+    }
+
+    if (showSettingsUpdateDialogState && updateInfoState != null) {
+        AppUpdateDialog(
+            updateInfo = updateInfoState!!,
+            backdropLayer = backdropLayer,
+            boxPositionInRoot = settingsViewLocation,
+            onDismiss = { showSettingsUpdateDialogState = false },
         )
     }
 }

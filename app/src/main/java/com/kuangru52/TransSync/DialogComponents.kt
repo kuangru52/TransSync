@@ -1,10 +1,13 @@
 package com.kuangru52.transsync
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +17,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import retrofit2.Call
@@ -380,6 +385,88 @@ fun EditTrackersDialog(
                 unfocusedTextColor = if (isDark) Color.White else Color(0xFF2D3436),
             ),
         )
+    }
+}
+
+/**
+ * 全应用统一版本更新提示 3D 液态玻璃弹窗 (AppUpdateDialog)
+ */
+@Composable
+fun AppUpdateDialog(
+    updateInfo: UpdateInfo,
+    backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
+    onDismiss: () -> Unit,
+) {
+    val context = LocalContext.current
+    val isDark = isSystemInDarkTheme()
+    val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
+    val accentColor = if (isDark) Color(0xFF1D88E3) else Color(0xFF00B0FF)
+
+    LiquidGlassDialog(
+        onDismissRequest = onDismiss,
+        backdropLayer = backdropLayer,
+        boxPositionInRoot = boxPositionInRoot,
+        title = "发现新版本 ${updateInfo.latestVersion}",
+        confirmButtonText = "立即更新",
+        confirmButtonColor = accentColor,
+        onConfirm = {
+            onDismiss()
+            UpdateCheckUtils.openReleasesPage(context, updateInfo.releaseUrl)
+        },
+        bottomLeftContent = {
+            Button(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(100.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = if (isDark) Color(0xFF131B24) else Color(0xFFF0F2F5)),
+                modifier = Modifier.height(36.dp),
+            ) {
+                Text(
+                    text = "稍后再说",
+                    fontSize = 12.5.sp,
+                    color = primaryTextColor,
+                )
+            }
+        },
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "更新日志",
+                fontSize = 13.5.sp,
+                fontWeight = FontWeight.Bold,
+                color = accentColor,
+            )
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 80.dp, max = 180.dp),
+                shape = RoundedCornerShape(12.dp),
+                color = if (isDark) Color(0x33131B24) else Color(0x33F0F2F5),
+                border = BorderStroke(1.dp, if (isDark) Color(0x22FFFFFF) else Color(0x33000000)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(12.dp),
+                ) {
+                    Text(
+                        text = updateInfo.releaseNotes.ifBlank { "包含稳定性提升与界面体验优化。" },
+                        style = TextStyle(
+                            fontSize = 12.5.sp,
+                            lineHeight = 18.sp,
+                            color = primaryTextColor,
+                        ),
+                    )
+                }
+            }
+        }
     }
 }
 

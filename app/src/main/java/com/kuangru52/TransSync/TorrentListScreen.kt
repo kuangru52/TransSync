@@ -1152,36 +1152,12 @@ fun TorrentListScreen(
             }
 
             if (showUpdateDialogState && updateInfoState != null) {
-                val info = updateInfoState!!
-                LiquidGlassDialog(
-                    onDismissRequest = { showUpdateDialogState = false },
-                    title = "发现新版本 ${info.latestVersion}",
-                    confirmButtonText = "前往下载",
-                    confirmButtonColor = Color(0xFF1D88E3),
-                    onConfirm = {
-                        showUpdateDialogState = false
-                        UpdateCheckUtils.openReleasesPage(context, info.releaseUrl)
-                    },
-                    bottomLeftContent = {
-                        TextButton(onClick = { showUpdateDialogState = false }) {
-                            Text("稍后再说", fontSize = 13.5.sp, color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72))
-                        }
-                    }
-                ) {
-                    Text(
-                        text = "发现 TransSync 新版本，点击【前往下载】可直接前往 GitHub Releases 页面下载最新 APK。",
-                        fontSize = 14.5.sp,
-                        color = if (isDark) Color.White else Color(0xFF2D3436)
-                    )
-                    if (info.releaseNotes.isNotBlank()) {
-                        Spacer(modifier = Modifier.height(10.dp))
-                        Text(
-                            text = "更新日志：\n${info.releaseNotes}",
-                            fontSize = 12.5.sp,
-                            color = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
-                        )
-                    }
-                }
+                AppUpdateDialog(
+                    updateInfo = updateInfoState!!,
+                    backdropLayer = backdropLayer,
+                    boxPositionInRoot = boxPositionInRoot,
+                    onDismiss = { showUpdateDialogState = false },
+                )
             }
         }
     }
