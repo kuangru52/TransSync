@@ -3,6 +3,7 @@ package com.kuangru52.transsync
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.core.content.edit
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -861,7 +862,20 @@ fun SettingsScreen(
                 serversList = ServerManager.getServers(context)
                 activeServer = ServerManager.getActiveServer(context)
                 serverToDeleteTarget = null
-                Toast.makeText(context, "已删除服务器配置", Toast.LENGTH_SHORT).show()
+
+                if (serversList.isEmpty()) {
+                    Toast.makeText(context, "已删除最后一个服务器，正在返回登录界面...", Toast.LENGTH_SHORT).show()
+                    context.getSharedPreferences("auth", Context.MODE_PRIVATE).edit { clear() }
+                    val intent = Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                    context.startActivity(intent)
+                    if (context is android.app.Activity) {
+                        context.finish()
+                    }
+                } else {
+                    Toast.makeText(context, "已删除服务器配置", Toast.LENGTH_SHORT).show()
+                }
             },
         ) {
             Text(
