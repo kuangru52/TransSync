@@ -253,27 +253,28 @@ fun MainScreen(
         // 1. 沉浸式 Bing 壁纸背景
         WallpaperBackground()
 
-        // 2. 全布局页面 Column：上为 Logo (靠上方小图标)，中为 3D 液态玻璃内联登录卡片
+        // 2. 全布局页面 Column：上为 Logo (放置于顶部红圈区域)，中为 3D 液态玻璃内联登录卡片 (红框区域)
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp, vertical = 12.dp),
+                .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
-            // A. 顶部 Logo 图标 (更精小 64.dp，位置更靠上)
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // A. 顶部 Logo 图标 (放置于最上方红圈区域)
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = "应用 Logo",
                 modifier = Modifier.size(64.dp),
             )
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(36.dp))
 
-            // B. 中间 3D 液态玻璃登录卡片 (直接内联渲染，不使用 Dialog 弹窗，保证与 Logo/版本号同图层流畅展现)
+            // B. 中间 3D 液态玻璃登录卡片 (对应红框区域)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
