@@ -265,14 +265,17 @@ fun MainScreen(
         ) {
             Spacer(modifier = Modifier.height(32.dp))
 
-            // A. 顶部 Logo 图标 (放置于最上方红圈区域)
+            // A. 顶部 Logo 图标 (圆润 18dp 软圆角 + 柔和阴影)
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = "应用 Logo",
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier
+                    .size(64.dp)
+                    .shadow(6.dp, RoundedCornerShape(18.dp))
+                    .clip(RoundedCornerShape(18.dp)),
             )
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(88.dp))
 
             // B. 中间 3D 液态玻璃登录卡片 (对应红框区域)
             Box(
