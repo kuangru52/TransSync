@@ -783,6 +783,15 @@ fun TorrentListScreen(
             )
         }
 
+        if (showUpdateDialogState && updateInfoState != null) {
+            AppUpdateDialog(
+                updateInfo = updateInfoState!!,
+                backdropLayer = backdropLayer,
+                boxPositionInRoot = boxPositionInRoot,
+                onDismiss = { showUpdateDialogState = false },
+            )
+        }
+
         if (showAddTorrentDialogState) {
             var torrentUrlInput by remember { mutableStateOf(initialUrlForAdd ?: "") }
             var downloadDirInput by remember { mutableStateOf(torrents.firstOrNull()?.downloadDir ?: "/downloads") }
@@ -1148,15 +1157,6 @@ fun TorrentListScreen(
                         showFabTuningInspector = false
                     },
                     onDismiss = { showFabTuningInspector = false }
-                )
-            }
-
-            if (showUpdateDialogState && updateInfoState != null) {
-                AppUpdateDialog(
-                    updateInfo = updateInfoState!!,
-                    backdropLayer = backdropLayer,
-                    boxPositionInRoot = boxPositionInRoot,
-                    onDismiss = { showUpdateDialogState = false },
                 )
             }
         }
