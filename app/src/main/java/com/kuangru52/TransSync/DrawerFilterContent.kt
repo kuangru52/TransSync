@@ -29,6 +29,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import android.os.Build
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.asComposeRenderEffect
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
@@ -133,6 +137,20 @@ fun DrawerFilterContent(
     val chipBorderColor = if (isDark) Color(0x33FFFFFF) else Color(0x33000000)
     val chipSelectedBorderColor = if (isDark) Color(0xEEFFFFFF) else Color(0xAA000000)
     val dividerGlowColor = if (isDark) Color.White.copy(alpha = 0.85f) else Color.Black.copy(alpha = 0.15f)
+
+    val density = LocalDensity.current
+    val speedbarVersion by SettingsManager.speedbarGlassParamsVersion.collectAsState()
+    val speedbarParams = remember(isDark, speedbarVersion) { SettingsManager.getSpeedbarGlassParams(context, isDark) }
+
+    val cachedShader = remember {
+        if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            try {
+                android.graphics.RuntimeShader(LIQUID_GLASS_AGSL)
+            } catch (_: Exception) { null }
+        } else null
+    }
+
+    val hasGlassEffect = (speedbarParams.refraction != 0f || speedbarParams.blurRadius > 0f || speedbarParams.whitePoint > 0f)
 
     Column(
         modifier = Modifier
@@ -406,27 +424,81 @@ fun DrawerFilterContent(
                                 }
                             },
                             shape = RoundedCornerShape(100.dp),
-                            color = if (isChipSelected) chipSelectedColor else chipBgColor,
+                            color = if (hasGlassEffect) Color.Transparent else (if (isChipSelected) chipSelectedColor else chipBgColor),
                             border = BorderStroke(1.dp, if (isChipSelected) chipSelectedBorderColor else chipBorderColor),
-                            modifier = Modifier.height(32.dp)
+                            shadowElevation = if (hasGlassEffect) 4.dp else 0.dp,
+                            modifier = Modifier.height(32.dp),
                         ) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxHeight()
                                     .clip(RoundedCornerShape(100.dp))
-                                    .then(if (shouldBlur) Modifier.blur(8.dp) else Modifier)
-                                    .padding(horizontal = 10.dp),
-                                contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "$trackerName  $count",
-                                    style = TextStyle(
-                                        fontSize = 12.sp,
-                                        lineHeight = 12.sp,
-                                        platformStyle = PlatformTextStyle(includeFontPadding = false),
-                                        color = if (isChipSelected) chipSelectedTextColor else chipTextColor
+                                if (hasGlassEffect) {
+                                    Box(
+                                        modifier = Modifier
+                                            .matchParentSize()
+                                            .clip(RoundedCornerShape(100.dp))
+                                            .graphicsLayer {
+                                                clip = true
+                                                shape = RoundedCornerShape(100.dp)
+                                                if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                                    if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                                        try {
+                                                            cachedShader.setFloatUniform("size", size.width, size.height)
+                                                            cachedShader.setFloatUniform("cornerRadius", size.height * 0.5f)
+                                                            cachedShader.setFloatUniform("refraction", with(density) { speedbarParams.refraction.dp.toPx() })
+                                                            cachedShader.setFloatUniform("refractionHeight", with(density) { speedbarParams.refractionHeight.dp.toPx() })
+                                                            cachedShader.setFloatUniform("saturationBoost", speedbarParams.saturationBoost)
+                                                            cachedShader.setFloatUniform("contrast", speedbarParams.contrast)
+                                                            cachedShader.setFloatUniform("whitePoint", speedbarParams.whitePoint)
+
+                                                            val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(cachedShader, "content")
+                                                            renderEffect = if (speedbarParams.blurRadius > 0f) {
+                                                                val blurPx = with(density) { speedbarParams.blurRadius.dp.toPx() }
+                                                                val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                                                android.graphics.RenderEffect.createChainEffect(runtimeShaderEffect, blurEffect).asComposeRenderEffect()
+                                                            } else {
+                                                                runtimeShaderEffect.asComposeRenderEffect()
+                                                            }
+                                                        } catch (_: Exception) {
+                                                            if (speedbarParams.blurRadius > 0f) {
+                                                                val blurPx = with(density) { speedbarParams.blurRadius.dp.toPx() }
+                                                                renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                                            }
+                                                        }
+                                                    } else if (speedbarParams.blurRadius > 0f) {
+                                                        val blurPx = with(density) { speedbarParams.blurRadius.dp.toPx() }
+                                                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                                    }
+                                                }
+                                            }
+                                            .drawBehind {
+                                                drawRect(color = if (isChipSelected) chipSelectedColor else chipBgColor)
+                                                if (speedbarParams.whitePoint > 0f) {
+                                                    drawRect(color = Color.White.copy(alpha = (speedbarParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
+                                                }
+                                            }
                                     )
-                                )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxHeight()
+                                        .then(if (shouldBlur) Modifier.blur(8.dp) else Modifier)
+                                        .padding(horizontal = 10.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Text(
+                                        text = "$trackerName  $count",
+                                        style = TextStyle(
+                                            fontSize = 12.sp,
+                                            lineHeight = 12.sp,
+                                            platformStyle = PlatformTextStyle(includeFontPadding = false),
+                                            color = if (isChipSelected) chipSelectedTextColor else chipTextColor,
+                                        )
+                                    )
+                                }
                             }
                         }
                     }

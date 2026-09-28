@@ -129,6 +129,9 @@ object SettingsManager {
     }
 
     // --- 底部网速条独立液态玻璃参数 Getter & Setter ---
+    private val _speedbarGlassParamsVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
+    val speedbarGlassParamsVersion: kotlinx.coroutines.flow.StateFlow<Int> = _speedbarGlassParamsVersion
+
     @Suppress("UNUSED_PARAMETER")
     fun getSpeedbarRefraction(context: Context, isDark: Boolean): Float {
         val defaultVal = -30f
@@ -139,6 +142,7 @@ object SettingsManager {
     fun setSpeedbarRefraction(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_SPEEDBAR_REFRACTION, value) }
+        _speedbarGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -151,6 +155,7 @@ object SettingsManager {
     fun setSpeedbarHeight(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_SPEEDBAR_HEIGHT, value) }
+        _speedbarGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -163,6 +168,7 @@ object SettingsManager {
     fun setSpeedbarBlur(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_SPEEDBAR_BLUR, value) }
+        _speedbarGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -175,6 +181,7 @@ object SettingsManager {
     fun setSpeedbarSaturation(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_SPEEDBAR_SATURATION, value) }
+        _speedbarGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -187,6 +194,7 @@ object SettingsManager {
     fun setSpeedbarContrast(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_SPEEDBAR_CONTRAST, value) }
+        _speedbarGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -199,6 +207,7 @@ object SettingsManager {
     fun setSpeedbarWhitePoint(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_SPEEDBAR_WHITE_POINT, value) }
+        _speedbarGlassParamsVersion.value++
     }
 
     // --- FAB 按钮独立液态玻璃参数 ---
@@ -272,6 +281,7 @@ object SettingsManager {
         setSpeedbarSaturation(context, params.saturationBoost)
         setSpeedbarContrast(context, params.contrast)
         setSpeedbarWhitePoint(context, params.whitePoint)
+        _speedbarGlassParamsVersion.value++
     }
 
     private const val KEY_TOPBAR_REFRACTION = "topbar_refraction"
