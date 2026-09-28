@@ -12,8 +12,8 @@ android {
         applicationId = "com.kuangru52.TransSync"
         minSdk = 24
         targetSdk = 35
-        versionCode = 423
-        versionName = "4.23"
+        versionCode = 424
+        versionName = "4.24"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
