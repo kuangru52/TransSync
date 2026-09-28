@@ -66,7 +66,7 @@ fun TorrentInfoScreen(
     val context = LocalContext.current
     val isDark = isSystemInDarkTheme()
 
-    var isFileTreeExpanded by remember { mutableStateOf(false) }
+    var isFileTreeExpanded by remember { mutableStateOf(value = false) }
 
     // 弹窗状态管理
     var showRenameDialogState by remember { mutableStateOf(false) }
@@ -127,11 +127,11 @@ fun TorrentInfoScreen(
             secondsSeeding = 186400,
             trackerName = "Google",
             trackers = listOf(Tracker(announce = "https://www.google.com/announce")),
-            trackerStats = listOf(TrackerStats(announce = "https://www.google.com/announce", seederCount = 42, leecherCount = 5, downloadCount = 120, hasScraped = true))
+            trackerStats = listOf(TrackerStats(announce = "https://www.google.com/announce", seederCount = 42, leecherCount = 5, downloadCount = 120, hasScraped = true)),
         )
     }
 
-    val activeTorrent = if (torrent == null && LocalInspectionMode.current) {
+    val activeTorrent = if ((torrent == null) && LocalInspectionMode.current) {
         samplePreviewTorrent
     } else {
         torrent
@@ -303,7 +303,7 @@ fun TorrentInfoScreen(
 
                                 val allAnnounces = (realTrackers + realStatsTrackers).distinct()
                                 if (allAnnounces.isNotEmpty()) {
-                                    allAnnounces.map { announce ->
+                                    allAnnounces.asSequence().map { announce ->
                                         try {
                                             val uri = java.net.URI(announce)
                                             uri.host ?: announce.substringAfter("://").substringBefore("/").substringBefore(":")

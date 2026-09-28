@@ -3,6 +3,7 @@ package com.kuangru52.transsync
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -14,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.IntentCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import retrofit2.Call
 import retrofit2.Callback
@@ -23,6 +25,7 @@ class MainActivity : AppCompatActivity() {
 
     private var isLoggingInState by mutableStateOf(value = false)
 
+    @Suppress("DEPRECATION")
     override fun onCreate(savedInstanceState: Bundle?) {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         enableEdgeToEdge()
@@ -30,7 +33,7 @@ class MainActivity : AppCompatActivity() {
 
         setupStatusBar()
 
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val requestPermissionLauncher = registerForActivityResult(
                 ActivityResultContracts.RequestPermission(),
             ) { isGranted: Boolean ->
@@ -67,7 +70,7 @@ class MainActivity : AppCompatActivity() {
                     isLoggingIn = isLoggingInState,
                     onLoginClick = { hostInput, userInput, passInput, clientTypeInput ->
                         performLoginClick(hostInput, userInput, passInput, clientTypeInput, isEditing, savedRpcUrl, savedUser, savedPass)
-                    }
+                    },
                 )
             }
         }
@@ -81,7 +84,7 @@ class MainActivity : AppCompatActivity() {
         isEditing: Boolean,
         savedRpcUrl: String?,
         savedUser: String?,
-        savedPass: String?
+        savedPass: String?,
     ) {
         var host = hostInput.trim()
         val user = userInput.trim()
@@ -100,7 +103,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        if (!host.startsWith("https://") && !host.startsWith("http://")) {
+        if ((!host.startsWith("https://")) && (!host.startsWith("http://"))) {
             host = if (host.startsWith("192.168.") || host.startsWith("10.") || host.startsWith("172.") || host.startsWith("127.0.0.1") || host.startsWith("localhost")) {
                 "http://$host"
             } else {
@@ -130,8 +133,9 @@ class MainActivity : AppCompatActivity() {
         finish()
     }
 
+    @Suppress("DEPRECATION")
     private fun setupStatusBar() {
-        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
 
@@ -150,50 +154,56 @@ class MainActivity : AppCompatActivity() {
             rpcUrl = rpcUrl,
             user = user,
             pass = pass,
-            isActive = true
+            isActive = true,
         )
         ServerManager.saveServer(this, serverConfig)
 
         if (clientType == ServerConfig.CLIENT_QBITTORRENT) {
             val qbitService = QBittorrentClient.getService(rpcUrl)
-            qbitService.getTransferInfo().enqueue(object : Callback<QbitTransferInfo> {
-                override fun onResponse(call: Call<QbitTransferInfo>, response: Response<QbitTransferInfo>) {
-                    isLoggingInState = false
-                    if (response.isSuccessful || response.code() == 200) {
-                        startTorrentList(rpcUrl, user, pass, intent.data, intent.getStringExtra(Intent.EXTRA_TEXT))
-                    } else {
-                        Toast.makeText(this@MainActivity, getString(R.string.msg_login_failed, response.code()), Toast.LENGTH_SHORT).show()
-                    }
-                }
+            qbitService.getTransferInfo()
+                .enqueue(
+                    object : Callback<QbitTransferInfo> {
+                        override fun onResponse(call: Call<QbitTransferInfo>, response: Response<QbitTransferInfo>) {
+                            isLoggingInState = false
+                            if ((response.isSuccessful) || (response.code() == 200)) {
+                                startTorrentList(rpcUrl, user, pass, intent.data, intent.getStringExtra(Intent.EXTRA_TEXT))
+                            } else {
+                                Toast.makeText(this@MainActivity, getString(R.string.msg_login_failed, response.code()), Toast.LENGTH_SHORT).show()
+                            }
+                        }
 
-                override fun onFailure(call: Call<QbitTransferInfo>, t: Throwable) {
-                    isLoggingInState = false
-                    Toast.makeText(this@MainActivity, getString(R.string.msg_error_with_msg, t.message), Toast.LENGTH_LONG).show()
-                }
-            })
+                        override fun onFailure(call: Call<QbitTransferInfo>, t: Throwable) {
+                            isLoggingInState = false
+                            Toast.makeText(this@MainActivity, getString(R.string.msg_error_with_msg, t.message), Toast.LENGTH_LONG).show()
+                        }
+                    },
+                )
         } else {
             val baseUrl = if (rpcUrl.contains(RPC_PATH)) rpcUrl.substringBefore(RPC_PATH) + "/" else rpcUrl
             val service = TransmissionClient.getService(baseUrl, user, pass)
             val request = RpcRequest("torrent-get", mapOf("fields" to listOf("id", "name")))
 
-            service.rpc(rpcUrl, null, request).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
-                override fun onResponse(
-                    call: Call<RpcResponse<Map<String, Any>>>,
-                    response: Response<RpcResponse<Map<String, Any>>>
-                ) {
-                    isLoggingInState = false
-                    if (response.isSuccessful || response.code() == 409) {
-                        startTorrentList(rpcUrl, user, pass, intent.data, intent.getStringExtra(Intent.EXTRA_TEXT))
-                    } else {
-                        Toast.makeText(this@MainActivity, getString(R.string.msg_login_failed, response.code()), Toast.LENGTH_SHORT).show()
-                    }
-                }
+            service.rpc(rpcUrl, null, request)
+                .enqueue(
+                    object : Callback<RpcResponse<Map<String, Any>>> {
+                        override fun onResponse(
+                            call: Call<RpcResponse<Map<String, Any>>>,
+                            response: Response<RpcResponse<Map<String, Any>>>,
+                        ) {
+                            isLoggingInState = false
+                            if ((response.isSuccessful) || (response.code() == 409)) {
+                                startTorrentList(rpcUrl, user, pass, intent.data, intent.getStringExtra(Intent.EXTRA_TEXT))
+                            } else {
+                                Toast.makeText(this@MainActivity, getString(R.string.msg_login_failed, response.code()), Toast.LENGTH_SHORT).show()
+                            }
+                        }
 
-                override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
-                    isLoggingInState = false
-                    Toast.makeText(this@MainActivity, getString(R.string.msg_error_with_msg, t.message), Toast.LENGTH_LONG).show()
-                }
-            })
+                        override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
+                            isLoggingInState = false
+                            Toast.makeText(this@MainActivity, getString(R.string.msg_error_with_msg, t.message), Toast.LENGTH_LONG).show()
+                        }
+                    },
+                )
         }
     }
 
