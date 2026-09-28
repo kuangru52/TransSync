@@ -31,8 +31,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import android.os.Build
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.res.painterResource
@@ -60,6 +67,8 @@ fun DrawerFilterContent(
     viewModel: TorrentListViewModel? = null,
     currentFilter: String = "All",
     rpcUrl: String = "",
+    backdropLayer: GraphicsLayer? = null,
+    boxPositionInRoot: Offset = Offset.Zero,
     onSelectFilter: (String) -> Unit = {},
     onServerSwitched: ((ServerConfig) -> Unit)? = null,
     onOpenSettings: (() -> Unit)? = null,
@@ -414,6 +423,8 @@ fun DrawerFilterContent(
                         val isRevealed = revealedTrackerNames.contains(trackerName)
                         val shouldBlur = isTrackerBlurEnabled && !isRevealed
 
+                        var chipPosInRoot by remember { mutableStateOf(Offset.Zero) }
+
                         Surface(
                             onClick = {
                                 if (shouldBlur) {
@@ -426,7 +437,11 @@ fun DrawerFilterContent(
                             color = if (isChipSelected) chipSelectedColor else Color.Transparent,
                             border = BorderStroke(1.dp, if (isChipSelected) chipSelectedBorderColor else chipBorderColor),
                             shadowElevation = if (hasGlassEffect && speedbarParams.blurRadius > 0f) 4.dp else 0.dp,
-                            modifier = Modifier.height(32.dp),
+                            modifier = Modifier
+                                .height(32.dp)
+                                .onGloballyPositioned { coordinates ->
+                                    chipPosInRoot = coordinates.positionInRoot()
+                                },
                         ) {
                             Box(
                                 modifier = Modifier
@@ -471,6 +486,18 @@ fun DrawerFilterContent(
                                                         renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
                                                     }
                                                 }
+                                            }
+                                            .drawWithContent {
+                                                if (backdropLayer != null) {
+                                                    try {
+                                                        val localOffsetX = (chipPosInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
+                                                        val localOffsetY = (chipPosInRoot.y - boxPositionInRoot.y).coerceAtLeast(0f)
+                                                        translate(left = -localOffsetX, top = -localOffsetY) {
+                                                            drawLayer(backdropLayer)
+                                                        }
+                                                    } catch (_: Exception) {}
+                                                }
+                                                drawContent()
                                             }
                                             .drawBehind {
                                                 if (isChipSelected) {

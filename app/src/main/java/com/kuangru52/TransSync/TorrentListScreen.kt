@@ -374,6 +374,8 @@ fun TorrentListScreen(
                             viewModel = viewModel,
                             currentFilter = currentFilter,
                             rpcUrl = rpcUrl,
+                            backdropLayer = backdropLayer,
+                            boxPositionInRoot = boxPositionInRoot,
                             onSelectFilter = { selectedFilter ->
                                 currentFilter = selectedFilter
                                 viewModel.setFilter(selectedFilter)
@@ -433,6 +435,8 @@ fun TorrentListScreen(
                             viewModel = viewModel,
                             currentFilter = currentFilter,
                             rpcUrl = rpcUrl,
+                            backdropLayer = backdropLayer,
+                            boxPositionInRoot = boxPositionInRoot,
                             onSelectFilter = { selectedFilter ->
                                 currentFilter = selectedFilter
                                 viewModel.setFilter(selectedFilter)
