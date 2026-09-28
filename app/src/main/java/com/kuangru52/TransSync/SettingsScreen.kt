@@ -351,7 +351,7 @@ fun SettingsScreen(
                                             serversList = ServerManager.getServers(context)
                                             activeServer = ServerManager.getActiveServer(context)
 
-                                            Toast.makeText(context, "正在重启应用以生效 ${server.alias}...", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, context.getString(R.string.msg_switching), Toast.LENGTH_SHORT).show()
                                             AppRestartUtils.restartApp(context)
                                         }
                                     },
@@ -885,7 +885,7 @@ fun SettingsScreen(
                 editingServerTarget = null
 
                 if (wasActive) {
-                    Toast.makeText(context, "服务器配置已更变，正在重启应用...", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.msg_switching), Toast.LENGTH_SHORT).show()
                     AppRestartUtils.restartApp(context)
                 }
             },
