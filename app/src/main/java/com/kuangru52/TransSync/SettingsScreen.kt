@@ -1,6 +1,5 @@
 package com.kuangru52.transsync
 
-import com.kuangru52.transsync.BuildConfig
 import android.content.Context
 import android.content.Intent
 import android.net.Uri

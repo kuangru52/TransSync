@@ -1,6 +1,5 @@
 package com.kuangru52.transsync
 
-import com.kuangru52.transsync.BuildConfig
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
