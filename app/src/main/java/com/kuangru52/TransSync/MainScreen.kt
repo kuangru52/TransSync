@@ -144,13 +144,7 @@ fun MainScreen(
     val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
     val secondaryTextColor = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
 
-    val versionName = remember {
-        try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "4.22"
-        } catch (_: Exception) {
-            "4.22"
-        }
-    }
+    val versionName = BuildConfig.VERSION_NAME
 
     val performTestConnection = {
         val rawUrl = hostInput.trim()
