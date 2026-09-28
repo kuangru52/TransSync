@@ -5,8 +5,12 @@ import java.util.concurrent.ConcurrentHashMap
 import javax.net.ssl.HttpsURLConnection
 
 /**
- * SSL 证书类型智能探测工具：
- * - 区分 Let's Encrypt / DigiCert / Cloudflare 等公网系统受信任 CA 证书与 mkcert / OpenSSL / 局域网 IP 等自签名证书
+ * SSL 证书类型智能探测工具 (SslCheckUtils.kt)
+ *
+ * 【作用与功能】：
+ * - 智能探测 HTTPS 地址是否使用自签名证书 (Self-Signed SSL Certificate) 或未受系统 CA 信任的证书；
+ * - 自动区分公网系统受信任 CA 证书（如 Let's Encrypt / DigiCert / Cloudflare）与局域网 IP / mkcert 证书；
+ * - 内置 ConcurrentHashMap 缓存，避免频繁发起 SSL 握手检测。
  */
 object SslCheckUtils {
 

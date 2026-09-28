@@ -9,10 +9,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * 多 Transmission 服务器配置持久化管理器：
- * - 允许添加/修改/删除多个服务器并设置备注名 (如 "家中 NAS", "云端 VPS")
- * - 一键快速切换活动服务器
- * - 自动迁移旧版单服务器配置
+ * 多下载服务器配置持久化管理器 (ServerManager.kt)
+ *
+ * 【作用与功能】：
+ * - 允许添加、编辑、删除多个 Transmission / qBittorrent 服务器并设置备注与圆头像；
+ * - 提供 [getActiveServer] / [setActiveServer] 支持一键快速无缝切换当前活动服务器；
+ * - 自动序列化存储为 JSON 字符串并保存至 SharedPreferences 磁盘。
  */
 object ServerManager {
 

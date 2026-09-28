@@ -21,6 +21,15 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+/**
+ * 启动与服务器登录入口 Activity (MainActivity.kt)
+ *
+ * 【作用与功能】：
+ * - 应用程序 Launcher 入口 Activity，负责全局启动逻辑、通知权限申请与服务器连接验证；
+ * - 判别已保存凭据：若存在有效服务器凭据且非编辑模式，自动跳过登录直接无缝进入种子列表主页 [TorrentListActivity]；
+ * - 接收外部 Intent 唤起：支持解析从浏览器或其他应用分享传入的 Magnet 磁力链或种子文件 URI；
+ * - 渲染 [MainScreen] Compose 登录主界面并响应登录/测试连接动作。
+ */
 class MainActivity : AppCompatActivity() {
 
     private var isLoggingInState by mutableStateOf(value = false)

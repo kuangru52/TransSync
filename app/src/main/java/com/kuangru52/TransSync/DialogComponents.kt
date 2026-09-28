@@ -21,7 +21,14 @@ import retrofit2.Callback
 import retrofit2.Response
 
 /**
- * 全应用统一重命名种子弹窗
+ * 全应用通用对话框组件库 (DialogComponents.kt)
+ *
+ * 【作用与功能】：
+ * 集中管理全应用统一风格的 3D 液态玻璃交互弹窗组件，包含以下控件与功能：
+ * 1. [RenameTorrentDialog]：种子重命名弹窗，包含单行 OutlinedTextField 输入框与确认/取消按钮，支持 RPC 异步同步；
+ * 2. [SetLocationDialog]：修改下载保存位置弹窗，集成 DirectoryDropdownTextField 历史路径下拉选择器与数据移动复选框；
+ * 3. [SetHrDialog]：H&R 考核天数设置弹窗，集成天数滑动选择器与手动输入框；
+ * 4. [EditTrackersDialog]：Tracker 服务器编辑弹窗，包含多行文本输入框与实时更新控制。
  */
 @Composable
 fun RenameTorrentDialog(

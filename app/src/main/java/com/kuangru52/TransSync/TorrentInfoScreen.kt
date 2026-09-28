@@ -32,6 +32,7 @@ import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.milliseconds
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
@@ -44,22 +45,25 @@ import androidx.compose.ui.unit.sp
 import java.util.Locale
 
 /**
- * 100% 纯 Compose 版本的 TorrentInfoScreen 详情信息界面：
- * - 复刻原版递归树状节点结构 (TorrentFileTreeView)，多级目录缩进、文件夹展开/折叠箭头与百分比精准对齐
- * - 各个元素位置、字号、卡片间距、内边距与功能与 XML 1:1 绝对一致
- * - 点击名称展开/收起文件树，长按复制文本
- * - 点击路径或 Tracker 编辑按钮 调起 Compose 100% 实心毛玻璃弹窗
+ * 种子概览与文件树详情 Compose 界面 (TorrentInfoScreen.kt)
+ *
+ * 【作用与功能】：
+ * 展示单个种子全面属性信息的卡片式详情界面，包含以下 UI 控件与交互功能：
+ * 1. 种子标题与文件树卡片：包含种子长标题与 [TorrentFileTreeView] 递归树状文件目录结构，支持文件夹展开/折叠、多级缩进与长按拷贝；
+ * 2. 数据统计 2x3 网格卡片 ([InfoGridCell])：展示总大小、分享率、已下载/进度、已上传、做种/下载/完成集群数与做种时长；
+ * 3. 路径与 Tracker 配置卡片：展示保存路径（带修改按钮与剪贴板复制）、Tracker 域名列表（带编辑按钮）与 H&R 考核通过状态；
+ * 4. 时间与状态卡片：展示预计剩余时间 (ETA)、添加日期、完成日期及最后活动时间。
  */
 @android.annotation.SuppressLint("NewApi")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TorrentInfoScreen(
     torrent: Torrent?,
-    rpcUrl: String,
-    user: String,
-    pass: String,
-    onRefresh: () -> Unit,
     modifier: Modifier = Modifier,
+    rpcUrl: String = "",
+    user: String = "",
+    pass: String = "",
+    onRefresh: () -> Unit = {},
     backdropLayer: GraphicsLayer? = null,
     boxPositionInRoot: Offset = Offset.Zero,
 ) {
@@ -166,7 +170,6 @@ fun TorrentInfoScreen(
                 CircularProgressIndicator(color = accentColor)
             }
         } else {
-            val torrent = activeTorrent
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
@@ -184,7 +187,7 @@ fun TorrentInfoScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = FormatUtils.formatTorrentTitle(torrent.name),
+                                text = FormatUtils.formatTorrentTitle(activeTorrent.name),
                                 style = TextStyle(
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
@@ -196,10 +199,10 @@ fun TorrentInfoScreen(
                                 }
                             )
 
-                            if (isFileTreeExpanded && !torrent.files.isNullOrEmpty()) {
+                            if (isFileTreeExpanded && !activeTorrent.files.isNullOrEmpty()) {
                                 Spacer(modifier = Modifier.height(12.dp))
                                 TorrentFileTreeView(
-                                    files = torrent.files,
+                                    files = activeTorrent.files,
                                     primaryTextColor = primaryTextColor,
                                     secondaryTextColor = secondaryTextColor
                                 )
@@ -218,17 +221,17 @@ fun TorrentInfoScreen(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                InfoGridCell("总大小", FormatUtils.formatSize(torrent.totalSize), secondaryTextColor, primaryTextColor, Modifier.weight(1f))
-                                InfoGridCell("分享率", String.format(Locale.US, "%.2f", torrent.uploadRatio), secondaryTextColor, primaryTextColor, Modifier.weight(1f))
+                                InfoGridCell("总大小", FormatUtils.formatSize(activeTorrent.totalSize), secondaryTextColor, primaryTextColor, Modifier.weight(1f))
+                                InfoGridCell("分享率", String.format(Locale.US, "%.2f", activeTorrent.uploadRatio), secondaryTextColor, primaryTextColor, Modifier.weight(1f))
                             }
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                val percent = (torrent.percentDone * 100).toInt()
-                                InfoGridCell("已下载", "${FormatUtils.formatSize(torrent.downloadedEver)} ($percent%)", secondaryTextColor, Color(0xFF2196F3), Modifier.weight(1f))
-                                InfoGridCell("已上传", FormatUtils.formatSize(torrent.uploadedEver), secondaryTextColor, Color(0xFF43A047), Modifier.weight(1f))
+                                val percent = (activeTorrent.percentDone * 100).toInt()
+                                InfoGridCell("已下载", "${FormatUtils.formatSize(activeTorrent.downloadedEver)} ($percent%)", secondaryTextColor, Color(0xFF2196F3), Modifier.weight(1f))
+                                InfoGridCell("已上传", FormatUtils.formatSize(activeTorrent.uploadedEver), secondaryTextColor, Color(0xFF43A047), Modifier.weight(1f))
                             }
                             Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                val trackerStat = torrent.trackerStats?.firstOrNull { (it.hasScraped) || (it.seederCount > 0) || (it.leecherCount > 0) || (it.downloadCount > 0) }
-                                    ?: torrent.trackerStats?.firstOrNull()
+                                val trackerStat = activeTorrent.trackerStats?.firstOrNull { (it.hasScraped) || (it.seederCount > 0) || (it.leecherCount > 0) || (it.downloadCount > 0) }
+                                    ?: activeTorrent.trackerStats?.firstOrNull()
 
                                 val seeders = trackerStat?.seederCount ?: -1
                                 val leechers = trackerStat?.leecherCount ?: -1
@@ -240,7 +243,7 @@ fun TorrentInfoScreen(
                                     "-- / -- / --"
                                 }
 
-                                val seedSec = torrent.secondsSeeding
+                                val seedSec = activeTorrent.secondsSeeding
                                 val days = seedSec / (24 * 3600)
                                 val hrs = (seedSec % (24 * 3600)) / 3600
                                 val mins = (seedSec % 3600) / 60
@@ -271,12 +274,12 @@ fun TorrentInfoScreen(
                             ) {
                                 Text("下载目录", fontSize = 12.sp, color = secondaryTextColor, modifier = Modifier.width(90.dp))
                                 Text(
-                                    text = torrent.downloadDir ?: "",
+                                    text = activeTorrent.downloadDir ?: "",
                                     fontSize = 13.sp,
                                     color = primaryTextColor,
                                     modifier = Modifier
                                         .weight(1f)
-                                        .clickable { copyToClipboard("downloadDir", torrent.downloadDir ?: "") }
+                                        .clickable { copyToClipboard("downloadDir", activeTorrent.downloadDir ?: "") }
                                 )
                                 IconButton(
                                     onClick = { showSetLocationDialogState = true },
@@ -292,12 +295,12 @@ fun TorrentInfoScreen(
                             }
 
                             // Tracker 行 (仅显示有效域名，若有多个 Tracker 自动分多行展示)
-                            val displayTrackerDomain = remember(torrent) {
-                                val realTrackers = torrent.trackers?.mapNotNull {
+                            val displayTrackerDomain = remember(activeTorrent) {
+                                val realTrackers = activeTorrent.trackers?.mapNotNull {
                                     if (it.announce.isNotBlank() && !it.announce.startsWith("**") && !it.announce.contains("[DHT]") && !it.announce.contains("[PeX]") && !it.announce.contains("[LSD]")) it.announce else null
                                 } ?: emptyList()
 
-                                val realStatsTrackers = torrent.trackerStats?.mapNotNull {
+                                val realStatsTrackers = activeTorrent.trackerStats?.mapNotNull {
                                     if (it.announce.isNotBlank() && !it.announce.startsWith("**") && !it.announce.contains("[DHT]") && !it.announce.contains("[PeX]") && !it.announce.contains("[LSD]")) it.announce else null
                                 } ?: emptyList()
 
@@ -352,11 +355,11 @@ fun TorrentInfoScreen(
                                     .fillMaxWidth()
                                     .clickable { showSetHrDialogState = true },
                             ) {
-                                HrStatusInfoRow(torrent = torrent, secondaryTextColor = secondaryTextColor, primaryTextColor = primaryTextColor)
+                                HrStatusInfoRow(torrent = activeTorrent, secondaryTextColor = secondaryTextColor, primaryTextColor = primaryTextColor)
                             }
 
                             // 错误信息行 (如果有错误)
-                            if (torrent.error != 0 && torrent.errorString.isNotEmpty()) {
+                            if (activeTorrent.error != 0 && activeTorrent.errorString.isNotEmpty()) {
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -365,7 +368,7 @@ fun TorrentInfoScreen(
                                 ) {
                                     Text("错误信息", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE53935), modifier = Modifier.width(90.dp))
                                     Text(
-                                        text = torrent.errorString,
+                                        text = activeTorrent.errorString,
                                         fontSize = 13.sp,
                                         color = Color(0xFFE53935),
                                         modifier = Modifier.weight(1f)
@@ -386,11 +389,11 @@ fun TorrentInfoScreen(
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
                             val etaText = when {
-                                torrent.percentDone >= 1.0 -> "已完成"
-                                torrent.eta == null || torrent.eta < 0L -> "未知"
-                                torrent.eta == 0L -> "已完成"
+                                activeTorrent.percentDone >= 1.0 -> "已完成"
+                                activeTorrent.eta == null || activeTorrent.eta < 0L -> "未知"
+                                activeTorrent.eta == 0L -> "已完成"
                                 else -> {
-                                    val etaSec = torrent.eta
+                                    val etaSec = activeTorrent.eta
                                     val days = etaSec / (24 * 3600)
                                     val hrs = (etaSec % (24 * 3600)) / 3600
                                     val mins = (etaSec % 3600) / 60
@@ -404,10 +407,10 @@ fun TorrentInfoScreen(
                                 }
                             }
 
-                            InfoRow("预计剩余", etaText, secondaryTextColor, if (torrent.percentDone < 1.0 && (torrent.eta ?: -1L) > 0L) Color(0xFF2196F3) else primaryTextColor)
-                            InfoRow("添加日期", FormatUtils.formatDate(torrent.addedDate), secondaryTextColor, primaryTextColor)
-                            InfoRow("完成日期", if (torrent.doneDate > 0) FormatUtils.formatDate(torrent.doneDate) else "未完成", secondaryTextColor, primaryTextColor)
-                            InfoRow("最后活动", if (torrent.activityDate > 0) FormatUtils.formatDate(torrent.activityDate) else "未活动", secondaryTextColor, primaryTextColor)
+                            InfoRow("预计剩余", etaText, secondaryTextColor, if (activeTorrent.percentDone < 1.0 && (activeTorrent.eta ?: -1L) > 0L) Color(0xFF2196F3) else primaryTextColor)
+                            InfoRow("添加日期", FormatUtils.formatDate(activeTorrent.addedDate), secondaryTextColor, primaryTextColor)
+                            InfoRow("完成日期", if (activeTorrent.doneDate > 0) FormatUtils.formatDate(activeTorrent.doneDate) else "未完成", secondaryTextColor, primaryTextColor)
+                            InfoRow("最后活动", if (activeTorrent.activityDate > 0) FormatUtils.formatDate(activeTorrent.activityDate) else "未活动", secondaryTextColor, primaryTextColor)
                         }
                     }
                 }
@@ -572,7 +575,7 @@ fun TorrentFileTreeView(
                                         var isLongPressed = false
 
                                         val longPressJob = launch {
-                                            delay(viewConfiguration.longPressTimeoutMillis)
+                                            delay(viewConfiguration.longPressTimeoutMillis.milliseconds)
                                             isLongPressed = true
                                             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                             hoveredFileName = node.name

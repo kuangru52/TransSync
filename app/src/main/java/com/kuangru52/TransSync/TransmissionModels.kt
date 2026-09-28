@@ -1,5 +1,12 @@
 package com.kuangru52.transsync
 
+/**
+ * Transmission RPC 传输协议数据模型 (TransmissionModels.kt)
+ *
+ * 【作用与功能】：
+ * - 定义 Transmission RPC 规范下的标准 JSON 实体数据类；
+ * - 包含 [RpcRequest]（方法与参数封装）、[RpcResponse]（响应体）、[Torrent]（种子完整属性实体）、[Tracker] 与 [TrackerStats] 等数据类。
+ */
 data class RpcRequest(
     val method: String,
     val arguments: Map<String, Any>? = null,

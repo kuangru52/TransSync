@@ -1,6 +1,5 @@
 package com.kuangru52.transsync
 
-import android.graphics.Shader
 import android.os.Build
 import kotlin.time.Duration.Companion.milliseconds
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -104,10 +103,12 @@ const val LIQUID_GLASS_AGSL = """
 """
 
 /**
- * 3层严密物理图层规范 Compose 弹窗组件：
- * - 1. 最底层 (Bottom Layer)：背景种子列表 (captured by backdropLayer)
- * - 2. 中间层 (Middle Glass Layer)：液体玻璃卡片底框，独立应用凸透镜折射 Shader 与高斯模糊 Filter
- * - 3. 最上层 (Top Foreground Layer)：100% 绝对清晰的前景输入框、标题与动作按钮，坐落在玻璃卡片上方，完全不受折射模糊影响！
+ * 3D 液态玻璃通用对话框 (LiquidGlassDialog.kt)
+ *
+ * 【作用与功能】：
+ * 全应用 3D AGSL 凸透镜液态玻璃弹窗基类，包含以下 UI 控件与渲染功能：
+ * 1. LiquidGlassDialog：利用 RuntimeShader 与 RenderEffect 采样背景，实现带凸透镜折射、高斯模糊与光泽边框的卡片；
+ * 2. 标题与操作按键区：支持标题显示、取消按键、确认按键及自定义底部左侧按钮扩展区。
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -243,7 +244,7 @@ fun LiquidGlassDialog(
 
                                     renderEffect = if (effectiveBlurRadiusDp > 0f) {
                                         val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }
-                                        val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
+                                        val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
                                         android.graphics.RenderEffect.createChainEffect(runtimeShaderEffect, blur).asComposeRenderEffect()
                                     } else {
                                         runtimeShaderEffect.asComposeRenderEffect()
@@ -252,13 +253,13 @@ fun LiquidGlassDialog(
                                     e.printStackTrace()
                                     if (effectiveBlurRadiusDp > 0f) {
                                         val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }
-                                        val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
+                                        val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
                                         renderEffect = blur.asComposeRenderEffect()
                                     }
                                 }
                             } else if (effectiveBlurRadiusDp > 0f) {
                                 val blurPx = with(density) { effectiveBlurRadiusDp.dp.toPx() }
-                                val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, Shader.TileMode.CLAMP)
+                                val blur = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
                                 renderEffect = blur.asComposeRenderEffect()
                             }
                         }

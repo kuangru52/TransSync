@@ -4,9 +4,13 @@ import android.content.Context
 import androidx.core.content.edit
 
 /**
- * 永久保存并管理按不同服务器分类隔离的下载路径历史记录与当前活动种子路径嗅探：
- * - 凡是应用嗅探到或用户输入过的任何目录，均按当前服务器 ID 独立隔离并永久存入 SharedPreferences 磁盘
- * - 即使后续这些目录中的所有种子任务被删除，该服务器的历史目录也绝对不会丢失
+ * 下载目录持久化管理器 (DownloadDirManager.kt)
+ *
+ * 【作用与功能】：
+ * 永久保存并管理按不同服务器 ID 隔离的下载路径历史记录：
+ * - 凡是应用嗅探到或用户手动输入过的任何下载目录，均按当前服务器 ID 独立隔离并永久存入 SharedPreferences 磁盘；
+ * - [getAllDirs]：自动整合合并磁盘历史记录与当前活动种子的路径；
+ * - [saveDirToHistory] / [saveDirsToHistory]：增量追加保存新路径，确保即使种子删除，服务器的历史路径也绝对不丢。
  */
 object DownloadDirManager {
 

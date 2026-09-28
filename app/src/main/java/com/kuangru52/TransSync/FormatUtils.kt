@@ -4,6 +4,15 @@ import java.util.Locale
 import kotlin.math.log10
 import kotlin.math.pow
 
+/**
+ * 数据格式化工具类 (FormatUtils.kt)
+ *
+ * 【作用与功能】：
+ * - 提供全应用统一的数据格式化静态工具函数；
+ * - [formatSize]：自动将 Byte 字节数转换为 B, KB, MB, GB, TB, PB 等最适单位；
+ * - [formatSpeed]：自动将 B/s 传输速率转换为 KB/s 或 MB/s 格式；
+ * - [formatDate] / [formatTorrentTitle]：提供时间戳格式化与种子标题清洗显示。
+ */
 object FormatUtils {
     fun formatSize(bytes: Long): String {
         if (bytes <= 0) return "0 B"

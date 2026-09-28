@@ -32,7 +32,14 @@ import androidx.compose.ui.unit.sp
 import java.util.Locale
 
 /**
- * 1:1 绝对对齐截图卡片尺寸 (外边距 12dp, 圆角 16dp)
+ * 种子列表项卡片组件 (TorrentItemCard.kt)
+ *
+ * 【作用与功能】：
+ * 种子列表中单个种子任务的 3D 液态玻璃卡片视图，包含以下控件与视觉呈现：
+ * 1. 种子标题与状态行：展示种子洗化标题（支持隐私模式遮罩）、Tracker 名称标签以及暂停/校验/下载/做种状态图标与颜色；
+ * 2. 数据与速率行：展示种子文件大小、分享率、实时下载速率 (↓) 与上传速率 (↑)；
+ * 3. 膨胀节点水管进度条 ([WaterPipeProgressBar])：独创挤压变粗百分比膨胀节点水管进度条，实现无缝融合；
+ * 4. 交互：支持单击查看详情、长按调出多选控制胶囊或单击复选框勾选。
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable

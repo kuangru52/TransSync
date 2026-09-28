@@ -42,11 +42,15 @@ import retrofit2.Callback
 import retrofit2.Response
 
 /**
- * 100% 纯 Compose 版本的 MainScreen 服务器连接/登录管理主界面：
- * - 默认沉浸式 Bing 壁纸背景 (录制进 backdropLayer)
- * - 顶端应用 Logo，中间复用与添加服务器弹窗 1:1 完全一致的高端 3D 液态玻璃弹窗卡片登录布局
- * - 包含：客户端类型切换、备注+头像选择、地址、用户名、密码、测试连接按钮与保存/登录按钮
- * - 底部显示 TransSync v4.11 版本号
+ * 沉浸式服务器连接/登录 Compose 界面 (MainScreen.kt)
+ *
+ * 【作用与功能】：
+ * 1:1 复刻添加服务器弹窗造型的登录主界面，包含以下 UI 控件与交互功能：
+ * 1. 背景：渲染 Bing 每日精选沉浸式壁纸，并录制到 backdropLayer 供玻璃卡片透射；
+ * 2. 顶部 Logo：卡片上方展示应用品牌 Logo；
+ * 3. 登录玻璃卡片：3D 液态玻璃材质卡片，包含客户端类型切换器 (Transmission / qBittorrent)、备注与圆头像选择、服务器地址输入框、用户名输入框、密码输入框（带明暗文切换）；
+ * 4. 底部动作区：左侧集成测试连接按钮与 Loading 进度环，右侧包含保存/登录按钮；
+ * 5. 底部版本标识：显示应用名称与当前版本号 (TransSync v4.11)。
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable

@@ -14,6 +14,15 @@ import retrofit2.Response
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * 种子列表业务数据 ViewModel (TorrentListViewModel.kt)
+ *
+ * 【作用与功能】：
+ * 全应用最核心的 ViewModel，管理种子列表全量数据状态与异步 RPC 交互：
+ * 1. 状态 LiveData：暴露种子列表 ([torrents])、抽屉分类计数 ([drawerData])、Tracker 节点统计 ([trackerData])、磁盘剩余空间 ([freeSpace])、实时总速率与限速状态；
+ * 2. 统一 RPC 调配：双向对接 Transmission RPC 协议与 qBittorrent Web API 协议，自动处理认证与数据提取；
+ * 3. 批处理动作：提供种子开始/暂停/删除/重命名/修改保存路径/校验数据/重新汇报等全量批处理函数。
+ */
 class TorrentListViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _torrents = MutableLiveData<List<Torrent>>(emptyList())

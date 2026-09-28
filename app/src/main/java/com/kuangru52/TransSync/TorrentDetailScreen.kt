@@ -36,9 +36,13 @@ import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.unit.dp
 
 /**
- * 100% 纯 Compose 版本的 TorrentDetailScreen 种子详情外壳容器界面：
- * - 顶栏 TabRow 与包含 信息 / 节点 两页的 HorizontalPager
- * - 蓝色指示线条 (#1D88E3)，原生流畅左右滑动切换与返回导航
+ * 种子详情顶层外壳 Compose 界面 (TorrentDetailScreen.kt)
+ *
+ * 【作用与功能】：
+ * 种子详情页的主控容器，包含以下 UI 控件与交互功能：
+ * 1. 顶部控制栏 ([DetailTopBar])：支持侧滑手势返回箭头、右侧 [信息 | 节点] 横排切换分段按钮；
+ * 2. 左右滑动 Page 容器：包含 [TorrentInfoScreen] (信息页) 与 [TorrentPeersScreen] (节点页) 双页面平滑左右手势滑动与关联切换；
+ * 3. 联动弹窗区：响应信息页触发的重命名、修改目录、编辑 Tracker 以及 H&R 设置等 3D 液态玻璃交互弹窗。
  */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable

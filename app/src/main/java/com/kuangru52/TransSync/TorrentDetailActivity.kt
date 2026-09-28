@@ -7,6 +7,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.MaterialTheme
 
+/**
+ * 种子详情页宿主 Activity (TorrentDetailActivity.kt)
+ *
+ * 【作用与功能】：
+ * - 承载 [TorrentDetailScreen] 种子详情界面的 AppCompatActivity 容器；
+ * - 负责接收 Intent 传入的种子 ID (torrent_id)、RPC 地址及用户认证凭据；
+ * - 支持侧滑手势返回与状态栏沉浸式浸入。
+ */
 class TorrentDetailActivity : AppCompatActivity() {
 
     private var torrentId: Int = -1

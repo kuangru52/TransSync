@@ -46,15 +46,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * ============================================================================
- * 全应用统一顶部悬浮控制栏组件库 (TorrentTopAppBar.kt)
- * - 严密的 3 层物理图层隔离架构：
- *   1. 底层 (Bottom Layer): 3D AGSL 凸透镜折射 Shader 与毛玻璃采样层 (只模糊/折射背景)
- *   2. 中层 (Middle Layer): Surface 容器承载轮廓边框与投影阴影
- *   3. 顶层 (Top Layer): 100% 矢量原生清晰的前景文本与图标 (绝对清晰、零模糊)
- * ============================================================================
+ * 顶部悬浮控制栏与选项卡卡片组件库 (TorrentTopAppBar.kt)
+ *
+ * 【作用与功能】：
+ * 包含全应用统一的顶部 3D 液态玻璃悬浮栏组件：
+ * 1. TopBarGlassSurface：3D AGSL 凸透镜折射与高斯模糊底层渲染 Surface；
+ * 2. FloatingTopControls：主页顶部悬浮控制栏，包含抽屉菜单按钮、备用限速乌龟按键、状态筛选标题、种子统计以及多选批处理控制扩展胶囊 MultiSelectRightCapsule；
+ * 3. SettingsTopBar：设置页面顶部紧凑胶囊返回按键；
+ * 4. DetailTopBar：详情页面顶部紧凑胶囊返回按键与右侧信息/节点横排切换分段按键组。
  */
-
 @Composable
 fun TopBarGlassSurface(
     shape: androidx.compose.ui.graphics.Shape,

@@ -75,7 +75,15 @@ sealed interface RightPaneTarget {
 }
 
 /**
- * 1:1 绝对复刻 5 张截图组件元素的重构版 TorrentListScreen 主界面
+ * 种子列表核心 Compose 主界面 (TorrentListScreen.kt)
+ *
+ * 【作用与功能】：
+ * 应用程序最核心的种子任务管理主界面，包含以下 UI 控件与交互功能：
+ * 1. 沉浸式壁纸背景 ([WallpaperBackground])：实时渲染 Bing / 本地轮播壁纸并录制图形图层；
+ * 2. 悬浮顶栏 controls ([FloatingTopControls])：集成抽屉菜单按钮、备用限速乌龟按键、状态筛选标题、种子统计以及多选批处理控制卡片；
+ * 3. 侧边栏抽屉 ([ModalNavigationDrawer] + [DrawerFilterContent])：手势侧滑拖出分类过滤与服务器无缝切换抽屉；
+ * 4. 种子卡片列表 ([LazyColumn] + [TorrentItemCard])：支持下拉刷新的高性能种子任务卡片列表；
+ * 5. 底部网速与搜索栏 ([LiquidBottomBarContent])：悬浮 3D 玻璃网速显示条，点击扩展搜索框。
  */
 @android.annotation.SuppressLint("NewApi")
 @OptIn(ExperimentalMaterial3Api::class)

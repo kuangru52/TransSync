@@ -15,6 +15,14 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 
+/**
+ * 种子信息页 Fragment 包装类 (TorrentInfoFragment.kt)
+ *
+ * 【作用与功能】：
+ * - 为传统 View / Fragment 架构提供桥接能力的 Fragment 容器类；
+ * - 在 [ComposeView] 中嵌入并渲染 [TorrentInfoScreen] 种子详情信息界面；
+ * - 负责异步拉取单种子详细属性与文件列表。
+ */
 class TorrentInfoFragment : Fragment() {
 
     private var torrentId: Int = -1

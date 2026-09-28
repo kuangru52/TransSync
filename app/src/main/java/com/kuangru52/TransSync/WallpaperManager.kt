@@ -27,7 +27,13 @@ import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
- * 全应用壁纸管理器 (Bing 每日壁纸拉取、本地多图按小时轮播、实时高斯模糊)
+ * 背景壁纸与高斯模糊管理器 (WallpaperManager.kt)
+ *
+ * 【作用与功能】：
+ * 全应用背景壁纸的核心下载、缓存与 Compose 渲染组件：
+ * 1. WallpaperBackground：自动根据当前模式（无壁纸 / 每日 Bing / 本地轮播）与高斯模糊度渲染全局背景；
+ * 2. fetchBingWallpaperToday：自动后台请求 Bing API 获取每日精选图片并缓存在应用私有目录；
+ * 3. 本地轮播逻辑：多图根据当前小时数自动计算平滑轮播。
  */
 object WallpaperManager {
 

@@ -17,6 +17,14 @@ interface IpApi {
     fun getCountry(@Path("ip") ip: String): Call<IpApiResponse>
 }
 
+/**
+ * IP 地理位置与国旗 Emoji 转换服务 (GeoIpService.kt)
+ *
+ * 【作用与功能】：
+ * - 查询节点 Peer IP 的地理位置国旗 Emoji 图标；
+ * - 使用 Retrofit 异步请求 ip-api.com 接口解析 ISO 国家代码，并转为 Unicode 国旗 Emoji 字符；
+ * - 内置内存 Map 缓存，避免重复网络查询。
+ */
 object GeoIpService {
     private val cache = mutableMapOf<String, String>()
     private val api = Retrofit.Builder()

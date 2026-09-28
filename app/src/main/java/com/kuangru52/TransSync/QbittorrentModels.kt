@@ -3,7 +3,11 @@ package com.kuangru52.transsync
 import com.google.gson.annotations.SerializedName
 
 /**
- * qBittorrent Web API v2 实体与映射器
+ * qBittorrent Web API 数据实体与映射器 (QbittorrentModels.kt)
+ *
+ * 【作用与功能】：
+ * - 包含 qBittorrent Web API 返回的各类 JSON 数据模型类：[QbitTorrentInfo]、[QbitTransferInfo]、QbitPeerItem、[QbitTrackerItem] 等；
+ * - 提供 [QbitMapper] 统一映射器，将 qBittorrent 的原生状态与字段平滑转换为 TransSync 通用的 [Torrent]、[Peer] 和 [Tracker] 实体。
  */
 @Suppress("PropertyName")
 data class QbitTorrentInfo(

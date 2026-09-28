@@ -22,12 +22,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.PopupProperties
 
 /**
- * 100% 统一规范的保存路径下拉输入框组件：
- * - 限制下拉列表为精致悬浮卡片形式 (heightIn(max = 200.dp))，绝不上下顶到屏幕边缘
- * - 限制下拉列表宽度与输入框 1:1 精确对齐 (不全屏拉伸)
- * - 给予 16dp 优雅圆角与阴影外边框 (shape = RoundedCornerShape(16.dp))
- * - 标准简洁的下拉菜单样式 (不含液态玻璃效果)
- * - 展开时按返回键 100% 仅收起下拉列表
+ * 保存路径下拉输入框组件 (DirectoryDropdownTextField.kt)
+ *
+ * 【作用与功能】：
+ * 100% 统一规范的下载保存目录下拉输入框，包含以下 UI 控件与交互功能：
+ * - [OutlinedTextField]：支持用户手动输入自定义路径；
+ * - [ExposedDropdownMenuBox] + [DropdownMenu]：展示当前服务器的历史下载目录列表，限制最大高度 200dp 悬浮卡片形式；
+ * - [BackHandler]：展开下拉菜单时按系统返回键只收起菜单，不关闭上层主弹窗；
+ * - 支持根据主题模式自动适配深色/浅色高对比度文字与背景。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

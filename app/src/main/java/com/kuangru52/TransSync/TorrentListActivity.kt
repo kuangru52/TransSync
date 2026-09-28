@@ -22,6 +22,14 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
+/**
+ * 种子列表主页宿主 Activity (TorrentListActivity.kt)
+ *
+ * 【作用与功能】：
+ * - 应用程序核心主界面 Activity 容器，绑定 [TorrentListViewModel] 数据 ViewModel；
+ * - Lifecycle 协程定时器：在 RESUMED 活跃状态下每隔 2 秒自动发起后台轮询更新种子列表数据；
+ * - 外部 Intent 处理：支持处理分享传入的种子文件或 Magnet 磁力链添加任务。
+ */
 class TorrentListActivity : AppCompatActivity() {
 
     private val viewModel: TorrentListViewModel by viewModels()

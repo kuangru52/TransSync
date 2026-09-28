@@ -13,6 +13,14 @@ import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
 import java.util.concurrent.ConcurrentHashMap
 
+/**
+ * Transmission RPC 客户端单例工厂 (TransmissionClient.kt)
+ *
+ * 【作用与功能】：
+ * - 构建并管理连接 Transmission RPC 服务端点的 Retrofit 客户端；
+ * - 自动拦截处理 409 响应，提取并更新所需的 X-Transmission-Session-Id 请求头；
+ * - 支持自签名 SSL 证书忽略校验与 HTTP Basic Auth 基础认证。
+ */
 object TransmissionClient {
     private const val TAG = "TransmissionClient"
     private val serviceCache = ConcurrentHashMap<String, TransmissionService>()

@@ -100,6 +100,15 @@ fun LiquidBottomBar(
     }
 }
 
+/**
+ * 悬浮网速条与搜索交互底栏组件 (LiquidBottomBar.kt)
+ *
+ * 【作用与功能】：
+ * 100% 纯 Compose 实现的底部 3D 液态玻璃悬浮控制栏，包含以下控件与交互：
+ * 1. 实时网速显示 ([SpeedSection])：展现上传/下载双向实时传输速率；
+ * 2. 扩展搜索框 ([ActiveSearchField])：点击网速条平滑展开为输入框，支持实时筛选过滤种子；
+ * 3. 调参面板 ([LiquidGlassTuningInspector])：长按连点调出，可实时调节 Shader 折射、高度、模糊与饱和度参数。
+ */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @SuppressLint("ReturnFromAwaitPointerEvent")
 @Composable

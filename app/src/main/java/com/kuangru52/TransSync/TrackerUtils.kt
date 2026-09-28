@@ -1,5 +1,13 @@
 package com.kuangru52.transsync
 
+/**
+ * Tracker 域名解析与简称映射工具 (TrackerUtils.kt)
+ *
+ * 【作用与功能】：
+ * - getTrackerNameFromUrl：提取 Tracker 宣告 URL 字符串中的核心域名；
+ * - 优先比对匹配用户自定义的 domain=label 映射关系表（如 www.google.com -> Google）；
+ * - 未匹配时自动提取 Host 主机名并剥离 "www." 兜底呈现。
+ */
 object TrackerUtils {
     fun getTrackerNameFromUrl(url: String, customMappings: Map<String, String> = emptyMap()): String? {
         if (url.isEmpty()) return null

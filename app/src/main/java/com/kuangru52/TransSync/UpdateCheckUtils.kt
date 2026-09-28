@@ -17,6 +17,14 @@ data class UpdateInfo(
     val releaseUrl: String,
 )
 
+/**
+ * 软件版本检查与在线更新工具 (UpdateCheckUtils.kt)
+ *
+ * 【作用与功能】：
+ * - 异步检查 GitHub Release 最新版本信息；
+ * - checkForUpdates：对比本地 versionName 与 GitHub 最新版本 Tag；
+ * - openReleasesPage：一键浏览器跳转调起 GitHub Release 页面供用户下载更新。
+ */
 object UpdateCheckUtils {
 
     const val GITHUB_RELEASES_URL = "https://github.com/kuangru52/TransSync/releases/latest"

@@ -12,7 +12,13 @@ import retrofit2.Callback
 import retrofit2.Response
 
 /**
- * 100% 清洁提炼的网络 RPC 服务传输助手 (双向兼容 Transmission 与 qBittorrent)
+ * 弹窗网络 RPC 请求工具助手 (DialogUtils.kt)
+ *
+ * 【作用与功能】：
+ * - 提炼并统一管理全应用弹窗交互所触发的网络 RPC 请求逻辑；
+ * - 双向兼容 Transmission RPC 协议与 qBittorrent Web API 协议；
+ * - 涵盖种子重命名 (performRename)、批量删除 (performDelete)、设置 H&R 考核 (performSetHr) 以及添加种子 (performAddTorrent) 等核心操作；
+ * - 自动处理网络请求失败与 Toast 状态反馈。
  */
 object DialogUtils {
 

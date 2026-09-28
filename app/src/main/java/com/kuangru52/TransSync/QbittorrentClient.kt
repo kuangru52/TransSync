@@ -20,6 +20,15 @@ import javax.net.ssl.X509TrustManager
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 
+/**
+ * qBittorrent Web API 客户端单例工厂 (QbittorrentClient.kt)
+ *
+ * 【作用与功能】：
+ * - 构建并管理连接 qBittorrent Web API (v2) 的 Retrofit 服务客户端；
+ * - 内置 CookieJar 自动持久化并共享登录 Session Cookie (SID)；
+ * - 自定义 SSL/TLS 信任管理器，自动支持自签名证书 (Self-signed Certificate) HTTPS 连接；
+ * - 提供 [ToStringConverterFactory] 兼容 qBittorrent 返回的纯文本响应。
+ */
 class ToStringConverterFactory : Converter.Factory() {
     override fun responseBodyConverter(
         type: Type,

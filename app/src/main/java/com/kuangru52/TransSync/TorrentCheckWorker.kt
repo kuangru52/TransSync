@@ -13,6 +13,14 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import retrofit2.awaitResponse
 
+/**
+ * 种子状态后台定时轮询检测 Worker (TorrentCheckWorker.kt)
+ *
+ * 【作用与功能】：
+ * - 基于 WorkManager 实现后台周期性轮询与任务提醒；
+ * - 自动检查当前服务器上的种子状态，当检测到有新完成下载或通过 H&R 考核的种子时，触发系统通知提示；
+ * - 点击通知可自动拉起应用并直达种子详情列表，记录推送历史避免重复弹窗通知。
+ */
 class TorrentCheckWorker(
     context: Context,
     params: WorkerParameters,

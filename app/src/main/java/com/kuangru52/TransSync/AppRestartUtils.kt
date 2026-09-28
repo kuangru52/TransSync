@@ -4,11 +4,15 @@ import android.content.Context
 import android.content.Intent
 import kotlin.system.exitProcess
 
+/**
+ * 应用重启工具类 (AppRestartUtils)
+ *
+ * 【作用与功能】：
+ * - 提供无缝重启应用进程的全局静态方法；
+ * - 当切换服务器客户端类型 (Transmission <-> qBittorrent) 或切换语言/主题时，清空全量 Activity 任务栈并重新拉起 Launcher 主入口；
+ * - 随后彻底杀死旧进程，确保客户端单例、内存缓存及网络连接 100% 干净重启生效。
+ */
 object AppRestartUtils {
-    /**
-     * 无缝重启本应用进程：
-     * - 清空全量 Activity 任务栈并从 Launcher 主入口重新拉起应用，随后彻底杀死旧进程，保证跨客户端类型 (Transmission <-> qBittorrent) 100% 内存干净生效
-     */
     fun restartApp(context: Context) {
         try {
             val packageManager = context.packageManager

@@ -64,11 +64,15 @@ import retrofit2.Callback
 import retrofit2.Response
 
 /**
- * 完整设置界面：
- * - 支持从左往右滑动返回/退出手势 (detectHorizontalDragGestures)
- * - 【最顶端卡片】Transmission / qBittorrent 服务器连接配置卡片 (直接在卡片内呈现全量多服务器管理/切换/编辑/添加)
- * - 外观主题：横排 3 按键 [跟随系统 | 浅色模式 | 深色模式]
- * - 应用语言：横排 3 按键 [跟随系统 | 简体中文 | English]
+ * 完整设置交互 Compose 界面 (SettingsScreen.kt)
+ *
+ * 【作用与功能】：
+ * 涵盖全应用核心配置功能的独立设置 UI 界面，包含以下卡片与交互控件：
+ * 1. 服务器连接配置卡片：展开式多服务器管理列表，支持一键切换、编辑、删除与调起 ServerEditDialog 添加服务器；
+ * 2. 主题与壁纸卡片：包含外观主题三分段切换按键、背景壁纸模式切换器、本地图片轮播选择器与实时高斯模糊度调节 [LiquidGlassSlider]；
+ * 3. 自定义 Tracker 映射卡片：一键调起大弹窗编辑 domain=label 映射表，支持备份导出至 Downloads 与恢复导入 .ini 备份文件；
+ * 4. 隐私模式卡片：提供一键隐藏种子敏感名称的开关切换；
+ * 5. 应用语言卡片：提供跟随系统 / 简体中文 / English 横排三分段语言切换按键。
  */
 @Composable
 fun SettingsScreen(

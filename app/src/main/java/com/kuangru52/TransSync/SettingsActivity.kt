@@ -7,6 +7,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.MaterialTheme
 
+/**
+ * 设置页面宿主 Activity (SettingsActivity.kt)
+ *
+ * 【作用与功能】：
+ * - 承载 [SettingsScreen] Compose 完整设置界面的 AppCompatActivity 容器；
+ * - 配置全屏沉浸式 Edge-to-Edge 系统栏状态；
+ * - 监听返回按键动作并销毁 Activity 返回主界面。
+ */
 class SettingsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED

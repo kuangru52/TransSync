@@ -21,10 +21,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * 100% 纯 Compose 版本的 TorrentPeersScreen 节点界面：
- * - 下拉手势支持 Material3 旋转下拉刷新动画 Indicator
- * - 空数据或有数据状态下均能流畅捕捉下拉手势，触发 Transmission torrent-reannounce 重新汇报
- * - 包含 IP 地址、GeoIP 国旗 Emoji、客户端名称、Flags 标志、进度与上下行速度
+ * 节点 Peer 列表 Compose 界面 (TorrentPeersScreen.kt)
+ *
+ * 【作用与功能】：
+ * 展示单个种子当前已连接的 Peer 节点列表界面，包含以下 UI 控件与交互：
+ * 1. 下拉刷新框 ([PullToRefreshBox])：支持手势下拉触发重新汇报 (reannounce) 寻找更多节点；
+ * 2. 节点列表卡片 ([LazyColumn])：展示节点 IP 地址、通过 [GeoIpService] 解析的国旗 Emoji、客户端 Client 名称、Flags 标志、下载进度与实时上下行速率。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

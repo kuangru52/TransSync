@@ -40,8 +40,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * 侧边栏 DrawerFilterContent：
- * - 兼具运行时真实 ViewModel 数据驱动与 Compose Preview 编辑器视图渲染支持
+ * 导航抽屉侧边栏内容组件 (DrawerFilterContent.kt)
+ *
+ * 【作用与功能】：
+ * 侧边栏抽屉的核心 UI 界面，包含以下控件与交互功能：
+ * 1. 顶部服务器图标切换行：展示多服务器头像/简写圆按键与连接安全角标，支持一键点击无缝切换当前活动服务器；
+ * 2. 状态分类过滤列表：展示全部任务、正在下载、做种中、已暂停、活动中、未活动、错误等分类项及对应任务数与存储占用；
+ * 3. Tracker 标签芯片 FlowRow 区域：展示 Tracker 聚合分类与节点数，支持点击过滤与模糊隐藏保护隐私；
+ * 4. 底部状态栏：展示可用存储空间及设置入口按键。
  */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
