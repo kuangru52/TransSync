@@ -388,11 +388,6 @@ fun TorrentListScreen(
                         )
                     }
 
-                    VerticalDivider(
-                        color = if (isDark) Color(0xFF34495E) else Color(0xFFE0E0E0),
-                        thickness = 1.dp
-                    )
-
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -483,26 +478,24 @@ fun TorrentListScreen(
             }
         }
 
-        // 3. 右侧随手势 100% 物理同步平移的主页面悬浮控制层 (不在 backdropLayer 内部录制，彻底防止 RenderNode 递归绘制崩溃)
+        // 3. 右侧主页面悬浮控制层 (平板双栏模式精准内边距偏移至右侧主列表区域)
         val drawerSlideRatio = (currentOffset / drawerWidthPx).coerceIn(0f, 1f)
-        Row(
-            modifier = Modifier
-                .fillMaxHeight()
-                .wrapContentWidth(align = Alignment.Start, unbounded = true)
-                .graphicsLayer {
-                    translationX = if (!isLandscape) currentOffset - drawerWidthPx else 0f
-                }
-        ) {
-            if (!isLandscape) {
-                Spacer(modifier = Modifier.width(drawerWidthDp))
-            } else {
-                Spacer(modifier = Modifier.width(281.dp))
-            }
+        val showMainFloatingControls = (!isLandscape) || (rightPaneTarget == RightPaneTarget.List)
 
+        if (showMainFloatingControls) {
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .then(if (!isLandscape) Modifier.requiredWidth(configuration.screenWidthDp.dp) else Modifier.weight(1f))
+                    .fillMaxSize()
+                    .then(
+                        if (!isLandscape) {
+                            Modifier
+                                .graphicsLayer { translationX = currentOffset - drawerWidthPx }
+                                .padding(start = drawerWidthDp)
+                                .requiredWidth(configuration.screenWidthDp.dp)
+                        } else {
+                            Modifier.padding(start = 280.dp)
+                        }
+                    )
             ) {
                 FloatingTopControls(
                     titleText = getFilterTitleText(currentFilter),
