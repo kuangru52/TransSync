@@ -3,7 +3,6 @@ package com.kuangru52.transsync
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import androidx.core.content.edit
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -858,19 +857,23 @@ fun SettingsScreen(
             confirmButtonText = stringResource(R.string.btn_delete),
             confirmButtonColor = Color(0xFFFF5252),
             onConfirm = {
+                val isDeletingActiveServer = serverToDelete.id == (activeServer?.id ?: "")
                 ServerManager.deleteServer(context, serverToDelete.id)
-                serversList = ServerManager.getServers(context)
+                val remainingServers = ServerManager.getServers(context)
+                serversList = remainingServers
                 activeServer = ServerManager.getActiveServer(context)
                 serverToDeleteTarget = null
 
-                if (serversList.isEmpty()) {
-                    Toast.makeText(context, "已删除最后一个服务器，正在返回登录界面...", Toast.LENGTH_SHORT).show()
-                    context.getSharedPreferences("auth", Context.MODE_PRIVATE).edit { clear() }
+                if (remainingServers.isEmpty()) {
+                    Toast.makeText(context, context.getString(R.string.msg_switching), Toast.LENGTH_SHORT).show()
                     val intent = Intent(context, MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                     context.startActivity(intent)
                     context.findActivity()?.finish()
+                } else if (isDeletingActiveServer) {
+                    Toast.makeText(context, context.getString(R.string.msg_switching), Toast.LENGTH_SHORT).show()
+                    AppRestartUtils.restartApp(context)
                 } else {
                     Toast.makeText(context, "已删除服务器配置", Toast.LENGTH_SHORT).show()
                 }

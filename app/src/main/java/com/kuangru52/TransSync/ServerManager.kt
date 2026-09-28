@@ -137,8 +137,20 @@ object ServerManager {
             val updated = servers.map { it.copy(isActive = (it.id == newActiveId)) }
             saveServersToPrefs(context, updated, newActiveId)
         } else {
-            saveServersToPrefs(context, emptyList(), "")
+            clearAllAppCachesAndPrefs(context)
         }
+    }
+
+    fun clearAllAppCachesAndPrefs(context: Context) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit(commit = true) { clear() }
+        context.getSharedPreferences("auth", Context.MODE_PRIVATE).edit(commit = true) { clear() }
+        context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE).edit(commit = true) { clear() }
+        TransmissionClient.clearCache()
+        QBittorrentClient.clearCache()
+        serversVersion += 1
+        try {
+            context.cacheDir.deleteRecursively()
+        } catch (_: Exception) {}
     }
 
     private fun saveServersToPrefs(context: Context, list: List<ServerConfig>, activeId: String) {
@@ -169,10 +181,14 @@ object ServerManager {
         val activeServer = list.find { it.id == activeId } ?: list.firstOrNull()
         if (activeServer != null) {
             context.getSharedPreferences("auth", Context.MODE_PRIVATE).edit(commit = true) {
-            putString("rpcUrl", activeServer.rpcUrl)
-            putString("user", activeServer.user)
-            putString("pass", activeServer.pass)
-        }
+                putString("rpcUrl", activeServer.rpcUrl)
+                putString("user", activeServer.user)
+                putString("pass", activeServer.pass)
+            }
+        } else {
+            context.getSharedPreferences("auth", Context.MODE_PRIVATE).edit(commit = true) {
+                clear()
+            }
         }
     }
 
@@ -188,7 +204,7 @@ object ServerManager {
                 rpcUrl = url,
                 user = user,
                 pass = pass,
-                isActive = true
+                isActive = true,
             )
         }
         return null
