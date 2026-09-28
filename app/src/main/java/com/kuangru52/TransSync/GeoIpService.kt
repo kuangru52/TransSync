@@ -33,25 +33,27 @@ object GeoIpService {
             return
         }
 
-        api.getCountry(cleanIp).enqueue(object : Callback<IpApiResponse> {
-            override fun onResponse(call: Call<IpApiResponse>, response: Response<IpApiResponse>) {
-                val countryCode = response.body()?.countryCode
-                val emoji = countryCode?.let { codeToEmoji(it) }
-                emoji?.let {
-                    cache[cleanIp] = it
+        api.getCountry(cleanIp).enqueue(
+            object : Callback<IpApiResponse> {
+                override fun onResponse(call: Call<IpApiResponse>, response: Response<IpApiResponse>) {
+                    val countryCode = response.body()?.countryCode
+                    val emoji = countryCode?.let { codeToEmoji(it) }
+                    emoji?.let {
+                        cache[cleanIp] = it
+                    }
+                    callback(emoji)
                 }
-                callback(emoji)
-            }
 
-            override fun onFailure(call: Call<IpApiResponse>, t: Throwable) {
-                callback(null)
+                override fun onFailure(call: Call<IpApiResponse>, t: Throwable) {
+                    callback(null)
+                }
             }
-        })
+        )
     }
 
     private fun codeToEmoji(countryCode: String): String {
-        val firstLetter = Character.codePointAt(countryCode, 0) - 0x41 + 0x1F1E6
-        val secondLetter = Character.codePointAt(countryCode, 1) - 0x41 + 0x1F1E6
+        val firstLetter = (Character.codePointAt(countryCode, 0) - 0x41) + 0x1F1E6
+        val secondLetter = (Character.codePointAt(countryCode, 1) - 0x41) + 0x1F1E6
         return String(Character.toChars(firstLetter)) + String(Character.toChars(secondLetter))
     }
 }

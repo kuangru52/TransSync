@@ -45,7 +45,7 @@ object SslCheckUtils {
 
     private fun isPrivateHost(host: String): Boolean {
         val h = host.lowercase()
-        return (h == "localhost" || h == "127.0.0.1" ||
+        return ((h == "localhost") || (h == "127.0.0.1") ||
                 h.startsWith("192.168.") ||
                 h.startsWith("10.") ||
                 h.startsWith("172.16.") || h.startsWith("172.17.") || h.startsWith("172.18.") || h.startsWith("172.19.") ||

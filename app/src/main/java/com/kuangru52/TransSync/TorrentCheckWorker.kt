@@ -95,8 +95,8 @@ class TorrentCheckWorker(
 
             // Update the notified sets
             notifiedPrefs.edit {
-                putStringSet(KEY_FINISHED_IDS, currentFinishedIds.map { it.toString() }.toSet())
-                putStringSet(KEY_HR_FINISHED_IDS, currentHrFinishedIds.map { it.toString() }.toSet())
+                putStringSet(KEY_FINISHED_IDS, currentFinishedIds.asSequence().map { it.toString() }.toSet())
+                putStringSet(KEY_HR_FINISHED_IDS, currentHrFinishedIds.asSequence().map { it.toString() }.toSet())
             }
 
             if (newlyFinishedNames.isNotEmpty()) {
@@ -126,7 +126,7 @@ class TorrentCheckWorker(
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Torrent Notifications",
-                NotificationManager.IMPORTANCE_DEFAULT
+                NotificationManager.IMPORTANCE_DEFAULT,
             )
             notificationManager.createNotificationChannel(channel)
         }

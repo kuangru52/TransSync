@@ -124,21 +124,22 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
             val qbitService = QBittorrentClient.getService(effectiveUrl)
 
             val fetchQbitData = {
-                qbitService.getTorrentsInfo("all")
-                    .enqueue(object : Callback<List<QbitTorrentInfo>> {
-                    override fun onResponse(call: Call<List<QbitTorrentInfo>>, response: Response<List<QbitTorrentInfo>>) {
-                        _isLoading.value = false
-                        if (response.isSuccessful) {
-                            val qbitList = response.body() ?: emptyList()
-                            val mappedTorrents = qbitList.map { QbitMapper.mapToTorrent(it) }
-                            processTorrentsAsync(mappedTorrents)
+                qbitService.getTorrentsInfo("all").enqueue(
+                    object : Callback<List<QbitTorrentInfo>> {
+                        override fun onResponse(call: Call<List<QbitTorrentInfo>>, response: Response<List<QbitTorrentInfo>>) {
+                            _isLoading.value = false
+                            if (response.isSuccessful) {
+                                val qbitList = response.body() ?: emptyList()
+                                val mappedTorrents = qbitList.map { QbitMapper.mapToTorrent(it) }
+                                processTorrentsAsync(mappedTorrents)
+                            }
+                        }
+
+                        override fun onFailure(call: Call<List<QbitTorrentInfo>>, t: Throwable) {
+                            _isLoading.value = false
                         }
                     }
-
-                    override fun onFailure(call: Call<List<QbitTorrentInfo>>, t: Throwable) {
-                        _isLoading.value = false
-                    }
-                })
+                )
 
                 qbitService.getTransferInfo().enqueue(object : Callback<QbitTransferInfo> {
                     override fun onResponse(call: Call<QbitTransferInfo>, response: Response<QbitTransferInfo>) {
@@ -268,9 +269,9 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
                 }
 
                 allCount++; allSize += torrent.totalSize
-                val isError = torrent.error != 0 || (torrent.errorString.isNotEmpty() && !torrent.errorString.contains("none", ignoreCase = true))
-                val isDownloading = torrent.status == 3 || torrent.status == 4
-                val isSeeding = torrent.status == 5 || torrent.status == 6
+                val isError = (torrent.error != 0) || (torrent.errorString.isNotEmpty() && !torrent.errorString.contains("none", ignoreCase = true))
+                val isDownloading = (torrent.status == 3) || (torrent.status == 4)
+                val isSeeding = (torrent.status == 5) || (torrent.status == 6)
                 val isPaused = torrent.status == 0
 
                 if (isDownloading) { downCount++; downSize += torrent.totalSize }
@@ -309,12 +310,12 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
     private fun applyFilterAndSearch() {
         val currentTime = System.currentTimeMillis()
         var filtered = when (currentFilter) {
-            "Downloading" -> allTorrentsRaw.filter { it.status == 3 || it.status == 4 }
-            "Seeding" -> allTorrentsRaw.filter { it.status == 5 || it.status == 6 }
+            "Downloading" -> allTorrentsRaw.filter { (it.status == 3) || (it.status == 4) }
+            "Seeding" -> allTorrentsRaw.filter { (it.status == 5) || (it.status == 6) }
             "Paused" -> allTorrentsRaw.filter { it.status == 0 }
             "Active" -> allTorrentsRaw.filter { (currentTime - (activeTorrentsLastSeen[it.id] ?: 0L)) <= 10000L }
             "Inactive" -> allTorrentsRaw.filter { (currentTime - (activeTorrentsLastSeen[it.id] ?: 0L)) > 10000L }
-            "Error" -> allTorrentsRaw.filter { it.error != 0 || (it.errorString.isNotEmpty() && !it.errorString.contains("none", ignoreCase = true)) }
+            "Error" -> allTorrentsRaw.filter { (it.error != 0) || (it.errorString.isNotEmpty() && !it.errorString.contains("none", ignoreCase = true)) }
             else -> {
                 if (currentFilter.startsWith("tracker:")) {
                     val trackerName = currentFilter.substringAfter("tracker:")
@@ -337,7 +338,7 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
         // 默认按最近添加时间降序排序 (最近添加的种子排在最顶部)
         filtered = filtered.sortedWith(
             compareByDescending<Torrent> { it.addedDate }
-                .thenByDescending { it.id }
+                .thenByDescending { it.id },
         )
 
         var filterTotalSize = 0L
@@ -350,8 +351,8 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
     private fun updateFreeSpace(rpcUrl: String, user: String, pass: String) {
         val service = TransmissionClient.getService(rpcUrl, user, pass)
         val downloadDir = allTorrentsRaw.firstOrNull()?.downloadDir ?: "/downloads"
-        service.rpc(rpcUrl, null, RpcRequest("free-space", mapOf("path" to downloadDir)))
-            .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+        service.rpc(rpcUrl, null, RpcRequest("free-space", mapOf("path" to downloadDir))).enqueue(
+            object : Callback<RpcResponse<Map<String, Any>>> {
                 override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                     if (response.isSuccessful) {
                         val bytes = (response.body()?.arguments?.get("size-bytes") as? Double)?.toLong() ?: 0L
@@ -359,7 +360,8 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
                     }
                 }
                 override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {}
-            })
+            }
+        )
     }
 
     private fun checkAltSpeedStatus(rpcUrl: String, user: String, pass: String) {
@@ -372,22 +374,26 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
         if (activeServer?.clientType == ServerConfig.CLIENT_QBITTORRENT) {
             val qbitService = QBittorrentClient.getService(effectiveUrl)
             val fetchSpeedMode = {
-                qbitService.getSpeedLimitsMode().enqueue(object : Callback<String> {
-                    override fun onResponse(call: Call<String>, response: Response<String>) {
-                        if (response.isSuccessful) {
-                            val body = response.body()?.trim() ?: "0"
-                            _altSpeedEnabled.postValue(body == "1")
+                qbitService.getSpeedLimitsMode().enqueue(
+                    object : Callback<String> {
+                        override fun onResponse(call: Call<String>, response: Response<String>) {
+                            if (response.isSuccessful) {
+                                val body = response.body()?.trim() ?: "0"
+                                _altSpeedEnabled.postValue(body == "1")
+                            }
                         }
+                        override fun onFailure(call: Call<String>, t: Throwable) {}
                     }
-                    override fun onFailure(call: Call<String>, t: Throwable) {}
-                })
+                )
             }
 
             if (effectiveUser.isNotEmpty() || effectivePass.isNotEmpty()) {
-                qbitService.login(effectiveUser, effectivePass).enqueue(object : Callback<String> {
-                    override fun onResponse(call: Call<String>, response: Response<String>) { fetchSpeedMode() }
-                    override fun onFailure(call: Call<String>, t: Throwable) { fetchSpeedMode() }
-                })
+                qbitService.login(effectiveUser, effectivePass).enqueue(
+                    object : Callback<String> {
+                        override fun onResponse(call: Call<String>, response: Response<String>) { fetchSpeedMode() }
+                        override fun onFailure(call: Call<String>, t: Throwable) { fetchSpeedMode() }
+                    }
+                )
             } else {
                 fetchSpeedMode()
             }
@@ -399,7 +405,7 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
             .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                 override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                     if (response.isSuccessful) {
-                        val enabled = response.body()?.arguments?.get("alt-speed-enabled") as? Boolean ?: false
+                        val enabled = (response.body()?.arguments?.get("alt-speed-enabled") as? Boolean) ?: false
                         _altSpeedEnabled.postValue(enabled)
                     }
                 }
@@ -421,7 +427,7 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
             val doToggle = {
                 qbitService.toggleSpeedLimitsMode().enqueue(object : Callback<String> {
                     override fun onResponse(call: Call<String>, response: Response<String>) {
-                        if (response.isSuccessful || response.code() == 200) {
+                        if ((response.isSuccessful) || (response.code() == 200)) {
                             _altSpeedEnabled.postValue(!currentlyEnabled)
                         } else {
                             checkAltSpeedStatus(effectiveUrl, effectiveUser, effectivePass)
@@ -540,15 +546,17 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
                         qbitService.resumeTorrents(hashesStr).enqueue(object : Callback<String> {
                             override fun onResponse(call: Call<String>, response: Response<String>) {
                                 if (!response.isSuccessful) {
-                                    qbitService.startTorrents(hashesStr).enqueue(object : Callback<String> {
-                                        override fun onResponse(c: Call<String>, r: Response<String>) {
-                                            onSuccess()
-                                            refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
+                                    qbitService.startTorrents(hashesStr).enqueue(
+                                        object : Callback<String> {
+                                            override fun onResponse(c: Call<String>, r: Response<String>) {
+                                                onSuccess()
+                                                refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
+                                            }
+                                            override fun onFailure(c: Call<String>, t: Throwable) {
+                                                refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
+                                            }
                                         }
-                                        override fun onFailure(c: Call<String>, t: Throwable) {
-                                            refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
-                                        }
-                                    })
+                                    )
                                 } else {
                                     onSuccess()
                                     refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
@@ -610,24 +618,28 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
                         })
                     }
                     else -> {
-                        qbitService.resumeTorrents(hashesStr).enqueue(object : Callback<String> {
-                            override fun onResponse(call: Call<String>, response: Response<String>) {
-                                onSuccess()
-                                refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
+                        qbitService.resumeTorrents(hashesStr).enqueue(
+                            object : Callback<String> {
+                                override fun onResponse(call: Call<String>, response: Response<String>) {
+                                    onSuccess()
+                                    refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
+                                }
+                                override fun onFailure(call: Call<String>, t: Throwable) {
+                                    refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
+                                }
                             }
-                            override fun onFailure(call: Call<String>, t: Throwable) {
-                                refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
-                            }
-                        })
+                        )
                     }
                 }
             }
 
             if (effectiveUser.isNotEmpty() || effectivePass.isNotEmpty()) {
-                qbitService.login(effectiveUser, effectivePass).enqueue(object : Callback<String> {
-                    override fun onResponse(call: Call<String>, response: Response<String>) { doBatch() }
-                    override fun onFailure(call: Call<String>, t: Throwable) { doBatch() }
-                })
+                qbitService.login(effectiveUser, effectivePass).enqueue(
+                    object : Callback<String> {
+                        override fun onResponse(call: Call<String>, response: Response<String>) { doBatch() }
+                        override fun onFailure(call: Call<String>, t: Throwable) { doBatch() }
+                    }
+                )
             } else {
                 doBatch()
             }
@@ -637,7 +649,7 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
         val service = TransmissionClient.getService(effectiveUrl, effectiveUser, effectivePass)
         service.rpc(effectiveUrl, null, RpcRequest(method, mapOf("ids" to ids))).enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
             override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
-                if (response.isSuccessful && response.body()?.result == "success") {
+                if (response.isSuccessful && (response.body()?.result == "success")) {
                     onSuccess()
                     refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
                 } else {
@@ -661,7 +673,7 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
         service.rpc(effectiveUrl, null, RpcRequest("torrent-set", mapOf("ids" to ids, "labels" to labels)))
             .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
                 override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
-                    if (response.isSuccessful && response.body()?.result == "success") {
+                    if (response.isSuccessful && (response.body()?.result == "success")) {
                         onSuccess()
                         refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
                     }
@@ -680,7 +692,7 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
         if (effectiveUrl.isEmpty()) return
 
         val currentTime = System.currentTimeMillis()
-        if (currentTime - lastActionTime < actionDebounceMs) return
+        if ((currentTime - lastActionTime) < actionDebounceMs) return
         lastActionTime = currentTime
 
         val activeServer = ServerManager.getActiveServer(getApplication())
@@ -690,22 +702,26 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
             val hashesStr = if (selectedHashes.isNotEmpty()) selectedHashes.joinToString("|") else "all"
 
             val doReannounce = {
-                qbitService.reannounceTorrents(hashesStr).enqueue(object : Callback<String> {
-                    override fun onResponse(call: Call<String>, response: Response<String>) {
-                        onSuccess()
-                        refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
+                qbitService.reannounceTorrents(hashesStr).enqueue(
+                    object : Callback<String> {
+                        override fun onResponse(call: Call<String>, response: Response<String>) {
+                            onSuccess()
+                            refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
+                        }
+                        override fun onFailure(call: Call<String>, t: Throwable) {
+                            refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
+                        }
                     }
-                    override fun onFailure(call: Call<String>, t: Throwable) {
-                        refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
-                    }
-                })
+                )
             }
 
             if (effectiveUser.isNotEmpty() || effectivePass.isNotEmpty()) {
-                qbitService.login(effectiveUser, effectivePass).enqueue(object : Callback<String> {
-                    override fun onResponse(call: Call<String>, response: Response<String>) { doReannounce() }
-                    override fun onFailure(call: Call<String>, t: Throwable) { doReannounce() }
-                })
+                qbitService.login(effectiveUser, effectivePass).enqueue(
+                    object : Callback<String> {
+                        override fun onResponse(call: Call<String>, response: Response<String>) { doReannounce() }
+                        override fun onFailure(call: Call<String>, t: Throwable) { doReannounce() }
+                    },
+                )
             } else {
                 doReannounce()
             }
@@ -713,10 +729,10 @@ class TorrentListViewModel(application: Application) : AndroidViewModel(applicat
         }
 
         val service = TransmissionClient.getService(effectiveUrl, effectiveUser, effectivePass)
-        service.rpc(effectiveUrl, null, RpcRequest("torrent-reannounce", mapOf("ids" to ids)))
-            .enqueue(object : Callback<RpcResponse<Map<String, Any>>> {
+        service.rpc(effectiveUrl, null, RpcRequest("torrent-reannounce", mapOf("ids" to ids))).enqueue(
+            object : Callback<RpcResponse<Map<String, Any>>> {
                 override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
-                    if (response.isSuccessful && response.body()?.result == "success") {
+                    if (response.isSuccessful && (response.body()?.result == "success")) {
                         onSuccess()
                         refreshTorrents(effectiveUrl, effectiveUser, effectivePass)
                     }
