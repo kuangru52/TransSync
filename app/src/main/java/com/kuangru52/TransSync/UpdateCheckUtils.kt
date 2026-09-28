@@ -42,9 +42,9 @@ object UpdateCheckUtils {
 
     suspend fun checkForUpdates(context: Context): UpdateInfo = withContext(Dispatchers.IO) {
         val currentVersion = try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "4.11"
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "4.21"
         } catch (_: Exception) {
-            "4.11"
+            "4.21"
         }
 
         try {
