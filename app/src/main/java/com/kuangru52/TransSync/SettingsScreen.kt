@@ -1,5 +1,6 @@
 package com.kuangru52.transsync
 
+import com.kuangru52.transsync.BuildConfig
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -741,13 +742,7 @@ fun SettingsScreen(
                 }
 
                 // 6. 底部居中版本号 (彩蛋：连点 5 次切换开发者模式，支持 GitHub Releases 在线更新提醒)
-                val versionName = remember {
-                    try {
-                        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "4.21"
-                    } catch (_: Exception) {
-                        "4.21"
-                    }
-                }
+                val versionName = BuildConfig.VERSION_NAME
 
                 var devModeTapCount by remember { mutableIntStateOf(0) }
                 var lastTapTimeMs by remember { mutableLongStateOf(0L) }
@@ -808,10 +803,10 @@ fun SettingsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "可更新 ${updateInfoState?.latestVersion}",
+                                    text = stringResource(R.string.update_badge_format, updateInfoState?.latestVersion ?: ""),
                                     fontSize = 11.5.sp,
                                     fontWeight = FontWeight.Bold,
-                                    color = Color.White
+                                    color = Color.White,
                                 )
                             }
                         }
@@ -875,7 +870,7 @@ fun SettingsScreen(
                     Toast.makeText(context, context.getString(R.string.msg_switching), Toast.LENGTH_SHORT).show()
                     AppRestartUtils.restartApp(context)
                 } else {
-                    Toast.makeText(context, "已删除服务器配置", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.msg_server_deleted), Toast.LENGTH_SHORT).show()
                 }
             },
         ) {
@@ -989,11 +984,11 @@ fun ServerEditDialog(
                     inputStream.close()
                     outputStream.close()
                     avatarUriInput = destFile.absolutePath
-                    Toast.makeText(context, "图片图标设置成功", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.msg_avatar_saved), Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                Toast.makeText(context, "图片加载失败", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.msg_avatar_failed), Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -1016,7 +1011,7 @@ fun ServerEditDialog(
             val rawUrl = rpcUrlInput.trim()
             val alias = aliasInput.trim().ifEmpty { if (clientTypeInput == ServerConfig.CLIENT_QBITTORRENT) "qBittorrent" else "Transmission" }
             if (rawUrl.isEmpty()) {
-                Toast.makeText(context, "请输入服务器地址", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.msg_enter_server_address), Toast.LENGTH_SHORT).show()
                 return@LiquidGlassDialog
             }
             val formattedUrl = formatServerUrl(rawUrl, clientTypeInput)
@@ -1040,7 +1035,7 @@ fun ServerEditDialog(
                     val u = userInput.trim()
                     val p = passInput.trim()
                     if (rawUrl.isEmpty()) {
-                        Toast.makeText(context, "请输入服务器地址", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.msg_enter_server_address), Toast.LENGTH_SHORT).show()
                         return@Button
                     }
                     val formattedUrl = formatServerUrl(rawUrl, clientTypeInput)
@@ -1053,14 +1048,14 @@ fun ServerEditDialog(
                                 override fun onResponse(call: Call<QbitTransferInfo>, response: Response<QbitTransferInfo>) {
                                     isTestingConnection = false
                                     if ((response.isSuccessful) || (response.code() == 200)) {
-                                        Toast.makeText(context, "连接成功！qBittorrent Web API 握手正常", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.msg_qbit_connect_success), Toast.LENGTH_SHORT).show()
                                     } else {
-                                        Toast.makeText(context, "连接失败，HTTP 响应码: ${response.code()}", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.msg_connect_failed_code, response.code()), Toast.LENGTH_SHORT).show()
                                     }
                                 }
                                 override fun onFailure(call: Call<QbitTransferInfo>, t: Throwable) {
                                     isTestingConnection = false
-                                    Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.msg_connect_failed_msg, t.localizedMessage ?: ""), Toast.LENGTH_SHORT).show()
                                 }
                             })
                         }
@@ -1072,12 +1067,12 @@ fun ServerEditDialog(
                                         performTransferCheck()
                                     } else {
                                         isTestingConnection = false
-                                        Toast.makeText(context, "qBittorrent 登录失败 (HTTP ${response.code()})，请检查账号密码", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(context, context.getString(R.string.msg_qbit_login_failed, response.code()), Toast.LENGTH_SHORT).show()
                                     }
                                 }
                                 override fun onFailure(call: Call<String>, t: Throwable) {
                                     isTestingConnection = false
-                                    Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.msg_connect_failed_msg, t.localizedMessage ?: ""), Toast.LENGTH_SHORT).show()
                                 }
                             })
                         } else {
@@ -1089,16 +1084,16 @@ fun ServerEditDialog(
                             override fun onResponse(call: Call<RpcResponse<Map<String, Any>>>, response: Response<RpcResponse<Map<String, Any>>>) {
                                 isTestingConnection = false
                                 if ((response.isSuccessful) || (response.code() == 409)) {
-                                    Toast.makeText(context, "连接成功！Transmission 握手正常", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.msg_transmission_connect_success), Toast.LENGTH_SHORT).show()
                                 } else if (response.code() == 401) {
-                                    Toast.makeText(context, "连接失败：认证失败 (401)，请检查用户名和密码", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.msg_auth_401_failed), Toast.LENGTH_SHORT).show()
                                 } else {
-                                    Toast.makeText(context, "连接失败，HTTP 响应码: ${response.code()}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.msg_connect_failed_code, response.code()), Toast.LENGTH_SHORT).show()
                                 }
                             }
                             override fun onFailure(call: Call<RpcResponse<Map<String, Any>>>, t: Throwable) {
                                 isTestingConnection = false
-                                Toast.makeText(context, "连接失败: ${t.localizedMessage}", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, context.getString(R.string.msg_connect_failed_msg, t.localizedMessage ?: ""), Toast.LENGTH_SHORT).show()
                             }
                         })
                     }
@@ -1201,7 +1196,7 @@ fun ServerEditDialog(
                                     onLongClick = {
                                         if (avatarUriInput.isNotBlank()) {
                                             avatarUriInput = ""
-                                            Toast.makeText(context, "已清除所选图片", Toast.LENGTH_SHORT).show()
+                                            Toast.makeText(context, context.getString(R.string.msg_avatar_cleared), Toast.LENGTH_SHORT).show()
                                         }
                                     }
                                 )

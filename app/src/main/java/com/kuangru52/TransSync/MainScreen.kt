@@ -1,5 +1,6 @@
 package com.kuangru52.transsync
 
+import com.kuangru52.transsync.BuildConfig
 import android.net.Uri
 import android.os.Build
 import android.widget.Toast
@@ -58,7 +59,7 @@ import retrofit2.Response
  * 2. 顶部 Logo：登录卡片外侧上方放置应用品牌 Logo；
  * 3. 内联 3D 液态玻璃卡片：不触发 Window 覆盖，直接内联渲染带 3D AGSL 折射与高斯模糊的卡片，包含客户端类型切换器 (Transmission / qBittorrent)、备注与圆头像选择、地址、用户名、密码输入框；
  * 4. 底部动作区：左侧集成测试连接按钮与 Loading 进度环，右侧包含保存/登录按钮；
- * 5. 底部版本标识：显示应用名称与当前版本号 (TransSync v4.21)。
+ * 5. 底部版本标识：显示应用名称与当前版本号 (TransSync v4.22)。
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -144,13 +145,7 @@ fun MainScreen(
     val primaryTextColor = if (isDark) Color.White else Color(0xFF2D3436)
     val secondaryTextColor = if (isDark) Color(0xFF9EABB8) else Color(0xFF636E72)
 
-    val versionName = remember {
-        try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "4.21"
-        } catch (_: Exception) {
-            "4.21"
-        }
-    }
+    val versionName = BuildConfig.VERSION_NAME
 
     val performTestConnection = {
         val rawUrl = hostInput.trim()

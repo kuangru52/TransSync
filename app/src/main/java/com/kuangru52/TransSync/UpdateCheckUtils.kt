@@ -1,5 +1,6 @@
 package com.kuangru52.transsync
 
+import com.kuangru52.transsync.BuildConfig
 import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
@@ -41,11 +42,7 @@ object UpdateCheckUtils {
     }
 
     suspend fun checkForUpdates(context: Context): UpdateInfo = withContext(Dispatchers.IO) {
-        val currentVersion = try {
-            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "4.21"
-        } catch (_: Exception) {
-            "4.21"
-        }
+        val currentVersion = BuildConfig.VERSION_NAME
 
         try {
             val request = Request.Builder()

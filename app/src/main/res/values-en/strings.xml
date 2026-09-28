@@ -148,5 +148,24 @@
     <string name="msg_tracker_mappings_saved">Tracker mappings saved successfully</string>
     <string name="msg_backup_success">Backed up to: %1$s</string>
     <string name="msg_backup_failed">Backup failed</string>
-    <string name="msg_server_deleted_returning">Server deleted, returning to login screen...</string>
+    <string name="msg_server_deleted_returning">Logged out</string>
+
+    <string name="update_badge_format">Update %1$s</string>
+    <string name="msg_server_deleted">Server configuration deleted</string>
+    <string name="msg_avatar_saved">Server icon saved</string>
+    <string name="msg_avatar_failed">Failed to load image</string>
+    <string name="msg_enter_server_address">Please enter server address</string>
+    <string name="msg_qbit_connect_success">Connection successful! qBittorrent Web API handshake OK</string>
+    <string name="msg_transmission_connect_success">Connection successful! Transmission handshake OK</string>
+    <string name="msg_connect_failed_code">Connection failed, HTTP code: %1$d</string>
+    <string name="msg_connect_failed_msg">Connection failed: %1$s</string>
+    <string name="msg_qbit_login_failed">qBittorrent login failed (HTTP %1$d), check credentials</string>
+    <string name="msg_auth_401_failed">Connection failed: Auth failed (401), check credentials</string>
+    <string name="msg_avatar_cleared">Server icon reset</string>
+    <string name="cd_expand">Expand</string>
+    <string name="cd_collapse">Collapse</string>
+    <string name="cd_edit">Edit</string>
+    <string name="cd_delete">Delete</string>
+    <string name="cd_pick_avatar">Select Photo</string>
+    <string name="cd_toggle_password">Toggle Password Visibility</string>
 </resources>

@@ -12,8 +12,8 @@ android {
         applicationId = "com.kuangru52.TransSync"
         minSdk = 24
         targetSdk = 35
-        versionCode = 421
-        versionName = "4.21"
+        versionCode = 422
+        versionName = "4.22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -47,6 +47,7 @@ android {
     buildFeatures {
         viewBinding = true
         compose = true
+        buildConfig = true
     }
 
 

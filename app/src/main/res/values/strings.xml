@@ -172,5 +172,24 @@
     <string name="msg_tracker_mappings_saved">Tracker 映射保存成功</string>
     <string name="msg_backup_success">已备份至: %1$s</string>
     <string name="msg_backup_failed">备份失败</string>
-    <string name="msg_server_deleted_returning">已删除服务器，正在返回登录界面...</string>
+    <string name="msg_server_deleted_returning">已退出</string>
+
+    <string name="update_badge_format">可更新 %1$s</string>
+    <string name="msg_server_deleted">已删除服务器配置</string>
+    <string name="msg_avatar_saved">图片图标设置成功</string>
+    <string name="msg_avatar_failed">图片加载失败</string>
+    <string name="msg_enter_server_address">请输入服务器地址</string>
+    <string name="msg_qbit_connect_success">连接成功！qBittorrent Web API 握手正常</string>
+    <string name="msg_transmission_connect_success">连接成功！Transmission 握手正常</string>
+    <string name="msg_connect_failed_code">连接失败，HTTP 响应码: %1$d</string>
+    <string name="msg_connect_failed_msg">连接失败: %1$s</string>
+    <string name="msg_qbit_login_failed">qBittorrent 登录失败 (HTTP %1$d)，请检查账号密码</string>
+    <string name="msg_auth_401_failed">连接失败：认证失败 (401)，请检查用户名和密码</string>
+    <string name="msg_avatar_cleared">已重置图片图标</string>
+    <string name="cd_expand">展开</string>
+    <string name="cd_collapse">折叠</string>
+    <string name="cd_edit">编辑</string>
+    <string name="cd_delete">删除</string>
+    <string name="cd_pick_avatar">选择照片</string>
+    <string name="cd_toggle_password">切换密码显示</string>
 </resources>
