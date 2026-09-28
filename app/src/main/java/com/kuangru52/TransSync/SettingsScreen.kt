@@ -870,9 +870,7 @@ fun SettingsScreen(
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                     }
                     context.startActivity(intent)
-                    if (context is android.app.Activity) {
-                        context.finish()
-                    }
+                    context.findActivity()?.finish()
                 } else {
                     Toast.makeText(context, "已删除服务器配置", Toast.LENGTH_SHORT).show()
                 }
