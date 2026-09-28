@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -31,10 +32,13 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import android.os.Build
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
@@ -65,6 +69,7 @@ fun DrawerFilterContent(
     currentFilter: String = "All",
     rpcUrl: String = "",
     backdropLayer: GraphicsLayer? = null,
+    wallpaperLayer: GraphicsLayer? = null,
     boxPositionInRoot: Offset = Offset.Zero,
     onSelectFilter: (String) -> Unit = {},
     onServerSwitched: ((ServerConfig) -> Unit)? = null,
@@ -133,9 +138,6 @@ fun DrawerFilterContent(
     )
 
     val unselectedTextColor = if (isDark) Color(0xDDFFFFFF) else Color(0xFF2D3436)
-    val selectedTextColor = if (isDark) Color.White else Color(0xFF1D88E3)
-    val selectedSurfaceColor = if (isDark) Color(0x44FFFFFF) else Color(0x22000000)
-    val selectedBorderColor = if (isDark) Color(0xB3FFFFFF) else Color(0x55000000)
     val chipSelectedColor = if (isDark) Color(0x55FFFFFF) else Color(0x33000000)
     val chipTextColor = if (isDark) Color(0xDDFFFFFF) else Color(0xFF2D3436)
     val chipSelectedTextColor = if (isDark) Color.White else Color(0xFF1D88E3)
@@ -303,47 +305,131 @@ fun DrawerFilterContent(
         Spacer(modifier = Modifier.height(2.dp))
 
         // --- 2. Category Filter List ---
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            categories.forEach { (key, title) ->
-                val isSelected = currentFilter == key
-                val itemData = drawerData[key] ?: DrawerItemData(0, 0L)
-                val countText = itemData.count.toString()
-                val sizeText = FormatUtils.formatSize(itemData.totalSize)
+        // --- 2. Category Filter List 集中写入单个 3D 液态玻璃卡片 (参数绑定弹窗卡片) ---
+        val dialogVersion by SettingsManager.dialogGlassParamsVersion.collectAsState()
+        val dialogParams = remember(isDark, dialogVersion) { SettingsManager.getDialogGlassParams(context, isDark) }
+        val hasDialogGlassEffect = (dialogParams.refraction != 0f || dialogParams.blurRadius > 0f || dialogParams.whitePoint > 0f)
 
-                Surface(
-                    onClick = { onSelectFilter(key) },
+        var categoryCardPosInRoot by remember { mutableStateOf(Offset.Zero) }
+
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 4.dp)
+                .onGloballyPositioned { coordinates ->
+                    categoryCardPosInRoot = coordinates.positionInRoot()
+                },
+            shape = RoundedCornerShape(16.dp),
+            color = Color.Transparent,
+            border = BorderStroke(1.dp, if (isDark) Color(0x3BFFFFFF) else Color(0x55E0E0E0)),
+            shadowElevation = if (hasDialogGlassEffect && dialogParams.blurRadius > 0f) 6.dp else 0.dp,
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+            ) {
+                // 1. 底层 3D AGSL 凸透镜 Shader 渲染层 (完全同步弹窗 dialogParams 参数，参数为 0 时全透明)
+                if (hasDialogGlassEffect) {
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clip(RoundedCornerShape(16.dp))
+                            .graphicsLayer {
+                                clip = true
+                                shape = RoundedCornerShape(16.dp)
+                                if (!isInspection && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                    if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) && (cachedShader != null)) {
+                                        try {
+                                            cachedShader.setFloatUniform("size", size.width, size.height)
+                                            cachedShader.setFloatUniform("cornerRadius", with(density) { 16.dp.toPx() })
+                                            cachedShader.setFloatUniform("refraction", with(density) { dialogParams.refraction.dp.toPx() })
+                                            cachedShader.setFloatUniform("refractionHeight", with(density) { dialogParams.refractionHeight.dp.toPx() })
+                                            cachedShader.setFloatUniform("saturationBoost", dialogParams.saturationBoost)
+                                            cachedShader.setFloatUniform("contrast", dialogParams.contrast)
+                                            cachedShader.setFloatUniform("whitePoint", dialogParams.whitePoint)
+
+                                            val runtimeShaderEffect = android.graphics.RenderEffect.createRuntimeShaderEffect(cachedShader, "content")
+                                            renderEffect = if (dialogParams.blurRadius > 0f) {
+                                                val blurPx = with(density) { dialogParams.blurRadius.dp.toPx() }
+                                                val blurEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP)
+                                                android.graphics.RenderEffect.createChainEffect(runtimeShaderEffect, blurEffect).asComposeRenderEffect()
+                                            } else {
+                                                runtimeShaderEffect.asComposeRenderEffect()
+                                            }
+                                        } catch (_: Exception) {
+                                            if (dialogParams.blurRadius > 0f) {
+                                                val blurPx = with(density) { dialogParams.blurRadius.dp.toPx() }
+                                                renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                            }
+                                        }
+                                    } else if (dialogParams.blurRadius > 0f) {
+                                        val blurPx = with(density) { dialogParams.blurRadius.dp.toPx() }
+                                        renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
+                                    }
+                                }
+                            }
+                            .drawWithContent {
+                                if (wallpaperLayer != null) {
+                                    try {
+                                        val localOffsetX = (categoryCardPosInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
+                                        val localOffsetY = (categoryCardPosInRoot.y - boxPositionInRoot.y).coerceAtLeast(0f)
+                                        translate(left = -localOffsetX, top = -localOffsetY) {
+                                            drawLayer(wallpaperLayer)
+                                        }
+                                    } catch (_: Exception) {}
+                                }
+                                drawContent()
+                            }
+                            .drawBehind {
+                                if (dialogParams.whitePoint > 0f) {
+                                    drawRect(color = Color.White.copy(alpha = (dialogParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
+                                }
+                            }
+                    )
+                }
+
+                // 2. 顶层 前景分类列表项 (圆角选中高亮，消除直角正方形)
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(36.dp)
-                        .padding(horizontal = 12.dp),
-                    shape = RoundedCornerShape(100.dp),
-                    color = if (isSelected) selectedSurfaceColor else Color.Transparent,
-                    border = if (isSelected) BorderStroke(1.dp, selectedBorderColor) else null,
+                        .padding(vertical = 4.dp, horizontal = 4.dp)
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "$title ($countText)",
-                            style = TextStyle(
-                                fontSize = 14.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                                color = if (isSelected) selectedTextColor else unselectedTextColor
-                            ),
-                            modifier = Modifier.weight(1f)
-                        )
-                        Text(
-                            text = "[$sizeText]",
-                            style = TextStyle(
-                                fontSize = 12.sp,
-                                color = if (isSelected) selectedTextColor.copy(alpha = 0.9f) else unselectedTextColor.copy(alpha = 0.8f)
+                    categories.forEach { (key, title) ->
+                        val isSelected = currentFilter == key
+                        val itemData = drawerData[key] ?: DrawerItemData(0, 0L)
+                        val countText = itemData.count.toString()
+                        val sizeText = FormatUtils.formatSize(itemData.totalSize)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(38.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .clickable { onSelectFilter(key) }
+                                .background(
+                                    color = if (isSelected) chipSelectedColor else Color.Transparent
+                                )
+                                .padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "$title ($countText)",
+                                style = TextStyle(
+                                    fontSize = 13.5.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                                    color = if (isSelected) chipSelectedTextColor else unselectedTextColor
+                                ),
+                                modifier = Modifier.weight(1f)
                             )
-                        )
+                            Text(
+                                text = "[$sizeText]",
+                                style = TextStyle(
+                                    fontSize = 12.sp,
+                                    color = if (isSelected) chipSelectedTextColor.copy(alpha = 0.9f) else unselectedTextColor.copy(alpha = 0.8f)
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -483,6 +569,18 @@ fun DrawerFilterContent(
                                                         renderEffect = android.graphics.RenderEffect.createBlurEffect(blurPx, blurPx, android.graphics.Shader.TileMode.CLAMP).asComposeRenderEffect()
                                                     }
                                                 }
+                                            }
+                                            .drawWithContent {
+                                                if (wallpaperLayer != null) {
+                                                    try {
+                                                        val localOffsetX = (chipPosInRoot.x - boxPositionInRoot.x).coerceAtLeast(0f)
+                                                        val localOffsetY = (chipPosInRoot.y - boxPositionInRoot.y).coerceAtLeast(0f)
+                                                        translate(left = -localOffsetX, top = -localOffsetY) {
+                                                            drawLayer(wallpaperLayer)
+                                                        }
+                                                    } catch (_: Exception) {}
+                                                }
+                                                drawContent()
                                             }
                                             .drawBehind {
                                                 if (isChipSelected) {

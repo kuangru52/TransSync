@@ -185,6 +185,23 @@ fun TorrentListScreen(
             }
         }
     }
+
+    val wallpaperLayer = remember(isInspection) {
+        if (!isInspection) {
+            try {
+                graphicsContext.createGraphicsLayer()
+            } catch (_: Exception) { null }
+        } else null
+    }
+    DisposableEffect(isInspection) {
+        onDispose {
+            if (wallpaperLayer != null) {
+                try {
+                    graphicsContext.releaseGraphicsLayer(wallpaperLayer)
+                } catch (_: Exception) {}
+            }
+        }
+    }
     var boxPositionInRoot by remember { mutableStateOf(Offset.Zero) }
 
     var isFabVisible by remember { mutableStateOf(true) }
@@ -359,8 +376,22 @@ fun TorrentListScreen(
                     drawContent()
                 }
         ) {
-            // 全局唯一一张壁纸 (录制进 backdropLayer 中供网速条与弹窗提取极致液态模糊)
-            WallpaperBackground()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .drawWithContent {
+                        if (wallpaperLayer != null) {
+                            try {
+                                wallpaperLayer.record {
+                                    this@drawWithContent.drawContent()
+                                }
+                            } catch (_: Exception) {}
+                        }
+                        drawContent()
+                    }
+            ) {
+                WallpaperBackground()
+            }
             if (isLandscape) {
                 Row(
                     modifier = Modifier.fillMaxSize()
@@ -375,6 +406,7 @@ fun TorrentListScreen(
                             currentFilter = currentFilter,
                             rpcUrl = rpcUrl,
                             backdropLayer = backdropLayer,
+                            wallpaperLayer = wallpaperLayer,
                             boxPositionInRoot = boxPositionInRoot,
                             onSelectFilter = { selectedFilter ->
                                 currentFilter = selectedFilter
@@ -436,6 +468,7 @@ fun TorrentListScreen(
                             currentFilter = currentFilter,
                             rpcUrl = rpcUrl,
                             backdropLayer = backdropLayer,
+                            wallpaperLayer = wallpaperLayer,
                             boxPositionInRoot = boxPositionInRoot,
                             onSelectFilter = { selectedFilter ->
                                 currentFilter = selectedFilter

@@ -26,6 +26,14 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- 允许冷启动拉起自定义 Scheme: transsync://download?url=... -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="transsync" />
+            </intent-filter>
         </activity>
 
         <!-- 外部浏览器分享磁力链/链接与种子文件的唯一接收 Activity (无需弹出二次选择菜单) -->
@@ -35,6 +43,14 @@
             android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize">
+
+            <!-- 处理自定义 Scheme: transsync://download?url=... -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="transsync" />
+            </intent-filter>
 
             <!-- 处理磁力链接 -->
             <intent-filter>

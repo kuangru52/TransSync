@@ -151,6 +151,24 @@ class TorrentListActivity : AppCompatActivity() {
 
     private fun handleExternalUri(uri: Uri) {
         val scheme = uri.scheme
+        if (scheme == "transsync") {
+            val rawTargetUrl = uri.getQueryParameter("url")
+                ?: uri.getQueryParameter("link")
+                ?: uri.toString().substringAfter("url=", "").substringBefore("&")
+            val targetUrl = if (rawTargetUrl.isNotBlank()) {
+                try {
+                    java.net.URLDecoder.decode(rawTargetUrl, "UTF-8")
+                } catch (_: Exception) {
+                    rawTargetUrl
+                }
+            } else ""
+
+            if (targetUrl.isNotBlank()) {
+                showAddTorrentDialog(initialUrl = targetUrl)
+            }
+            return
+        }
+
         val isMagnetOrHttp = (scheme == "magnet") || (scheme == "http") || (scheme == "https")
         if (isMagnetOrHttp) {
             showAddTorrentDialog(initialUrl = uri.toString())

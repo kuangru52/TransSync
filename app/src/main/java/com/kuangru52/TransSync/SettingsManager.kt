@@ -324,6 +324,9 @@ object SettingsManager {
         _topBarGlassParamsVersion.value++
     }
 
+    private val _dialogGlassParamsVersion = kotlinx.coroutines.flow.MutableStateFlow(0)
+    val dialogGlassParamsVersion: kotlinx.coroutines.flow.StateFlow<Int> = _dialogGlassParamsVersion
+
     @Suppress("unused")
     fun getDialogGlassParams(context: Context, isDark: Boolean): GlassParams {
         return GlassParams(
@@ -344,6 +347,7 @@ object SettingsManager {
         setDialogSaturation(context, params.saturationBoost)
         setDialogContrast(context, params.contrast)
         setDialogWhitePoint(context, params.whitePoint)
+        _dialogGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -356,6 +360,7 @@ object SettingsManager {
     fun setDialogRefraction(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_DIALOG_REFRACTION, value) }
+        _dialogGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -368,6 +373,7 @@ object SettingsManager {
     fun setDialogHeight(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_DIALOG_HEIGHT, value) }
+        _dialogGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -380,6 +386,7 @@ object SettingsManager {
     fun setDialogBlur(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_DIALOG_BLUR, value) }
+        _dialogGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -392,6 +399,7 @@ object SettingsManager {
     fun setDialogSaturation(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_DIALOG_SATURATION, value) }
+        _dialogGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -404,6 +412,7 @@ object SettingsManager {
     fun setDialogContrast(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_DIALOG_CONTRAST, value) }
+        _dialogGlassParamsVersion.value++
     }
 
     @Suppress("UNUSED_PARAMETER")
@@ -416,6 +425,7 @@ object SettingsManager {
     fun setDialogWhitePoint(context: Context, value: Float) {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit { putFloat(KEY_DIALOG_WHITE_POINT, value) }
+        _dialogGlassParamsVersion.value++
     }
 
     fun getWallpaperMode(context: Context): String {
