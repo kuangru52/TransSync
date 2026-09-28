@@ -386,12 +386,30 @@ fun LiquidBottomBarContent(
             saturationBoost = liveSaturationBoost,
             contrast = liveContrast,
             whitePoint = liveWhitePoint,
-            onRefractionChange = { liveRefractionDp = it },
-            onRefractionHeightChange = { liveRefractionHeightDp = it },
-            onBlurRadiusChange = { liveBlurRadiusDp = it },
-            onSaturationBoostChange = { liveSaturationBoost = it },
-            onContrastChange = { liveContrast = it },
-            onWhitePointChange = { liveWhitePoint = it },
+            onRefractionChange = {
+                liveRefractionDp = it
+                SettingsManager.setSpeedbarRefraction(context, it)
+            },
+            onRefractionHeightChange = {
+                liveRefractionHeightDp = it
+                SettingsManager.setSpeedbarHeight(context, it)
+            },
+            onBlurRadiusChange = {
+                liveBlurRadiusDp = it
+                SettingsManager.setSpeedbarBlur(context, it)
+            },
+            onSaturationBoostChange = {
+                liveSaturationBoost = it
+                SettingsManager.setSpeedbarSaturation(context, it)
+            },
+            onContrastChange = {
+                liveContrast = it
+                SettingsManager.setSpeedbarContrast(context, it)
+            },
+            onWhitePointChange = {
+                liveWhitePoint = it
+                SettingsManager.setSpeedbarWhitePoint(context, it)
+            },
             onReset = {
                 val defRefraction = -30f
                 val defHeight = 3f

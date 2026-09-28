@@ -130,7 +130,6 @@ fun DrawerFilterContent(
     val selectedTextColor = if (isDark) Color.White else Color(0xFF1D88E3)
     val selectedSurfaceColor = if (isDark) Color(0x44FFFFFF) else Color(0x22000000)
     val selectedBorderColor = if (isDark) Color(0xB3FFFFFF) else Color(0x55000000)
-    val chipBgColor = if (isDark) Color(0x1AFFFFFF) else Color(0x1A000000)
     val chipSelectedColor = if (isDark) Color(0x55FFFFFF) else Color(0x33000000)
     val chipTextColor = if (isDark) Color(0xDDFFFFFF) else Color(0xFF2D3436)
     val chipSelectedTextColor = if (isDark) Color.White else Color(0xFF1D88E3)
@@ -424,9 +423,9 @@ fun DrawerFilterContent(
                                 }
                             },
                             shape = RoundedCornerShape(100.dp),
-                            color = if (hasGlassEffect) Color.Transparent else (if (isChipSelected) chipSelectedColor else chipBgColor),
+                            color = if (isChipSelected) chipSelectedColor else Color.Transparent,
                             border = BorderStroke(1.dp, if (isChipSelected) chipSelectedBorderColor else chipBorderColor),
-                            shadowElevation = if (hasGlassEffect) 4.dp else 0.dp,
+                            shadowElevation = if (hasGlassEffect && speedbarParams.blurRadius > 0f) 4.dp else 0.dp,
                             modifier = Modifier.height(32.dp),
                         ) {
                             Box(
@@ -474,7 +473,9 @@ fun DrawerFilterContent(
                                                 }
                                             }
                                             .drawBehind {
-                                                drawRect(color = if (isChipSelected) chipSelectedColor else chipBgColor)
+                                                if (isChipSelected) {
+                                                    drawRect(color = chipSelectedColor)
+                                                }
                                                 if (speedbarParams.whitePoint > 0f) {
                                                     drawRect(color = Color.White.copy(alpha = (speedbarParams.whitePoint * 0.3f).coerceIn(0f, 0.4f)))
                                                 }

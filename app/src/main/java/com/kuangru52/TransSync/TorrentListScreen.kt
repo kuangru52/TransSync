@@ -488,10 +488,7 @@ fun TorrentListScreen(
                     .fillMaxSize()
                     .then(
                         if (!isLandscape) {
-                            Modifier
-                                .graphicsLayer { translationX = currentOffset - drawerWidthPx }
-                                .padding(start = drawerWidthDp)
-                                .requiredWidth(configuration.screenWidthDp.dp)
+                            Modifier.graphicsLayer { translationX = currentOffset }
                         } else {
                             Modifier.padding(start = 280.dp)
                         }
